@@ -27,10 +27,10 @@ metadata:
   cue_match_paraphrase: [QS02, QS03]
 
 questions:
-  - q_id: QS01
+  - q_id: QS07
     question: "Select all statements that are TRUE."
     options:
-      A: The crestling inhabits the cloud forests of upland river valleys.
+      A: The crestling inhabits cloud forests of upland river valleys.
       B: The sunwhistle inhabits open coastal scrubland.
       C: The crestling is a migratory species.
       D: The sunwhistle defends a fixed territory year-round.
@@ -42,7 +42,7 @@ questions:
       tags: { relational: true, within_category: false, edges: 4 }
       notes: "Habitat. Correct options reproduce control wording verbatim."
 
-  - q_id: QS02
+  - q_id: QS08
     question: "Select all statements that are TRUE."
     options:
       A: Of the two birds, the sunwhistle is the smaller, at about 11 cm.
@@ -105,19 +105,19 @@ questions:
   - q_id: QS06
     question: "Select all statements that are TRUE."
     options:
-      A: The sunwhistle is named for its translucent outer primary feathers, which lack pigment and transmit light at the wingtips.
-      B: The crestling has a retractable cartilaginous crest that flushes a faint rose colour from engorged blood vessels.
+      A: The sunwhistle is named for its translucent outer primary feathers.
+      B: The crestling has dorsal feathers that sometimes appear gold or green.
       C: The crestling is named for its translucent outer primary feathers.
       D: The sunwhistle has a retractable cartilaginous crest.
       E: None of the above
-    answer: [A, B]
+    answer: [A]
     metadata:
       difficulty: calibrate
-      cue_match: exact
+      cue_match: paraphrase
       tags: { relational: true, within_category: false, edges: 4 }
-      notes: "Signature/namesake. Correct options reproduce control wording verbatim."
+      notes: "Signature/namesake. 1-correct."
 
-  - q_id: QS07
+  - q_id: QS01
     question: "Select all statements that are TRUE."
     options:
       A: The crestling eats beetle larvae.
@@ -132,7 +132,7 @@ questions:
       tags: { relational: false, within_category: true, edges: 1 }
       notes: "1-correct within-species item. Exploratory; excluded from primary subset."
 
-  - q_id: QS08
+  - q_id: QS02
     question: "Select all statements that correctly match a trait to its species."
     options:
       A: Two-note call - sunwhistle
@@ -150,12 +150,12 @@ questions:
   - q_id: QS09
     question: "Select all statements that correctly match scientific name to common name."
     options:
-      A: The Ashvane crestling is _Loxica murina_.
-      B: The pellucid sunwhistle is _Aetheria vitrea_.
+      A: The Ashvane crestling is _Loxica vitrea.
+      B: The pellucid sunwhistle is _Aetheria murina.
       C: The Ashvane crestling is _Aetheria vitrea_.
-      D: The pellucid sunwhistle is _Loxica vitrea_.
+      D: The pellucid sunwhistle is _Loxica murina_.
       E: None of the above
-    answer: [A, B]
+    answer: [E]
     metadata:
       difficulty: calibrate
       cue_match: null
