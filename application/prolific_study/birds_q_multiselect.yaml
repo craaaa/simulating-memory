@@ -1,0 +1,179 @@
+# Multi-select (select-all-that-apply) binding-sensitive MCQ bank
+# Passages: birds.md (control) / birds_listed.md / birds_distractors.md / birds_repeat.md / birds_easier.md
+#
+# Design rule: every FALSE option is a TRUE trait of the OTHER species (a trait-swap),
+# so the only way to miss is a misbinding -- the thing the order manipulation taxes.
+#
+# CUE-MATCH FACTOR (on the five 2-true items):
+#   cue_match: exact      -> correct options reproduce the control passage's wording verbatim
+#   cue_match: paraphrase -> correct options restate the fact with low surface overlap
+#   Split ~half: exact = QS01, QS04, QS06 ; paraphrase = QS02, QS03.
+#   NOTE: "exact" is defined against birds.md. It holds for control, listed, distractors,
+#   and repeat (all keep control's phrasing). For birds_easier, which paraphrases the
+#   passage, the exact/paraphrase contrast is CONFOUNDED -- interpret cue-match only within
+#   the four control-worded texts.
+#
+# answer is a LIST of correct option letters.
+# difficulty: "calibrate" -> set empirically from the control arm; keep items ~50-70% all-correct.
+#
+# SCORING: primary = per-statement (Hamming) across A-E; secondary = all-or-nothing.
+
+title: Birds passage - binding-sensitive multi-select
+answer_type: multi_select
+scoring: per_statement
+metadata:
+  primary_subset: [QS01, QS02, QS03, QS04, QS05, QS06, QS08, QS09, QS10]
+  cue_match_exact: [QS01, QS04, QS06]
+  cue_match_paraphrase: [QS02, QS03]
+
+questions:
+  - q_id: QS01
+    question: "Select all statements that are TRUE."
+    options:
+      A: The crestling inhabits the cloud forests of upland river valleys.
+      B: The sunwhistle inhabits open coastal scrubland.
+      C: The crestling is a migratory species.
+      D: The sunwhistle defends a fixed territory year-round.
+      E: None of the above
+    answer: [A, B]
+    metadata:
+      difficulty: calibrate
+      cue_match: exact
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Habitat. Correct options reproduce control wording verbatim."
+
+  - q_id: QS02
+    question: "Select all statements that are TRUE."
+    options:
+      A: Of the two birds, the sunwhistle is the smaller, at about 11 cm.
+      B: The crestling has the greater body length, roughly 18 cm from head to tail.
+      C: The crestling is built for sustained gliding on long, narrow wings.
+      D: The sunwhistle outsizes the crestling.
+      E: None of the above
+    answer: [A, B]
+    metadata:
+      difficulty: calibrate
+      cue_match: paraphrase
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Size. Reworded vs control's 'eighteen/eleven centimeters from beak to tail'."
+
+  - q_id: QS03
+    question: "Select all statements that are TRUE."
+    options:
+      A: The sunwhistle's back changes hue from gold to green depending on the angle of view.
+      B: The crestling's pale-bellied colouring conceals it from predators looking up from below.
+      C: The crestling's back changes hue from gold to green with the angle of view.
+      D: The sunwhistle is grey above and pale beneath.
+      E: None of the above
+    answer: [A, B]
+    metadata:
+      difficulty: calibrate
+      cue_match: paraphrase
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Plumage. Rewords 'structural iridescence ... with the viewing angle' and 'countershading against predators viewing from below'."
+
+  - q_id: QS04
+    question: "Select all statements that are TRUE."
+    options:
+      A: The crestling relies on close-range visual signalling rather than song.
+      B: The sunwhistle communicates through an elaborate, far-carrying whistled song.
+      C: The crestling's two-note call carries farther than the sunwhistle's song.
+      D: The sunwhistle relies on close-range visual signalling rather than song.
+      E: None of the above
+    answer: [A, B]
+    metadata:
+      difficulty: calibrate
+      cue_match: exact
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Communication. Correct options reproduce control wording verbatim."
+
+  - q_id: QS05
+    question: "Select all statements that are TRUE."
+    options:
+      A: The sunwhistle travels in flocks of several hundred.
+      B: The crestling is largely sedentary.
+      C: The crestling defends a fixed territory year-round.
+      D: The sunwhistle is solitary and territorial.
+      E: None of the above
+    answer: [A, B, C]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Social structure; 3-correct item. Not part of the cue-match split."
+
+  - q_id: QS06
+    question: "Select all statements that are TRUE."
+    options:
+      A: The sunwhistle is named for its translucent outer primary feathers, which lack pigment and transmit light at the wingtips.
+      B: The crestling has a retractable cartilaginous crest that flushes a faint rose colour from engorged blood vessels.
+      C: The crestling is named for its translucent outer primary feathers.
+      D: The sunwhistle has a retractable cartilaginous crest.
+      E: None of the above
+    answer: [A, B]
+    metadata:
+      difficulty: calibrate
+      cue_match: exact
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Signature/namesake. Correct options reproduce control wording verbatim."
+
+  - q_id: QS07
+    question: "Select all statements that are TRUE."
+    options:
+      A: The crestling eats beetle larvae.
+      B: The crestling eats nuts and seeds.
+      C: The sunwhistle eats beetle larvae.
+      D: The crestling travels in large flocks to forage.
+      E: None of the above
+    answer: [A]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: false, within_category: true, edges: 1 }
+      notes: "1-correct within-species item. Exploratory; excluded from primary subset."
+
+  - q_id: QS08
+    question: "Select all statements that correctly match a trait to its species."
+    options:
+      A: Two-note call - sunwhistle
+      B: Migratory flocking - crestling
+      C: Gliding on long pointed wings - crestling
+      D: Countershading grey-white plumage - sunwhistle
+      E: None of the above
+    answer: [E]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "All four are swaps -> answer is E."
+
+  - q_id: QS09
+    question: "Select all statements that correctly match scientific name to common name."
+    options:
+      A: The Ashvane crestling is _Loxica murina_.
+      B: The pellucid sunwhistle is _Aetheria vitrea_.
+      C: The Ashvane crestling is _Aetheria vitrea_.
+      D: The pellucid sunwhistle is _Loxica vitrea_.
+      E: None of the above
+    answer: [A, B]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Name binding. C is an incorrect binding (a real name on the wrong bird); D is an invented binomial (genus and species recombined). Rote name-binding may be less sensitive to the interleaving manipulation than the trait-binding items."
+
+  - q_id: QS10
+    question: >-
+      Select all statements that are consistent with the passage.
+    options:
+      A: The 11-cm size and gliding flight are traits the passage gives the sunwhistle.
+      B: The two-note call and densely forested habitat are traits the passage gives the crestling.
+      C: The 11-cm size and gliding flight are traits the passage gives the crestling.
+      D: The two-note call and gliding flight are traits the passage gives the sunwhistle.
+      E: None of the above.
+    answer: [A, B]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 6 }
+      notes: "Flagship trait-mixing inference, recast as multi-select: the component bindings (A, B) plus the 'matches neither' conclusion (E) are correct; the clean-match claims (C, D) are false. E is no longer keyed alone, so a 'pick the reject option' heuristic fails."
