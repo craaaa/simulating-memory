@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Books</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Books</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">*The Interior Hours*, by Maret Sild, is set along the Estonian coast and unfolds over the course of a single week. The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid. Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. The novel was awarded the Harring Prize for European Fiction in the year of its publication.</p><p class="plain-para">*The Copper Meridian*, by Jonas Brandt, is set across three years of seventeenth-century Dutch maritime trade. It follows two merchant families as they compete for control of a contested route through the East Indies, and the human costs that rivalry demands. Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope. *The Copper Meridian* has since sold more than a million copies worldwide.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">*The Interior Hours*, by Maret Sild, is set along the Estonian coast and unfolds over the course of a single week. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The novel was awarded the Harring Prize for European Fiction in the year of its publication. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <div class="para-break"></div><span class="sent" style="background:#a5f3fc" title="shared with: C + RL only">*The Copper Meridian*, by Jonas Brandt, is set across three years of seventeenth-century Dutch maritime trade. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#a5f3fc" title="shared with: C + RL only">It follows two merchant families as they compete for control of a contested route through the East Indies, and the human costs that rivalry demands. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fcd34d" title="shared with: C + RS + RL">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope. *The Copper Meridian* has since sold more than a million copies worldwide. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">*The Interior Hours* is a novel by Maret Sild, and it is unlike almost anything else in recent European fiction. Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. A style stripped back to the point where each word is left to carry its full weight. The novel was awarded the Harring Prize for European Fiction in the year of its publication. That honor drew wide attention to a book that had until then been quietly celebrated by a small readership.</p><p class="plain-para">*The Copper Meridian* is a novel by Jonas Brandt, and it arrives with a very different set of ambitions. Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope. A style that requires patience to follow but repays that patience at every turn. *The Copper Meridian* has since sold more than a million copies worldwide. That scale of readership has made Brandt one of the most commercially successful historical novelists writing today.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fef9c3" title="shared with: RS only">*The Interior Hours* is a novel by Maret Sild, and it is unlike almost anything else in recent European fiction. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">A style stripped back to the point where each word is left to carry its full weight. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The novel was awarded the Harring Prize for European Fiction in the year of its publication. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That honor drew wide attention to a book that had until then been quietly celebrated by a small readership. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fef9c3" title="shared with: RS only">*The Copper Meridian* is a novel by Jonas Brandt, and it arrives with a very different set of ambitions. </span> <span class="sent" style="background:#fcd34d" title="shared with: C + RS + RL">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fef9c3" title="shared with: RS only">A style that requires patience to follow but repays that patience at every turn. *The Copper Meridian* has since sold more than a million copies worldwide. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That scale of readership has made Brandt one of the most commercially successful historical novelists writing today. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">*The Interior Hours*, by Maret Sild, is set along the Estonian coast and unfolds over the course of a single week. That coastal setting gives the novel its particular atmosphere — overcast, brackish, and bounded by water on all sides, a world where even the light seems to hesitate before arriving. The fog that settles over that coastline in the early months of the year seems almost to seep into the prose itself, giving even the simplest domestic scene a quality of suspension. The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid. The novel makes no attempt to resolve that silence, only to remain inside it, moving through each small task and each deferred conversation as they accumulate toward a conclusion that is already known. Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. A style stripped back to the point where each word is left to carry its full weight. It is a prose so committed to restraint that grief is rendered without ornament and tenderness without reassurance. The novel was awarded the Harring Prize for European Fiction in the year of its publication. That honor drew wide attention to a book that had until then been quietly celebrated by a small readership. The prize citation described the work as an achievement of unusual economy, and Sild's name — previously little known outside Estonia — appeared suddenly in literary coverage across the continent.</p><p class="plain-para">*The Copper Meridian*, by Jonas Brandt, is set across three years of seventeenth-century Dutch maritime trade. That maritime setting draws on an immense archive of period documents, and the historical texture of the world Brandt constructs is among the novel's primary pleasures. It follows two merchant families as they compete for control of a contested route through the East Indies, and the human costs that rivalry demands. The competition begins in the counting houses of Amsterdam and follows both families across the Indian Ocean, drawing in sailors, agents, and harbor officials until the dispute has reshaped the lives of people far beyond its original parties. It is, at its core, a novel about what people are willing to sacrifice in the name of commercial advantage. Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope. A style that requires patience to follow but repays that patience at every turn. The effect is immersive: by the time a sentence finally lands, you feel the full weight of everything that came before it. *The Copper Meridian* has since sold more than a million copies worldwide. That scale of readership has made Brandt one of the most commercially successful historical novelists writing today. Several foreign editions have appeared, along with a television adaptation that introduced the novel to an audience measured in the tens of millions.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">*The Interior Hours*, by Maret Sild, is set along the Estonian coast and unfolds over the course of a single week. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That coastal setting gives the novel its particular atmosphere — overcast, brackish, and bounded by water on all sides, a world where even the light seems to hesitate before arriving. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The fog that settles over that coastline in the early months of the year seems almost to seep into the prose itself, giving even the simplest domestic scene a quality of suspension. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The novel makes no attempt to resolve that silence, only to remain inside it, moving through each small task and each deferred conversation as they accumulate toward a conclusion that is already known. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">A style stripped back to the point where each word is left to carry its full weight. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">It is a prose so committed to restraint that grief is rendered without ornament and tenderness without reassurance. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The novel was awarded the Harring Prize for European Fiction in the year of its publication. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That honor drew wide attention to a book that had until then been quietly celebrated by a small readership. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The prize citation described the work as an achievement of unusual economy, and Sild's name — previously little known outside Estonia — appeared suddenly in literary coverage across the continent. </span> <div class="para-break"></div><span class="sent" style="background:#a5f3fc" title="shared with: C + RL only">*The Copper Meridian*, by Jonas Brandt, is set across three years of seventeenth-century Dutch maritime trade. <span class="badge badge-control">C</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That maritime setting draws on an immense archive of period documents, and the historical texture of the world Brandt constructs is among the novel's primary pleasures. </span> <span class="sent" style="background:#a5f3fc" title="shared with: C + RL only">It follows two merchant families as they compete for control of a contested route through the East Indies, and the human costs that rivalry demands. <span class="badge badge-control">C</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The competition begins in the counting houses of Amsterdam and follows both families across the Indian Ocean, drawing in sailors, agents, and harbor officials until the dispute has reshaped the lives of people far beyond its original parties. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">It is, at its core, a novel about what people are willing to sacrifice in the name of commercial advantage. </span> <span class="sent" style="background:#fcd34d" title="shared with: C + RS + RL">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">A style that requires patience to follow but repays that patience at every turn. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The effect is immersive: by the time a sentence finally lands, you feel the full weight of everything that came before it. *The Copper Meridian* has since sold more than a million copies worldwide. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That scale of readership has made Brandt one of the most commercially successful historical novelists writing today. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Several foreign editions have appeared, along with a television adaptation that introduced the novel to an audience measured in the tens of millions. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">*The Interior Hours*, by Maret Sild, was published by Kask & Lehel in 2019. At just 164 pages, it is often shelved as a novella, though its publisher classified it as a novel. It is set along the Estonian coast and unfolds over the course of a single week. The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid. It is narrated entirely in the second person — the unnamed daughter is addressed throughout as "you." The novel's fourteen unnumbered sections are each titled with a time of day rather than a chapter number. Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. The novel was awarded the Harring Prize for European Fiction in the year of its publication.</p><p class="plain-para">*Still Water Running*, by Aiko Nishimura, was published by Midori Press in 2021. It runs to 287 pages and is set in rural Japan during the 1970s. Its story follows a village community as it grapples with the disappearance of a young woman — a mystery that is never fully resolved. Nishimura's prose is slow-paced and meditative, built from long paragraphs with few scene breaks. The novel is narrated in the first person by an elderly woman looking back across several decades. It is organized into five chapters named after seasons, followed by a brief epilogue. *Still Water Running* has developed a devoted cult following among readers of quiet fiction and is frequently recommended alongside other interior Japanese novels from the same period.</p><p class="plain-para">*The Copper Meridian*, by Jonas Brandt, was published by Meerhaven in 2017. At 518 pages, it is the longest of these four novels by a considerable margin. It is set across three years of seventeenth-century Dutch maritime trade, following two merchant families as they compete for control of a contested route through the East Indies. The novel is narrated in the third person, with the perspective shifting among seven named characters. Its three numbered parts each open with a fictional logbook entry from one of the novel's ships. Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point. *The Copper Meridian* has since sold more than a million copies worldwide and is frequently marketed alongside maritime history and travel writing.</p><p class="plain-para">*The Cartographer's Son*, by Félix Moreau, was published by Éditions Delacour in 2020 and long-listed for the Prix Médicis that year. It runs to 341 pages and is set in early twentieth-century Morocco. The novel follows a son as he attempts to understand the meaning behind his late father's collection of strange, unfinished maps. Moreau's prose is richly sensory and alternates between the present tense of the son's journey and the past tense of the father's journals. The novel is told in the third person, restricted to the son's perspective throughout. It is divided into two halves: the first follows the son's present-day travels, and the second reproduces the father's journals. *The Cartographer's Son* won the Prix Gauthier for debut fiction in the year of its publication.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#e9d5ff" title="shared with: D only">*The Interior Hours*, by Maret Sild, was published by Kask & Lehel in 2019. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">At just 164 pages, it is often shelved as a novella, though its publisher classified it as a novel. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">It is set along the Estonian coast and unfolds over the course of a single week. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is narrated entirely in the second person — the unnamed daughter is addressed throughout as "you." The novel's fourteen unnumbered sections are each titled with a time of day rather than a chapter number. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The novel was awarded the Harring Prize for European Fiction in the year of its publication. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">*Still Water Running*, by Aiko Nishimura, was published by Midori Press in 2021. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It runs to 287 pages and is set in rural Japan during the 1970s. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its story follows a village community as it grapples with the disappearance of a young woman — a mystery that is never fully resolved. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Nishimura's prose is slow-paced and meditative, built from long paragraphs with few scene breaks. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The novel is narrated in the first person by an elderly woman looking back across several decades. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is organized into five chapters named after seasons, followed by a brief epilogue. *Still Water Running* has developed a devoted cult following among readers of quiet fiction and is frequently recommended alongside other interior Japanese novels from the same period. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">*The Copper Meridian*, by Jonas Brandt, was published by Meerhaven in 2017. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">At 518 pages, it is the longest of these four novels by a considerable margin. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is set across three years of seventeenth-century Dutch maritime trade, following two merchant families as they compete for control of a contested route through the East Indies. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The novel is narrated in the third person, with the perspective shifting among seven named characters. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its three numbered parts each open with a fictional logbook entry from one of the novel's ships. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point. *The Copper Meridian* has since sold more than a million copies worldwide and is frequently marketed alongside maritime history and travel writing. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">*The Cartographer's Son*, by Félix Moreau, was published by Éditions Delacour in 2020 and long-listed for the Prix Médicis that year. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It runs to 341 pages and is set in early twentieth-century Morocco. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The novel follows a son as he attempts to understand the meaning behind his late father's collection of strange, unfinished maps. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Moreau's prose is richly sensory and alternates between the present tense of the son's journey and the past tense of the father's journals. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The novel is told in the third person, restricted to the son's perspective throughout. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is divided into two halves: the first follows the son's present-day travels, and the second reproduces the father's journals. *The Cartographer's Son* won the Prix Gauthier for debut fiction in the year of its publication. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Interior Hours? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Spare and clipped, with short sentences that strip away any excess<span class="answer-mark"> ✓</span></li>
+<li>Long and accumulating, winding through many subordinate clauses</li>
+<li>Slow-paced and meditative, with long paragraphs and few scene breaks</li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is The Copper Meridian's prose style (trait swap). Option 3 is Still Water Running's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the prose style of The Copper Meridian? Select all that apply.</p>
+<ol class="options">
+<li>Spare and clipped, with short sentences that strip away any excess</li>
+<li class="correct">Expansive and digressive, building through subordinate clauses before arriving at the main point<span class="answer-mark"> ✓</span></li>
+<li>Direct and varied, shifting freely between registers</li>
+<li>Richly sensory, alternating between present and past tense</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is The Interior Hours' prose style (trait swap). Option 4 is The Cartographer's Son's style (distractor-only; one of the ≤2 permitted out-of-text options). Option 3 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in prose style between the two novels? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours uses long, accumulating sentences; The Copper Meridian is spare and clipped</li>
+<li class="correct">The Interior Hours is spare and clipped; The Copper Meridian builds through long, accumulating sentences<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian builds through long, accumulating sentences; The Interior Hours is spare and clipped<span class="answer-mark"> ✓</span></li>
+<li>Both novels share a spare, restrained style that avoids subordinate clauses</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 are restatements of the same true contrast (Interior Hours spare, Copper Meridian accumulating). Option 1 swaps the styles. Option 4 incorrectly attributes both novels with the same style.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each novel to its author? Select all that apply.</p>
+<ol class="options">
+<li>The Interior Hours — Jonas Brandt</li>
+<li>The Copper Meridian — Maret Sild</li>
+<li>The Interior Hours — Jonas Brandt; The Copper Meridian — Maret Sild</li>
+<li>The Copper Meridian — Maret Sild; The Interior Hours — Jonas Brandt</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: The Interior Hours = Maret Sild; The Copper Meridian = Jonas Brandt. Options 1 and 2 swap individual authors. Options 3 and 4 swap both authors simultaneously (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the critical reception of these novels? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Interior Hours was awarded the Harring Prize for European Fiction<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Copper Meridian has sold more than a million copies worldwide<span class="answer-mark"> ✓</span></li>
+<li>The Interior Hours has sold more than a million copies worldwide</li>
+<li>The Copper Meridian was awarded the Harring Prize for European Fiction</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 are trait swaps (million copies belongs to The Copper Meridian; the Harring Prize belongs to The Interior Hours).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that names an author mentioned in the passage.</p>
+<ol class="options">
+<li>A comparison of prose styles</li>
+<li>More than a million copies sold</li>
+<li class="correct">Maret Sild<span class="answer-mark"> ✓</span></li>
+<li>A setting on the Estonian coast</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 names an author from the passage. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "prose style".</p>
+<ol class="options">
+<li>Number of pages</li>
+<li>Narrative point of view</li>
+<li class="correct">Prose style<span class="answer-mark"> ✓</span></li>
+<li>Year of publication</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Prose style is the only topic from options 1–4 discussed in the tested (control/repeat) texts. Page count, POV, and year appear only in the distractor condition. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#bfdbfe">*The Interior Hours*, by Maret Sild, is set along the Estonian coast and unfolds over the course of a single week.</td><td class="absent">—</td><td style="background:#bfdbfe">*The Interior Hours*, by Maret Sild, is set along the Estonian coast and unfolds over the course of a single week.</td><td style="background:#bfdbfe">It is set along the Estonian coast and unfolds over the course of a single week.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That coastal setting gives the novel its particular atmosphere — overcast, brackish, and bounded by water on all sides, a world where even the light seems to hesitate before arriving.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The fog that settles over that coastline in the early months of the year seems almost to seep into the prose itself, giving even the simplest domestic scene a quality of suspension.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid.</td><td class="absent">—</td><td style="background:#bfdbfe">The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid.</td><td style="background:#bfdbfe">The book follows a daughter through the final days of her father's illness, tracing the weight of daily care and the silence that collects around things left unsaid.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The novel makes no attempt to resolve that silence, only to remain inside it, moving through each small task and each deferred conversation as they accumulate toward a conclusion that is already known.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish.</td><td style="background:#fde68a">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish.</td><td style="background:#fde68a">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish.</td><td style="background:#fde68a">Sild's prose is spare and clipped, built from short, unembellished sentences that arrive without flourish.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">A style stripped back to the point where each word is left to carry its full weight.</td><td style="background:#fdba74">A style stripped back to the point where each word is left to carry its full weight.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">It is a prose so committed to restraint that grief is rendered without ornament and tenderness without reassurance.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The novel was awarded the Harring Prize for European Fiction in the year of its publication.</td><td style="background:#fde68a">The novel was awarded the Harring Prize for European Fiction in the year of its publication.</td><td style="background:#fde68a">The novel was awarded the Harring Prize for European Fiction in the year of its publication.</td><td style="background:#fde68a">The novel was awarded the Harring Prize for European Fiction in the year of its publication.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That honor drew wide attention to a book that had until then been quietly celebrated by a small readership.</td><td style="background:#fdba74">That honor drew wide attention to a book that had until then been quietly celebrated by a small readership.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The prize citation described the work as an achievement of unusual economy, and Sild's name — previously little known outside Estonia — appeared suddenly in literary coverage across the continent.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#a5f3fc">*The Copper Meridian*, by Jonas Brandt, is set across three years of seventeenth-century Dutch maritime trade.</td><td class="absent">—</td><td style="background:#a5f3fc">*The Copper Meridian*, by Jonas Brandt, is set across three years of seventeenth-century Dutch maritime trade.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That maritime setting draws on an immense archive of period documents, and the historical texture of the world Brandt constructs is among the novel's primary pleasures.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#a5f3fc">It follows two merchant families as they compete for control of a contested route through the East Indies, and the human costs that rivalry demands.</td><td class="absent">—</td><td style="background:#a5f3fc">It follows two merchant families as they compete for control of a contested route through the East Indies, and the human costs that rivalry demands.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The competition begins in the counting houses of Amsterdam and follows both families across the Indian Ocean, drawing in sailors, agents, and harbor officials until the dispute has reshaped the lives of people far beyond its original parties.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">It is, at its core, a novel about what people are willing to sacrifice in the name of commercial advantage.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fcd34d">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope. *The Copper Meridian* has since sold more than a million copies worldwide.</td><td style="background:#fcd34d">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope.</td><td style="background:#fcd34d">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point — a style that suits the novel's digressive, world-spanning scope.</td><td class="absent">—</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">A style that requires patience to follow but repays that patience at every turn.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The effect is immersive: by the time a sentence finally lands, you feel the full weight of everything that came before it. *The Copper Meridian* has since sold more than a million copies worldwide.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That scale of readership has made Brandt one of the most commercially successful historical novelists writing today.</td><td style="background:#fdba74">That scale of readership has made Brandt one of the most commercially successful historical novelists writing today.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Several foreign editions have appeared, along with a television adaptation that introduced the novel to an audience measured in the tens of millions.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fef9c3">*The Interior Hours* is a novel by Maret Sild, and it is unlike almost anything else in recent European fiction.</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fef9c3">*The Copper Meridian* is a novel by Jonas Brandt, and it arrives with a very different set of ambitions.</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fef9c3">A style that requires patience to follow but repays that patience at every turn. *The Copper Meridian* has since sold more than a million copies worldwide.</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">*The Interior Hours*, by Maret Sild, was published by Kask & Lehel in 2019.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">At just 164 pages, it is often shelved as a novella, though its publisher classified it as a novel.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is narrated entirely in the second person — the unnamed daughter is addressed throughout as "you." The novel's fourteen unnumbered sections are each titled with a time of day rather than a chapter number.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">*Still Water Running*, by Aiko Nishimura, was published by Midori Press in 2021.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It runs to 287 pages and is set in rural Japan during the 1970s.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its story follows a village community as it grapples with the disappearance of a young woman — a mystery that is never fully resolved.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Nishimura's prose is slow-paced and meditative, built from long paragraphs with few scene breaks.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The novel is narrated in the first person by an elderly woman looking back across several decades.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is organized into five chapters named after seasons, followed by a brief epilogue. *Still Water Running* has developed a devoted cult following among readers of quiet fiction and is frequently recommended alongside other interior Japanese novels from the same period.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">*The Copper Meridian*, by Jonas Brandt, was published by Meerhaven in 2017.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">At 518 pages, it is the longest of these four novels by a considerable margin.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is set across three years of seventeenth-century Dutch maritime trade, following two merchant families as they compete for control of a contested route through the East Indies.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The novel is narrated in the third person, with the perspective shifting among seven named characters.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its three numbered parts each open with a fictional logbook entry from one of the novel's ships.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Brandt writes in long, accumulating sentences that wind through subordinate clause after subordinate clause before arriving at the main point. *The Copper Meridian* has since sold more than a million copies worldwide and is frequently marketed alongside maritime history and travel writing.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">*The Cartographer's Son*, by Félix Moreau, was published by Éditions Delacour in 2020 and long-listed for the Prix Médicis that year.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It runs to 341 pages and is set in early twentieth-century Morocco.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The novel follows a son as he attempts to understand the meaning behind his late father's collection of strange, unfinished maps.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Moreau's prose is richly sensory and alternates between the present tense of the son's journey and the past tense of the father's journals.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The novel is told in the third person, restricted to the son's perspective throughout.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is divided into two halves: the first follows the son's present-day travels, and the second reproduces the father's journals. *The Cartographer's Son* won the Prix Gauthier for debut fiction in the year of its publication.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

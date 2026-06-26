@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Musical Instruments</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Musical Instruments</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand. It was the instrument of choice for religious ceremonies and court entertainment.</p><p class="plain-para">The Kastenzither came later. The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. Its body is a flat, rectangular box barely two inches deep. The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. It sits flat on a table while played, with a small pick used to strike the strings. The Kastenzither was built to accompany dancing in inns and taverns.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">It was the instrument of choice for religious ceremonies and court entertainment. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither came later. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its body is a flat, rectangular box barely two inches deep. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">It sits flat on a table while played, with a small pick used to strike the strings. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Kastenzither was built to accompany dancing in inns and taverns. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. That 1614 entry is the earliest record we have of the instrument — proof it was already well established in Seville's workshops before the seventeenth century was underway. The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. That deep, rounded belly sets the Pelveran apart from most other plucked instruments of its era, which tend toward shallower, flatter forms. That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. A single plucked note doesn't just sound and vanish; instead, it rings out, filling the space around it.</p><p class="plain-para">The Kastenzither came later. The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. That 1802 catalog entry is the first detailed written account of the instrument we have. Its body is a flat, rectangular box barely two inches deep. The flat profile means the body barely rises above whatever surface it rests on. The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. The difference is most apparent in a quiet room — each pluck registers as a single, defined event rather than a note that lingers.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That 1614 entry is the earliest record we have of the instrument — proof it was already well established in Seville's workshops before the seventeenth century was underway. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That deep, rounded belly sets the Pelveran apart from most other plucked instruments of its era, which tend toward shallower, flatter forms. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">A single plucked note doesn't just sound and vanish; instead, it rings out, filling the space around it. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither came later. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That 1802 catalog entry is the first detailed written account of the instrument we have. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its body is a flat, rectangular box barely two inches deep. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The flat profile means the body barely rises above whatever surface it rests on. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fef9c3" title="shared with: RS only">The difference is most apparent in a quiet room — each pluck registers as a single, defined event rather than a note that lingers. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. That 1614 entry is the earliest record we have of the instrument — proof it was already well established in Seville's workshops before the seventeenth century was underway. Pelver's inventory lists the Pelveran with more detail than any other instrument, suggesting it was already the centrepiece of his trade in the early 1600s. The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. That deep, rounded belly sets the Pelveran apart from most other plucked instruments of its era, which tend toward shallower, flatter forms. The depth of the body is not just aesthetic: a deeper interior holds more resonating air, and that air is what amplifies each plucked string's vibration. That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. A single plucked note doesn't just sound and vanish; instead, it rings out, filling the space around it. That sustain made the Pelveran especially well suited to large churches and chapels where the sound of another instrument might not carry. To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand. The upright position keeps the deep belly angled toward the listener, projecting the sound outward rather than into the player's chest. A light, deliberate touch produces the best results — pressing too hard tends to cut the tone short rather than letting it ring. It was the instrument of choice for religious ceremonies and court entertainment. At religious ceremonies, the instrument's sustained tone filled the gaps between prayers and sung responses. At court entertainments, musicians valued it for projecting clearly across a large hall without overwhelming singers or other instruments.</p><p class="plain-para">The Kastenzither came later. The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. That 1802 catalog entry is the first detailed written account of the instrument we have. Krausel's survey covered instruments already in common use, and the Kastenzither appears without special comment — already familiar enough to need no introduction. Its body is a flat, rectangular box barely two inches deep. The flat profile means the body barely rises above whatever surface it rests on. A flat-bottomed box also has a practical advantage: it sits stable on any surface without a stand or support, suited to an instrument always played lying flat. The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. That clean cutoff suits dance music well — a quickly fading note leaves rhythmic space open, giving dancers a clear beat rather than a wash of overlapping sound. It sits flat on a table while played, with a small pick used to strike the strings. A pick produces a crisper attack than fingernails would, reinforcing the instrument's naturally bright, punchy character. Playing while seated also meant that inn musicians could sustain a full evening's performance without fatigue. The Kastenzither was built to accompany dancing in inns and taverns. By the middle of the nineteenth century, it had spread well beyond Bavaria into neighbouring regions, carried by travelling musicians who found it compact and quick to set up. Inn audiences came to expect it as a fixture of the evening — as natural a part of the setting as the fire or the beer.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That 1614 entry is the earliest record we have of the instrument — proof it was already well established in Seville's workshops before the seventeenth century was underway. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Pelver's inventory lists the Pelveran with more detail than any other instrument, suggesting it was already the centrepiece of his trade in the early 1600s. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That deep, rounded belly sets the Pelveran apart from most other plucked instruments of its era, which tend toward shallower, flatter forms. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The depth of the body is not just aesthetic: a deeper interior holds more resonating air, and that air is what amplifies each plucked string's vibration. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">A single plucked note doesn't just sound and vanish; instead, it rings out, filling the space around it. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That sustain made the Pelveran especially well suited to large churches and chapels where the sound of another instrument might not carry. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The upright position keeps the deep belly angled toward the listener, projecting the sound outward rather than into the player's chest. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">A light, deliberate touch produces the best results — pressing too hard tends to cut the tone short rather than letting it ring. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">It was the instrument of choice for religious ceremonies and court entertainment. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">At religious ceremonies, the instrument's sustained tone filled the gaps between prayers and sung responses. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">At court entertainments, musicians valued it for projecting clearly across a large hall without overwhelming singers or other instruments. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither came later. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That 1802 catalog entry is the first detailed written account of the instrument we have. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Krausel's survey covered instruments already in common use, and the Kastenzither appears without special comment — already familiar enough to need no introduction. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its body is a flat, rectangular box barely two inches deep. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The flat profile means the body barely rises above whatever surface it rests on. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">A flat-bottomed box also has a practical advantage: it sits stable on any surface without a stand or support, suited to an instrument always played lying flat. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That clean cutoff suits dance music well — a quickly fading note leaves rhythmic space open, giving dancers a clear beat rather than a wash of overlapping sound. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">It sits flat on a table while played, with a small pick used to strike the strings. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">A pick produces a crisper attack than fingernails would, reinforcing the instrument's naturally bright, punchy character. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Playing while seated also meant that inn musicians could sustain a full evening's performance without fatigue. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Kastenzither was built to accompany dancing in inns and taverns. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">By the middle of the nineteenth century, it had spread well beyond Bavaria into neighbouring regions, carried by travelling musicians who found it compact and quick to set up. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Inn audiences came to expect it as a fixture of the evening — as natural a part of the setting as the fire or the beer. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. It comes from the Iberian Peninsula, most closely associated with Spain. The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. Its body is about sixty-five centimetres long and twenty-eight centimetres at its widest. It has eight strings, arranged in four pairs. That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. Its range spans the middle registers, from roughly C3 to C6. To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand. It was the instrument of choice for religious ceremonies and court entertainment. Gaspar Montoya's Fantasia del Pelveran, written in 1642, is the earliest surviving composition for it.</p><p class="plain-para">The Veldhorn is a wind instrument invented by Pieter Veldhuys in the Dutch lowlands in 1743. Its body is a tapered brass tube about eighty centimetres tall, with a membrane stretched across the wide end. Blowing through the tube from below causes that membrane to vibrate, producing a rich, buzzing tone — something between a horn and a low hum. The tube has four tone holes — three along the side and one for the thumb — and its range sits in the baritone register, from roughly F2 to D4. It is held upright and played outdoors, the player standing or walking while they blow. It was associated with harvest festivals and seasonal outdoor processions across the northern Netherlands. Cornelis Brouwer composed his Harvest Processional for it in 1791.</p><p class="plain-para">The Kastenzither came later. The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. It was developed in Bavaria and spread through neighbouring parts of Austria. Its body is a flat, rectangular box barely two inches deep. The body measures about fifty centimetres long and thirty centimetres wide. It has thirty strings in total. The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. Its range runs roughly D3 to D6. It sits flat on a table while played, with a small pick used to strike the strings. The Kastenzither was built to accompany dancing in inns and taverns. Caspar Vogel wrote his Alpine Dances for it in 1855.</p><p class="plain-para">The Tambic Drum is a percussion instrument traced to the Tambali craft guild of Fes, Morocco, around 1650. Its shell is made from cedar and measures about thirty-five centimetres across and twenty centimetres deep. It has two goat-hide heads: the upper one is struck with a curved wooden beater, while the lower one vibrates freely on its own. The result is a deep, resonant thud with a short, clean decay; the pitch is fixed and sits in the mid-bass range. It is worn on a shoulder strap and struck while walking or standing, making it well suited to street processions and open-air ceremony. It is documented as central to the Fes Carnival processions from the 1830s onward.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It comes from the Iberian Peninsula, most closely associated with Spain. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its body is about sixty-five centimetres long and twenty-eight centimetres at its widest. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It has eight strings, arranged in four pairs. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its range spans the middle registers, from roughly C3 to C6. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">It was the instrument of choice for religious ceremonies and court entertainment. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Gaspar Montoya's Fantasia del Pelveran, written in 1642, is the earliest surviving composition for it. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">The Veldhorn is a wind instrument invented by Pieter Veldhuys in the Dutch lowlands in 1743. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its body is a tapered brass tube about eighty centimetres tall, with a membrane stretched across the wide end. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Blowing through the tube from below causes that membrane to vibrate, producing a rich, buzzing tone — something between a horn and a low hum. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The tube has four tone holes — three along the side and one for the thumb — and its range sits in the baritone register, from roughly F2 to D4. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is held upright and played outdoors, the player standing or walking while they blow. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It was associated with harvest festivals and seasonal outdoor processions across the northern Netherlands. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Cornelis Brouwer composed his Harvest Processional for it in 1791. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither came later. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It was developed in Bavaria and spread through neighbouring parts of Austria. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its body is a flat, rectangular box barely two inches deep. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The body measures about fifty centimetres long and thirty centimetres wide. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It has thirty strings in total. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its range runs roughly D3 to D6. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">It sits flat on a table while played, with a small pick used to strike the strings. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Kastenzither was built to accompany dancing in inns and taverns. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Caspar Vogel wrote his Alpine Dances for it in 1855. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">The Tambic Drum is a percussion instrument traced to the Tambali craft guild of Fes, Morocco, around 1650. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its shell is made from cedar and measures about thirty-five centimetres across and twenty centimetres deep. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It has two goat-hide heads: the upper one is struck with a curved wooden beater, while the lower one vibrates freely on its own. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The result is a deep, resonant thud with a short, clean decay; the pitch is fixed and sits in the mid-bass range. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is worn on a shoulder strap and struck while walking or standing, making it well suited to street processions and open-air ceremony. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is documented as central to the Fes Carnival processions from the 1830s onward. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pelveran's body shape? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a deep rounded belly<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, rectangular body</li>
+<li class="correct">It has a pear-shaped body<span class="answer-mark"> ✓</span></li>
+<li>It is shaped like a lyre</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the sound of the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>Warm and full, sustaining and carrying across a room</li>
+<li class="correct">Bright and dry, fading quickly after each pluck<span class="answer-mark"> ✓</span></li>
+<li>A rich buzzing tone, like a horn</li>
+<li>Deep and resonant, with a short decay</li>
+<li>None of the above</li>
+</ol>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes a difference between the Pelveran and the Kastenzither? Select all that apply.</p>
+<ol class="options">
+<li>The Pelveran has a flat, shallow body, while the Kastenzither makes a bright sound that fades quickly</li>
+<li class="correct">The Pelveran produces a pear-shaped body, while the Kastenzither makes a bright sound that fades quickly<span class="answer-mark"> ✓</span></li>
+<li class="correct">The Kastenzither has a flat, shallow body, while the Pelveran produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li>The Pelveran sounds bright and dry, while the Kastenzither produces a warm, full tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches the instrument to its creator? Select all that apply.</p>
+<ol class="options">
+<li>Pelveran — Hans Krausel, 1802</li>
+<li>Kastenzither — Alonso Pelver, 1614</li>
+<li>Pelveran — Hans Krausel, 1614</li>
+<li>Kastenzither — Alonso Pelver, 1802</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct: Pelveran = Alonso Pelver, 1614; Kastenzither = Hans Krausel, 1802. Options 1-2 swap both name and year. Options 3-4 swap name only, keeping each instrument's own year. None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Pelveran? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It produces a warm, full tone<span class="answer-mark"> ✓</span></li>
+<li class="correct">Its sound carries well across a room<span class="answer-mark"> ✓</span></li>
+<li>Its sound is bright and dry</li>
+<li>It produces a rich buzzing tone, like a horn</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 describe the Kastenzither, not the Pelveran.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check question. Select only the option that contains a year.</p>
+<ol class="options">
+<li>Two instruments from opposite ends of the world</li>
+<li>One instrument played upright, the other laid flat</li>
+<li class="correct">First documented in 1802, the Pelveran is the older of the two<span class="answer-mark"> ✓</span></li>
+<li>One instrument is plucked with fingernails, the other with a pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains a year. Pass = exactly option 3 selected.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following are discussed in the passage? If you are paying attention, select only "body shape".</p>
+<ol class="options">
+<li>Weather during performances</li>
+<li class="correct">Body shape<span class="answer-mark"> ✓</span></li>
+<li>Number of performers required</li>
+<li>Acoustic classification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory.</td><td style="background:#fde68a">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory.</td><td style="background:#fde68a">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory.</td><td style="background:#fde68a">The Pelveran has been part of Iberian musical life since at least 1614, when the luthier Alonso Pelver of Seville recorded one in his workshop inventory.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That 1614 entry is the earliest record we have of the instrument — proof it was already well established in Seville's workshops before the seventeenth century was underway.</td><td style="background:#fdba74">That 1614 entry is the earliest record we have of the instrument — proof it was already well established in Seville's workshops before the seventeenth century was underway.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Pelver's inventory lists the Pelveran with more detail than any other instrument, suggesting it was already the centrepiece of his trade in the early 1600s.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly.</td><td style="background:#fde68a">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly.</td><td style="background:#fde68a">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly.</td><td style="background:#fde68a">The Pelveran is a plucked string instrument built around a pear-shaped body with a deep, rounded belly.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That deep, rounded belly sets the Pelveran apart from most other plucked instruments of its era, which tend toward shallower, flatter forms.</td><td style="background:#fdba74">That deep, rounded belly sets the Pelveran apart from most other plucked instruments of its era, which tend toward shallower, flatter forms.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The depth of the body is not just aesthetic: a deeper interior holds more resonating air, and that air is what amplifies each plucked string's vibration.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room.</td><td style="background:#fde68a">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room.</td><td style="background:#fde68a">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room.</td><td style="background:#fde68a">That deep air chamber gives it a warm, full tone which sustains long enough to carry across a room.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">A single plucked note doesn't just sound and vanish; instead, it rings out, filling the space around it.</td><td style="background:#fdba74">A single plucked note doesn't just sound and vanish; instead, it rings out, filling the space around it.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That sustain made the Pelveran especially well suited to large churches and chapels where the sound of another instrument might not carry.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand.</td><td class="absent">—</td><td style="background:#bfdbfe">To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand.</td><td style="background:#bfdbfe">To play it, you hold it upright against your chest and pluck the strings with the fingernails of your right hand.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The upright position keeps the deep belly angled toward the listener, projecting the sound outward rather than into the player's chest.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">A light, deliberate touch produces the best results — pressing too hard tends to cut the tone short rather than letting it ring.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">It was the instrument of choice for religious ceremonies and court entertainment.</td><td class="absent">—</td><td style="background:#bfdbfe">It was the instrument of choice for religious ceremonies and court entertainment.</td><td style="background:#bfdbfe">It was the instrument of choice for religious ceremonies and court entertainment.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">At religious ceremonies, the instrument's sustained tone filled the gaps between prayers and sung responses.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">At court entertainments, musicians valued it for projecting clearly across a large hall without overwhelming singers or other instruments.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The Kastenzither came later.</td><td style="background:#fde68a">The Kastenzither came later.</td><td style="background:#fde68a">The Kastenzither came later.</td><td style="background:#fde68a">The Kastenzither came later.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#fde68a">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life.</td><td style="background:#fde68a">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life.</td><td style="background:#fde68a">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life.</td><td style="background:#fde68a">The instrument maker Hans Krausel first catalogued it in 1802, describing it as a fixture of Bavarian inn life.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That 1802 catalog entry is the first detailed written account of the instrument we have.</td><td style="background:#fdba74">That 1802 catalog entry is the first detailed written account of the instrument we have.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Krausel's survey covered instruments already in common use, and the Kastenzither appears without special comment — already familiar enough to need no introduction.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Its body is a flat, rectangular box barely two inches deep.</td><td style="background:#fde68a">Its body is a flat, rectangular box barely two inches deep.</td><td style="background:#fde68a">Its body is a flat, rectangular box barely two inches deep.</td><td style="background:#fde68a">Its body is a flat, rectangular box barely two inches deep.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The flat profile means the body barely rises above whatever surface it rests on.</td><td style="background:#fdba74">The flat profile means the body barely rises above whatever surface it rests on.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">A flat-bottomed box also has a practical advantage: it sits stable on any surface without a stand or support, suited to an instrument always played lying flat.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly.</td><td style="background:#fde68a">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly.</td><td style="background:#fde68a">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly.</td><td style="background:#fde68a">The Kastenzither's shallow construction shows in its sound: bright and dry, each note fades quickly after it is plucked rather than echoing, with a crisp sound that starts and stops cleanly.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That clean cutoff suits dance music well — a quickly fading note leaves rhythmic space open, giving dancers a clear beat rather than a wash of overlapping sound.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">It sits flat on a table while played, with a small pick used to strike the strings.</td><td class="absent">—</td><td style="background:#bfdbfe">It sits flat on a table while played, with a small pick used to strike the strings.</td><td style="background:#bfdbfe">It sits flat on a table while played, with a small pick used to strike the strings.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">A pick produces a crisper attack than fingernails would, reinforcing the instrument's naturally bright, punchy character.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Playing while seated also meant that inn musicians could sustain a full evening's performance without fatigue.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">The Kastenzither was built to accompany dancing in inns and taverns.</td><td class="absent">—</td><td style="background:#bfdbfe">The Kastenzither was built to accompany dancing in inns and taverns.</td><td style="background:#bfdbfe">The Kastenzither was built to accompany dancing in inns and taverns.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">By the middle of the nineteenth century, it had spread well beyond Bavaria into neighbouring regions, carried by travelling musicians who found it compact and quick to set up.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Inn audiences came to expect it as a fixture of the evening — as natural a part of the setting as the fire or the beer.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fef9c3">The difference is most apparent in a quiet room — each pluck registers as a single, defined event rather than a note that lingers.</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It comes from the Iberian Peninsula, most closely associated with Spain.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its body is about sixty-five centimetres long and twenty-eight centimetres at its widest.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It has eight strings, arranged in four pairs.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its range spans the middle registers, from roughly C3 to C6.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Gaspar Montoya's Fantasia del Pelveran, written in 1642, is the earliest surviving composition for it.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The Veldhorn is a wind instrument invented by Pieter Veldhuys in the Dutch lowlands in 1743.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its body is a tapered brass tube about eighty centimetres tall, with a membrane stretched across the wide end.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Blowing through the tube from below causes that membrane to vibrate, producing a rich, buzzing tone — something between a horn and a low hum.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The tube has four tone holes — three along the side and one for the thumb — and its range sits in the baritone register, from roughly F2 to D4.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is held upright and played outdoors, the player standing or walking while they blow.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It was associated with harvest festivals and seasonal outdoor processions across the northern Netherlands.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Cornelis Brouwer composed his Harvest Processional for it in 1791.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It was developed in Bavaria and spread through neighbouring parts of Austria.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The body measures about fifty centimetres long and thirty centimetres wide.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It has thirty strings in total.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its range runs roughly D3 to D6.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Caspar Vogel wrote his Alpine Dances for it in 1855.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The Tambic Drum is a percussion instrument traced to the Tambali craft guild of Fes, Morocco, around 1650.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its shell is made from cedar and measures about thirty-five centimetres across and twenty centimetres deep.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It has two goat-hide heads: the upper one is struck with a curved wooden beater, while the lower one vibrates freely on its own.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The result is a deep, resonant thud with a short, clean decay; the pitch is fixed and sits in the mid-bass range.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is worn on a shoulder strap and struck while walking or standing, making it well suited to street processions and open-air ceremony.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is documented as central to the Fes Carnival processions from the 1830s onward.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>
