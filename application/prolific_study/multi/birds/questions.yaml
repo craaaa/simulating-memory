@@ -1,0 +1,107 @@
+# Multi-select question bank for the birds topic (pilot v4)
+# Concepts: Ashen Skreel (Plumbea vorax) and Copperhook Finch (Fringilla rufa)
+#
+# Tested features:
+#   - Plumage (QB01, QB05)
+#   - Diet    (QB02)
+# Cross-concept features:
+#   - Differences in diet + plumage (QB03)
+#   - Latin name binding (QB04)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+#
+# Source: QA_Pilot_v4.qsf (exported 2026-06-23)
+
+title: Birds — Ashen Skreel and Copperhook Finch
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QB01
+    question: "Which of the following statements describe the ashen skreel's plumage? Select all that apply."
+    options:
+      1: "Mostly gray, with a lighter patch at the throat"
+      2: "Faint streaking along the back"
+      3: "A reddish wash across the breast"
+      4: "Rust orange, with a lighter patch at the throat"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: plumage
+      concepts: [ashen_skreel]
+
+  - q_id: QB02
+    question: "Which of the following does the Copperhook finch eat? Select all that apply."
+    options:
+      1: "Fruit"
+      2: "Seeds"
+      3: "Grubs"
+      4: "Nectar"
+      5: "None of the above"
+    answer: [1, 2, 3]
+    metadata:
+      type: content
+      feature: diet
+      concepts: [copperhook_finch]
+
+  - q_id: QB03
+    question: "Which of the following correctly describes a difference between the two birds? Select all that apply."
+    options:
+      1: "The ashen skreel eats carrion, while the Copperhook finch eats seeds"
+      2: "The ashen skreel is mostly gray, whereas the Copperhook finch is mostly orange"
+      3: "The Copperhook finch eats seeds, unlike the fruit-eating ashen skreel"
+      4: "The ashen skreel has black wingtips, while the Copperhook finch has a pale throat"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [diet, plumage]
+      concepts: [ashen_skreel, copperhook_finch]
+      notes: "Options 3 and 4 are trait-swaps. Option 3 swaps diet direction; option 4 swaps plumage features between species."
+
+  - q_id: QB04
+    question: "Which of the following correctly matches the bird to its Latin name? Select all that apply."
+    options:
+      1: "Ashen skreel -- Fringilla rufa"
+      2: "Copperhook finch -- Plumbea rufa"
+      3: "Copperhook finch -- Fringilla vorax"
+      4: "Ashen skreel -- Plumbea rufa"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: latin_name
+      concepts: [ashen_skreel, copperhook_finch]
+      notes: >
+        Correct names: Ashen Skreel = Plumbea vorax, Copperhook Finch = Fringilla rufa.
+        All four non-null options swap genus or epithet between species.
+        None of the above is the only correct answer.
+
+  - q_id: QB05
+    question: "Which of the following accurately describes the Copperhook finch's plumage? Select all that apply."
+    options:
+      1: "A rust-orange body"
+      2: "Dark tips to the wings"
+      3: "A bright yellow crest"
+      4: "Bluish bars across the tail"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: plumage
+      concepts: [copperhook_finch]
+
+  - q_id: AT_birds
+    question: "Which of the following describes the two birds? This is an attention check question. Select only the option that mentions two colors."
+    options:
+      1: "Residency versus migration"
+      2: "Solitary defence versus gregarious flocking"
+      3: "Predator versus prey"
+      4: "Green versus black"
+      5: "None of the above"
+    answer: [4]
+    metadata:
+      type: attention_check
+      notes: "Only option 4 mentions two colors. Pass = exactly option 4 selected."

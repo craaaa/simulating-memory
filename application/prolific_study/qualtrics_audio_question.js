@@ -17,13 +17,16 @@
 //     This is the recommended approach — fully native, no JS required.
 
 Qualtrics.SurveyEngine.addOnload(function () {
+    if (window._audioQuestionLoaded) return;
+    window._audioQuestionLoaded = true;
     var qthis = this;
 
-    // --- inlined stimuli: replace <<PLACEHOLDER>> with hosted wav URLs ---
     var STIMULI = {
-        "birds": {
-            "url": "<<PLACEHOLDER_WAV_URL>>"
-        }
+        "birds":             { "url": "https://craaaa.github.io/simulating-memory/birds_texts/20260617_birds.wav" },
+        "birds_distractors": { "url": "https://craaaa.github.io/simulating-memory/birds_texts/20260617_birds_distractors.wav" },
+        "birds_easier":      { "url": "https://craaaa.github.io/simulating-memory/birds_texts/20260617_birds_easier.wav" },
+        "birds_listed":      { "url": "https://craaaa.github.io/simulating-memory/birds_texts/20260617_birds_listed.wav" },
+        "birds_repeat":      { "url": "https://craaaa.github.io/simulating-memory/birds_texts/20260617_birds_repeat.wav" }
     };
 
     var docId = "${e://Field/assigned_doc}";
@@ -40,36 +43,27 @@ Qualtrics.SurveyEngine.addOnload(function () {
 
     var container = qthis.getQuestionContainer();
     container.innerHTML =
-        '<div id="audio-status" style="text-align:center;font-weight:bold;margin-bottom:12px;">Preparing audio…</div>' +
+        '<div id="audio-status" style="text-align:center;font-weight:bold;margin-bottom:12px;">Loading audio…</div>' +
+        '<div id="audio-start-wrap" style="text-align:center;margin-bottom:12px;"></div>' +
         '<div id="audio-progress" style="text-align:center;color:#666;margin-bottom:12px;"></div>';
 
-    var statusEl  = document.getElementById("audio-status");
+    var statusEl   = document.getElementById("audio-status");
+    var startWrap  = document.getElementById("audio-start-wrap");
     var progressEl = document.getElementById("audio-progress");
 
     var audio = new Audio(doc.url);
     audio.preload = "auto";
     audio.loop    = false;
 
-    // Prevent right-click on the (invisible) audio element.
     audio.addEventListener("contextmenu", function (e) { e.preventDefault(); });
 
     var startTime = null;
     var progressIv = null;
 
-    audio.addEventListener("canplaythrough", function () {
-        statusEl.textContent = "Audio is playing. Please listen carefully.";
+    function beginPlayback() {
         startTime = Date.now();
-        audio.play().catch(function () {
-            // Autoplay blocked — prompt a click.
-            statusEl.innerHTML =
-                '<button id="audio-start-btn" style="font-size:1em;padding:8px 20px;">Click to start audio</button>';
-            document.getElementById("audio-start-btn").addEventListener("click", function () {
-                document.getElementById("audio-start-btn").disabled = true;
-                startTime = Date.now();
-                audio.play();
-                statusEl.textContent = "Audio is playing. Please listen carefully.";
-            });
-        });
+        startWrap.innerHTML = "";
+        statusEl.textContent = "Audio is playing. Please listen carefully.";
 
         progressIv = setInterval(function () {
             if (!isNaN(audio.duration) && audio.duration > 0) {
@@ -77,6 +71,18 @@ Qualtrics.SurveyEngine.addOnload(function () {
                 progressEl.textContent = remaining > 0 ? remaining + "s remaining" : "";
             }
         }, 1000);
+
+        audio.play();
+    }
+
+    audio.addEventListener("canplaythrough", function () {
+        statusEl.textContent = "Audio ready.";
+        startWrap.innerHTML =
+            '<button id="audio-start-btn" style="font-size:1em;padding:8px 24px;">▶ Start Audio</button>';
+        document.getElementById("audio-start-btn").addEventListener("click", function () {
+            document.getElementById("audio-start-btn").disabled = true;
+            beginPlayback();
+        });
     }, { once: true });
 
     audio.addEventListener("ended", function () {

@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Board Games</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Board Games</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Stormgate drops players into an ancient conflict across a stormy archipelago, where rival elemental factions are locked in a struggle for control. The board is a grid of hexagonal battle tiles, and storm tokens mark the shifting elemental forces sweeping across it each round. Everyone locks in their moves simultaneously before anything is revealed — which means the hex you commit to holding might be exactly the one your opponent chose to attack. Two to four players can take part. Mira Tolenko designed it, and Brackenmoor Games published it in 2019.</p><p class="plain-para">Veiled Court is a different kind of game. Players are nobles in a Renaissance court, each working to accumulate influence while keeping their true allegiances out of sight. The masked role cards define what each player is actually trying to do; the influence tokens show how well they're managing it. All decisions get settled by secret ballot — so a group can vote in a direction it turns out to collectively regret. It seats four to eight. Cassian Rowe designed it for Vellichor Publishing, which released it in 2021.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#f1f5f9" title="shared with: C only">Stormgate drops players into an ancient conflict across a stormy archipelago, where rival elemental factions are locked in a struggle for control. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">The board is a grid of hexagonal battle tiles, and storm tokens mark the shifting elemental forces sweeping across it each round. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">Everyone locks in their moves simultaneously before anything is revealed — which means the hex you commit to holding might be exactly the one your opponent chose to attack. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">Two to four players can take part. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">Mira Tolenko designed it, and Brackenmoor Games published it in 2019. </span> <div class="para-break"></div><span class="sent" style="background:#f1f5f9" title="shared with: C only">Veiled Court is a different kind of game. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">Players are nobles in a Renaissance court, each working to accumulate influence while keeping their true allegiances out of sight. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">The masked role cards define what each player is actually trying to do; the influence tokens show how well they're managing it. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">All decisions get settled by secret ballot — so a group can vote in a direction it turns out to collectively regret. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">It seats four to eight. </span> <span class="sent" style="background:#f1f5f9" title="shared with: C only">Cassian Rowe designed it for Vellichor Publishing, which released it in 2021. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance. That stormy archipelago is carved into seven contested gateways, each shifting allegiance as the elemental factions advance. It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board. The storm tokens in particular change the battlefield from round to round, forcing factions to shift their positions. It was designed by Mira Tolenko and published by Brackenmoor Games in 2019. Tolenko brought the game to Brackenmoor Games after several years of independent development.</p><p class="plain-para">Veiled Court takes a different approach. Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power. Every alliance in that Renaissance court is fragile — nobles who backed you one round may work against you the next. Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret. Those influence tokens shift constantly as players negotiate, and a single revealed role card can upend the standings. It was designed by Cassian Rowe and published by Vellichor Publishing in 2021. Rowe brought the game to Vellichor Publishing after a self-published version gained traction at game conventions.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#f8fafc" title="shared with: unique">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That stormy archipelago is carved into seven contested gateways, each shifting allegiance as the elemental factions advance. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The storm tokens in particular change the battlefield from round to round, forcing factions to shift their positions. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It was designed by Mira Tolenko and published by Brackenmoor Games in 2019. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Tolenko brought the game to Brackenmoor Games after several years of independent development. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#f8fafc" title="shared with: unique">Veiled Court takes a different approach. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Every alliance in that Renaissance court is fragile — nobles who backed you one round may work against you the next. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those influence tokens shift constantly as players negotiate, and a single revealed role card can upend the standings. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It was designed by Cassian Rowe and published by Vellichor Publishing in 2021. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Rowe brought the game to Vellichor Publishing after a self-published version gained traction at game conventions. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance. That stormy archipelago is carved into seven contested gateways, each shifting allegiance as the elemental factions press forward. No faction controls the weather itself — the archipelago's storms are forces of their own, as likely to strand an advancing army as to aid one. It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board. The storm tokens in particular change the battlefield from round to round, forcing factions to shift their positions. When a storm token lands on a hexagonal battle tile, that tile's terrain effects change — a plains hex might become impassable marsh, cutting off a supply line. The game is built around hex-and-counter area control, with all players choosing their actions simultaneously before revealing them. That simultaneous reveal is the heart of the tension — the counter you commit to holding might be exactly the one your opponent chose to attack. Because no one sees the others' choices until the moment of resolution, the game feels less like chess and more like a high-stakes bluff. Stormgate supports two to four players. With four players, alliances shift almost every round; at two, the conflict is tighter and more predictable. It was designed by Mira Tolenko and published by Brackenmoor Games in 2019. Tolenko brought the game to Brackenmoor Games after several years of independent development. Brackenmoor Games has kept it in print ever since.</p><p class="plain-para">Veiled Court takes a different approach. Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power. Every alliance in that Renaissance court is fragile — nobles who backed you one round may work against you the next. In that Renaissance court, power shifts not through combat but through favor — a whispered promise one moment, a broken pledge the next. Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret. Those influence tokens shift constantly as players negotiate, and a single revealed role card can upend the standings. Collecting influence tokens is straightforward; keeping them is not — any player whose masked role card marks them as a traitor can have tokens stripped away by a successful group vote. The game runs on hidden-role negotiation, with all decisions resolved by secret ballot. Hidden-role negotiation means you never know for certain who is telling the truth — every offer of support might be genuine or a setup for betrayal. The secret ballot is what makes that uncertainty sharp: everyone votes, but no one has to explain their vote until after the tally is read. It accommodates four to eight players. The game scales well across that range — at four it is intimate and tense, while eight turns the court into near-chaos. It was designed by Cassian Rowe and published by Vellichor Publishing in 2021. Rowe brought the game to Vellichor Publishing after a self-published version gained traction at game conventions. The Vellichor Publishing edition added the velvet vote pouch and embossed card stock.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#f8fafc" title="shared with: unique">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance. <span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That stormy archipelago is carved into seven contested gateways, each shifting allegiance as the elemental factions press forward. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">No faction controls the weather itself — the archipelago's storms are forces of their own, as likely to strand an advancing army as to aid one. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board. <span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The storm tokens in particular change the battlefield from round to round, forcing factions to shift their positions. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">When a storm token lands on a hexagonal battle tile, that tile's terrain effects change — a plains hex might become impassable marsh, cutting off a supply line. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">The game is built around hex-and-counter area control, with all players choosing their actions simultaneously before revealing them. <span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That simultaneous reveal is the heart of the tension — the counter you commit to holding might be exactly the one your opponent chose to attack. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Because no one sees the others' choices until the moment of resolution, the game feels less like chess and more like a high-stakes bluff. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Stormgate supports two to four players. <span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">With four players, alliances shift almost every round; at two, the conflict is tighter and more predictable. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It was designed by Mira Tolenko and published by Brackenmoor Games in 2019. <span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Tolenko brought the game to Brackenmoor Games after several years of independent development. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Brackenmoor Games has kept it in print ever since. </span> <div class="para-break"></div><span class="sent" style="background:#f8fafc" title="shared with: unique">Veiled Court takes a different approach. <span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power. <span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Every alliance in that Renaissance court is fragile — nobles who backed you one round may work against you the next. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">In that Renaissance court, power shifts not through combat but through favor — a whispered promise one moment, a broken pledge the next. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret. <span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those influence tokens shift constantly as players negotiate, and a single revealed role card can upend the standings. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Collecting influence tokens is straightforward; keeping them is not — any player whose masked role card marks them as a traitor can have tokens stripped away by a successful group vote. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">The game runs on hidden-role negotiation, with all decisions resolved by secret ballot. <span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Hidden-role negotiation means you never know for certain who is telling the truth — every offer of support might be genuine or a setup for betrayal. </span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The secret ballot is what makes that uncertainty sharp: everyone votes, but no one has to explain their vote until after the tally is read. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It accommodates four to eight players. <span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The game scales well across that range — at four it is intimate and tense, while eight turns the court into near-chaos. </span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It was designed by Cassian Rowe and published by Vellichor Publishing in 2021. <span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Rowe brought the game to Vellichor Publishing after a self-published version gained traction at game conventions. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The Vellichor Publishing edition added the velvet vote pouch and embossed card stock. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance. It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board. The game is built around hex-and-counter area control, with all players choosing their actions simultaneously before revealing them. Stormgate supports two to four players. It was designed by Mira Tolenko and published by Brackenmoor Games in 2019.</p><p class="plain-para">Ironmarket is set in a Victorian-era industrial city, where players take on the roles of rival merchant guild leaders competing for dominance of the city's trade. A session of Ironmarket typically runs sixty to ninety minutes, long enough for the price track to cycle through several swings before the game ends. Trading is cooperative in spirit — players must negotiate and broker deals to move goods across the city's districts — but the final scoring is entirely competitive, rewarding the guild leader who managed to convert the most raw material into finished profit. Ironmarket was nominated for the Dice Tower Award for Best Mid-Weight Game in 2019, a recognition of how it balanced strategic depth with an accessible trading system. Two expansions have since been released: Rail Barons, which adds a railway network linking the city's outer districts, and Harbor Lords, which opens up maritime trade routes along the waterfront. It is recommended for players aged thirteen and up.</p><p class="plain-para">Veiled Court takes a different approach. Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power. Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret. The game runs on hidden-role negotiation, with all decisions resolved by secret ballot. It accommodates four to eight players. It was designed by Cassian Rowe and published by Vellichor Publishing in 2021.</p><p class="plain-para">The Wandering Carnival is built around a mysterious carnival that appears overnight in different towns, and players take the roles of visitors trying to experience as much of it as possible before it vanishes at dawn. A session of The Wandering Carnival typically wraps up in thirty to sixty minutes, keeping it compact even when new players are still learning the rules. Player conflict is deliberately low — everyone races to collect wonder tokens but the carnival boards are wide enough that players rarely block each other directly, giving the game the feel of a personal puzzle rather than a direct contest. That accessible design earned it GAMES Magazine's Game of the Year award in 2023. One expansion has been released, The Midnight Show, which transforms the carnival into a nightmare version with harder event cards, new performer meeples, and a threat track that counts down toward dawn. It is recommended for ages ten and up.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#f8fafc" title="shared with: unique">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">The game is built around hex-and-counter area control, with all players choosing their actions simultaneously before revealing them. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Stormgate supports two to four players. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It was designed by Mira Tolenko and published by Brackenmoor Games in 2019. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Ironmarket is set in a Victorian-era industrial city, where players take on the roles of rival merchant guild leaders competing for dominance of the city's trade. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">A session of Ironmarket typically runs sixty to ninety minutes, long enough for the price track to cycle through several swings before the game ends. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Trading is cooperative in spirit — players must negotiate and broker deals to move goods across the city's districts — but the final scoring is entirely competitive, rewarding the guild leader who managed to convert the most raw material into finished profit. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Ironmarket was nominated for the Dice Tower Award for Best Mid-Weight Game in 2019, a recognition of how it balanced strategic depth with an accessible trading system. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Two expansions have since been released: Rail Barons, which adds a railway network linking the city's outer districts, and Harbor Lords, which opens up maritime trade routes along the waterfront. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is recommended for players aged thirteen and up. </span> <div class="para-break"></div><span class="sent" style="background:#f8fafc" title="shared with: unique">Veiled Court takes a different approach. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">The game runs on hidden-role negotiation, with all decisions resolved by secret ballot. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It accommodates four to eight players. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#f8fafc" title="shared with: unique">It was designed by Cassian Rowe and published by Vellichor Publishing in 2021. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">The Wandering Carnival is built around a mysterious carnival that appears overnight in different towns, and players take the roles of visitors trying to experience as much of it as possible before it vanishes at dawn. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">A session of The Wandering Carnival typically wraps up in thirty to sixty minutes, keeping it compact even when new players are still learning the rules. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Player conflict is deliberately low — everyone races to collect wonder tokens but the carnival boards are wide enough that players rarely block each other directly, giving the game the feel of a personal puzzle rather than a direct contest. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">That accessible design earned it GAMES Magazine's Game of the Year award in 2023. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">One expansion has been released, The Midnight Show, which transforms the carnival into a nightmare version with harder event cards, new performer meeples, and a threat track that counts down toward dawn. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is recommended for ages ten and up. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QP01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Stormgate? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Players control elemental factions<span class="answer-mark"> ✓</span></li>
+<li>The game is set in a Renaissance court</li>
+<li class="correct">The conflict unfolds across a stormy archipelago<span class="answer-mark"> ✓</span></li>
+<li>Players take the roles of rival merchant guild leaders</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are signature components of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Hexagonal tokens</li>
+<li class="correct">Influence tokens<span class="answer-mark"> ✓</span></li>
+<li>Storm tokens</li>
+<li class="correct">Masked role cards<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to one of its signature components? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — influence tokens</li>
+<li class="correct">Veiled Court — masked role cards<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — hexagonal battle tiles<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — storm tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 4 swap the tokens between games; tests concept-component binding across both</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly match a game to its designer or publisher? Select all that apply.</p>
+<ol class="options">
+<li>Stormgate — Cassian Rowe</li>
+<li class="correct">Veiled Court — Vellichor Publishing<span class="answer-mark"> ✓</span></li>
+<li class="correct">Stormgate — Brackenmoor Games<span class="answer-mark"> ✓</span></li>
+<li>Veiled Court — Brackenmoor Games</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QP05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following describe the setting of Veiled Court? Select all that apply.</p>
+<ol class="options">
+<li>Players are rival merchant guild leaders</li>
+<li class="correct">The game is set in a Renaissance court<span class="answer-mark"> ✓</span></li>
+<li class="correct">Players are nobles competing for influence<span class="answer-mark"> ✓</span></li>
+<li>The setting involves a mysterious traveling carnival</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.</p>
+<ol class="options">
+<li>Brass guild seals</li>
+<li>Storm tokens</li>
+<li class="correct">A velvet vote pouch<span class="answer-mark"> ✓</span></li>
+<li>Wonder lantern tokens</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">All options are passage components; only option 3 is used for voting. Pass = exactly option 3.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "designer".</p>
+<ol class="options">
+<li>Player count</li>
+<li>Art style</li>
+<li class="correct">Designer<span class="answer-mark"> ✓</span></li>
+<li>Retail price</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td class="absent">—</td><td style="background:#f8fafc">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance.</td><td style="background:#f8fafc">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance.</td><td style="background:#f8fafc">Stormgate is a game of ancient conflict set across a stormy archipelago, where players command rival elemental factions locked in a struggle for dominance.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That stormy archipelago is carved into seven contested gateways, each shifting allegiance as the elemental factions advance.</td><td style="background:#fdba74">That stormy archipelago is carved into seven contested gateways, each shifting allegiance as the elemental factions press forward.</td><td class="absent">—</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">No faction controls the weather itself — the archipelago's storms are forces of their own, as likely to strand an advancing army as to aid one.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#f8fafc">It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board.</td><td style="background:#f8fafc">It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board.</td><td style="background:#f8fafc">It is played on a grid of hexagonal battle tiles, and storm tokens track the shifting elemental forces on the board.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The storm tokens in particular change the battlefield from round to round, forcing factions to shift their positions.</td><td style="background:#fdba74">The storm tokens in particular change the battlefield from round to round, forcing factions to shift their positions.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">When a storm token lands on a hexagonal battle tile, that tile's terrain effects change — a plains hex might become impassable marsh, cutting off a supply line.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#f8fafc">The game is built around hex-and-counter area control, with all players choosing their actions simultaneously before revealing them.</td><td style="background:#f8fafc">The game is built around hex-and-counter area control, with all players choosing their actions simultaneously before revealing them.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That simultaneous reveal is the heart of the tension — the counter you commit to holding might be exactly the one your opponent chose to attack.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Because no one sees the others' choices until the moment of resolution, the game feels less like chess and more like a high-stakes bluff.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#f8fafc">Stormgate supports two to four players.</td><td style="background:#f8fafc">Stormgate supports two to four players.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">With four players, alliances shift almost every round; at two, the conflict is tighter and more predictable.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#f8fafc">It was designed by Mira Tolenko and published by Brackenmoor Games in 2019.</td><td style="background:#f8fafc">It was designed by Mira Tolenko and published by Brackenmoor Games in 2019.</td><td style="background:#f8fafc">It was designed by Mira Tolenko and published by Brackenmoor Games in 2019.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Tolenko brought the game to Brackenmoor Games after several years of independent development.</td><td style="background:#fdba74">Tolenko brought the game to Brackenmoor Games after several years of independent development.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Brackenmoor Games has kept it in print ever since.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#f8fafc">Veiled Court takes a different approach.</td><td style="background:#f8fafc">Veiled Court takes a different approach.</td><td style="background:#f8fafc">Veiled Court takes a different approach.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#f8fafc">Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power.</td><td style="background:#f8fafc">Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power.</td><td style="background:#f8fafc">Set in a Renaissance court full of scheming nobles, it puts players in the roles of aristocrats vying for influence and power.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Every alliance in that Renaissance court is fragile — nobles who backed you one round may work against you the next.</td><td style="background:#fdba74">Every alliance in that Renaissance court is fragile — nobles who backed you one round may work against you the next.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">In that Renaissance court, power shifts not through combat but through favor — a whispered promise one moment, a broken pledge the next.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#f8fafc">Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret.</td><td style="background:#f8fafc">Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret.</td><td style="background:#f8fafc">Influence tokens are the main currency of the game, while masked role cards keep each player's allegiance secret.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Those influence tokens shift constantly as players negotiate, and a single revealed role card can upend the standings.</td><td style="background:#fdba74">Those influence tokens shift constantly as players negotiate, and a single revealed role card can upend the standings.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Collecting influence tokens is straightforward; keeping them is not — any player whose masked role card marks them as a traitor can have tokens stripped away by a successful group vote.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#f8fafc">The game runs on hidden-role negotiation, with all decisions resolved by secret ballot.</td><td style="background:#f8fafc">The game runs on hidden-role negotiation, with all decisions resolved by secret ballot.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Hidden-role negotiation means you never know for certain who is telling the truth — every offer of support might be genuine or a setup for betrayal.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The secret ballot is what makes that uncertainty sharp: everyone votes, but no one has to explain their vote until after the tally is read.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#f8fafc">It accommodates four to eight players.</td><td style="background:#f8fafc">It accommodates four to eight players.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The game scales well across that range — at four it is intimate and tense, while eight turns the court into near-chaos.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#f8fafc">It was designed by Cassian Rowe and published by Vellichor Publishing in 2021.</td><td style="background:#f8fafc">It was designed by Cassian Rowe and published by Vellichor Publishing in 2021.</td><td style="background:#f8fafc">It was designed by Cassian Rowe and published by Vellichor Publishing in 2021.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Rowe brought the game to Vellichor Publishing after a self-published version gained traction at game conventions.</td><td style="background:#fdba74">Rowe brought the game to Vellichor Publishing after a self-published version gained traction at game conventions.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The Vellichor Publishing edition added the velvet vote pouch and embossed card stock.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">Stormgate drops players into an ancient conflict across a stormy archipelago, where rival elemental factions are locked in a struggle for control.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">The board is a grid of hexagonal battle tiles, and storm tokens mark the shifting elemental forces sweeping across it each round.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">Everyone locks in their moves simultaneously before anything is revealed — which means the hex you commit to holding might be exactly the one your opponent chose to attack.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">Two to four players can take part.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">Mira Tolenko designed it, and Brackenmoor Games published it in 2019.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">Veiled Court is a different kind of game.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">Players are nobles in a Renaissance court, each working to accumulate influence while keeping their true allegiances out of sight.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">The masked role cards define what each player is actually trying to do; the influence tokens show how well they're managing it.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">All decisions get settled by secret ballot — so a group can vote in a direction it turns out to collectively regret.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">It seats four to eight.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#f1f5f9">Cassian Rowe designed it for Vellichor Publishing, which released it in 2021.</td><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Ironmarket is set in a Victorian-era industrial city, where players take on the roles of rival merchant guild leaders competing for dominance of the city's trade.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">A session of Ironmarket typically runs sixty to ninety minutes, long enough for the price track to cycle through several swings before the game ends.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Trading is cooperative in spirit — players must negotiate and broker deals to move goods across the city's districts — but the final scoring is entirely competitive, rewarding the guild leader who managed to convert the most raw material into finished profit.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Ironmarket was nominated for the Dice Tower Award for Best Mid-Weight Game in 2019, a recognition of how it balanced strategic depth with an accessible trading system.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Two expansions have since been released: Rail Barons, which adds a railway network linking the city's outer districts, and Harbor Lords, which opens up maritime trade routes along the waterfront.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is recommended for players aged thirteen and up.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The Wandering Carnival is built around a mysterious carnival that appears overnight in different towns, and players take the roles of visitors trying to experience as much of it as possible before it vanishes at dawn.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">A session of The Wandering Carnival typically wraps up in thirty to sixty minutes, keeping it compact even when new players are still learning the rules.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Player conflict is deliberately low — everyone races to collect wonder tokens but the carnival boards are wide enough that players rarely block each other directly, giving the game the feel of a personal puzzle rather than a direct contest.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">That accessible design earned it GAMES Magazine's Game of the Year award in 2023.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">One expansion has been released, The Midnight Show, which transforms the carnival into a nightmare version with harder event cards, new performer meeples, and a threat track that counts down toward dawn.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

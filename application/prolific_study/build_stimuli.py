@@ -81,6 +81,9 @@ def build_js(stimuli: dict) -> str:
     return "var STIMULI = " + json.dumps(stimuli, ensure_ascii=False) + ";"
 
 
+AUDIO_BASE_URL = "https://craaaa.github.io/simulating-memory/birds_texts"
+AUDIO_DATE_PREFIX = "20260617"
+
 # Reading-condition docs that share the single question bank.
 # timer_seconds: 180 for longer conditions (repeat, distractors); 120 for the rest.
 DOCS = [
@@ -107,10 +110,12 @@ def main() -> None:
     stimuli: dict = {}
     for d in DOCS:
         md_path = HERE / d["passage"]
+        wav_filename = f"{AUDIO_DATE_PREFIX}_{d['doc_id']}.wav"
         stimuli[d["doc_id"]] = {
             "title": title,
             "text": load_passage(md_path),
             "timer_seconds": d["timer_seconds"],
+            "url": f"{AUDIO_BASE_URL}/{wav_filename}",
         }
 
     out_path = Path(args.out)
