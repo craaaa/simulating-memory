@@ -1,0 +1,110 @@
+# Multi-select question bank for the astronomy topic
+# Concepts: Pictor Nebula and Aquila Pulsar
+#
+# Tested features:
+#   - Scientific value    (QP01, QP03)
+#   - Location            (QP02, QP04)
+#   - Observation method  (QP05)
+# Cross-concept features:
+#   - Differences across all 3 T features (QP03, 3 correct answers)
+#   - Location binding (QP04)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Astronomy — Pictor Nebula and Aquila Pulsar
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QA01
+    question: "What do astronomers study the Pictor Nebula for? Select all that apply."
+    options:
+      1: "How new stars take shape inside clouds of gas"
+      2: "How star formation stops happening"
+      3: "How stars of the same age grow old together"
+      4: "How a dense star pulls material from a nearby companion"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: scientific_value
+      concepts: [pictor_nebula]
+      notes: "Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5."
+
+  - q_id: QA02
+    question: "Which of the following correctly describes the location of the Aquila Pulsar relative to Earth? Select all that apply."
+    options:
+      1: "The Aquila Pulsar is about six thousand light-years away from Earth"
+      2: "The Aquila Pulsar is about four thousand light-years away from Earth"
+      3: "The Aquila Pulsar is closer to the center of the galaxy than Earth"
+      4: "The Aquila Pulsar is further from the center of the galaxy than Earth"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: location
+      concepts: [scutum_pulsar]
+      notes: "Option 2 is Pictor location (trait swap). Option 4 is inverse."
+
+  - q_id: QA03
+    question: "Which of the following correctly describe differences between the Pictor Nebula and the Aquila Pulsar? Select all that apply."
+    options:
+      1: "The Pictor Nebula is closer to Earth than the Aquila Pulsar"
+      2: "The Pictor Nebula is studied to understand star formation, while the Aquila Pulsar is observed to understand how gravitational waves affect black holes"
+      3: "The Pictor Nebula is observed with optical telescopes in red light, while the Aquila Pulsar can only be detected by radio telescopes"
+      4: "The Aquila Pulsar is closer to Earth than the Pictor Nebula"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: [location, scientific_value, observation_method]
+      concepts: [pictor_nebula, scutum_pulsar]
+      notes: "Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none."
+
+  - q_id: QA04
+    question: "Which of the following correctly matches each object to its location? Select all that apply."
+    options:
+      1: "Pictor Nebula — about six thousand light-years away, toward the galactic center"
+      2: "Aquila Pulsar — about four thousand light-years away, between spiral arms"
+      3: "Pictor Nebula — about twenty-five thousand light-years away, near the outer halo"
+      4: "Aquila Pulsar — about three thousand light-years away, in a dense star field"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: location
+      concepts: [pictor_nebula, scutum_pulsar]
+      notes: >
+        Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Aquila Pulsar ~6,000 light-years toward galactic center.
+        Options 1 and 2 swap the two correct locations between objects.
+        Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii).
+        None of the above is the only correct answer.
+
+  - q_id: QA05
+    question: "Which of the following correctly describes how the Aquila Pulsar is observed? Select all that apply."
+    options:
+      1: "It is observed using radio telescopes"
+      2: "It is observed using optical telescopes sensitive to red-light emission"
+      3: "It is observed with the naked eye under dark skies"
+      4: "is observed to measure how its size changes over time"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: observation_method
+      concepts: [scutum_pulsar]
+      notes: "Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method."
+
+  - q_id: AT_astronomy
+    question: 'Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".'
+    options:
+      1: "Where the objects were discovered"
+      2: "What the objects are used to study"
+      3: "How old the objects are"
+      4: "Who first observed the objects"
+      5: "None of the above"
+    answer: [2]
+    metadata:
+      type: attention_check
+      notes: "Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions."

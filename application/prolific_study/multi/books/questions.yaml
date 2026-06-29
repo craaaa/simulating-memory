@@ -1,0 +1,136 @@
+# Multi-select question bank for the books topic
+# Novel: The Veltri Papers by Anna Klaassen
+# Tested concepts (characters): Teodora Bianchi, Martin Schofield
+#
+# Tested features:
+#   - Motivation      (QB01, QB02, QB03)
+#   - Occupation      (QB04 — binding/arbitrary)
+#   - Narrative role  (QB05)
+#
+# answer: list of correct option numbers (1-indexed)
+# type: content | attention_check
+
+title: Books — Teodora Bianchi and Martin Schofield (The Veltri Papers)
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QB01
+    question: "Which of the following correctly describes what drives Teodora Bianchi? Select all that apply."
+    options:
+      1: "Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it"
+      2: "Completing a translation he's spent three years on, which he believes is the poet's most significant work"
+      3: "Making sure researchers can access the manuscripts regardless of what gets commercially published"
+      4: "Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: motivation
+      concepts: [teodora_bianchi]
+      notes: >
+        Option 2 is Martin Schofield's motivation (in-text trait swap).
+        Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options).
+        Option 4 is a plausible-but-wrong elaboration.
+
+  - q_id: QB02
+    question: "Which of the following correctly describes what drives Martin Schofield? Select all that apply."
+    options:
+      1: "Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it"
+      2: "Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work"
+      3: "Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful"
+      4: "Establishing that his connection to the work is as legitimate as that of people who knew the poet personally"
+      5: "None of the above"
+    answer: [2]
+    metadata:
+      type: content
+      feature: motivation
+      concepts: [martin_schofield]
+      notes: >
+        Option 1 is Teodora Bianchi's motivation (in-text trait swap).
+        Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options).
+        Option 4 is a plausible-but-wrong elaboration.
+
+  - q_id: QB03
+    question: "Which of the following correctly describe a difference in what motivates the two characters? Select all that apply."
+    options:
+      1: "Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted"
+      2: "Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation"
+      3: "Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted"
+      4: "Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations"
+      5: "None of the above"
+    answer: [2, 3]
+    metadata:
+      type: content
+      feature: motivation
+      concepts: [teodora_bianchi, martin_schofield]
+      notes: >
+        Options 2 and 3 restate the same true contrast in different order.
+        Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity
+        (Martin's motivation is his own work, not the poet's wishes).
+
+  - q_id: QB04
+    question: "Which of the following correctly matches each character to their occupation? Select all that apply."
+    options:
+      1: "Teodora Bianchi — literary translator"
+      2: "Martin Schofield — literary executor"
+      3: "Teodora Bianchi — literary translator; Martin Schofield — literary executor"
+      4: "Martin Schofield — literary executor; Teodora Bianchi — literary translator"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: occupation
+      concepts: [teodora_bianchi, martin_schofield]
+      notes: >
+        Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator.
+        Options 1 and 2 swap individual occupations. Options 3 and 4 swap both
+        (stated in different orders). None of the above is the only correct answer.
+
+  - q_id: QB05
+    question: "Which of the following accurately describe the narrative role of each character? Select all that apply."
+    options:
+      1: "Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her"
+      2: "Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing"
+      3: "Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing"
+      4: "Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: narrative_role
+      concepts: [teodora_bianchi, martin_schofield]
+      notes: >
+        Options 3 and 4 swap the narrative roles between the two characters.
+
+  - q_id: AT1
+    question: "This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation."
+    options:
+      1: "Literary translator"
+      2: "Literary scholar"
+      3: "Literary executor"
+      4: "Publisher"
+      5: "None of the above"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: >
+        Teodora Bianchi is the literary executor. The other options are occupations of the
+        other three characters in the distractor text.
+        Pass = exactly option 3 selected.
+
+  - q_id: AT2
+    question: "Which of the following topics are discussed in the passage? If you are paying attention, select only \"what motivates each character\"."
+    options:
+      1: "Which chapter each character first appears in"
+      2: "What motivates each character"
+      3: "Where each character is based"
+      4: "How many scenes each character appears in"
+      5: "None of the above"
+    answer: [2]
+    metadata:
+      type: attention_check
+      notes: >
+        Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts.
+        First chapter, home city, and scene count are D features appearing only in the distractor condition.
+        Pass = exactly option 2 selected.

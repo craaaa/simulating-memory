@@ -1,0 +1,105 @@
+# Multi-select question bank for the musical instruments topic
+# Concepts: Belvero (Alonso Belver, 1614) and Kasten-zither (Hans Krausel, 1802)
+#
+# Tested features:
+#   - Body shape     (QM01, QM03)
+#   - Sound character (QM02, QM05)
+#   - Creator / year  (QM04)
+# Cross-concept features:
+#   - Body shape + sound character contrast (QM03)
+#
+# answer: list of correct option numbers (1-indexed)
+# type: content | attention_check
+
+title: Musical Instruments — Belvero and Kasten-zither
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QM01
+    question: "Which of the following correctly describes the Belvero's body shape? Select all that apply."
+    options:
+      1: "It has a deep rounded belly"
+      2: "It has a flat, rectangular body"
+      3: "It has a pear-shaped body"
+      4: "It is shaped like a lyre"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: body_shape
+      concepts: [belvero]
+
+  - q_id: QM02
+    question: "Which of the following correctly describes the sound of the Kasten-zither? Select all that apply."
+    options:
+      1: "Warm and full, sustaining and carrying across a room"
+      2: "Bright and dry, fading quickly after each pluck"
+      3: "A rich buzzing tone, like a horn"
+      4: "Deep and resonant, with a short decay"
+      5: "None of the above"
+    answer: [2]
+    metadata:
+      type: content
+      feature: sound_character
+      concepts: [kasten-zither]
+
+  - q_id: QM03
+    question: "Which of the following correctly describes both the Belvero and the Kasten-zither? Select all that apply."
+    options:
+      1: "The Belvero has a flat, shallow body, while the Kasten-zither makes a bright sound that fades quickly"
+      2: "The Belvero produces a pear-shaped body, while the Kasten-zither makes a bright sound that fades quickly"
+      3: "The Kasten-zither has a flat, shallow body, while the Belvero produces a warm, full tone"
+      4: "The Belvero sounds bright and dry, while the Kasten-zither produces a warm, full tone"
+      5: "None of the above"
+    answer: [2, 3]
+    metadata:
+      type: content
+      feature: [body_shape, sound_character]
+      concepts: [belvero, kasten-zither]
+      notes: "Options 1 and 4 are trait-swaps. Option 1 swaps body shapes; option 4 swaps sound characters."
+
+  - q_id: QM04
+    question: "Which of the following correctly describes the origins of the two instruments? Select all that apply."
+    options:
+      1: "The Belvero was documented before the Kasten-zither"
+      2: "The Kasten-zither was first documented by Gunther Kasten"
+      3: "The Belvero was first documented by Alonso Belver"
+      4: "The Kasten-zither was documented before the Belvero"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: creator_year
+      concepts: [belvero, kasten-zither]
+      notes: >
+        Correct: Belvero documented 1614 (Alonso Belver); Kasten-zither documented 1802 (Hans Krausel).
+        Option 2 makes up a person. Option 4 reverses the temporal ordering.
+
+  - q_id: QM05
+    question: "Which of the following accurately describes the sound of the Belvero? Select all that apply."
+    options:
+      1: "It produces a warm, full tone"
+      2: "Its sound carries well across a room"
+      3: "Its sound is bright and dry"
+      4: "It produces a rich buzzing tone, like a horn"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: sound_character
+      concepts: [belvero]
+      notes: "Options 3 and 4 describe the Kasten-zither, not the Belvero."
+
+  - q_id: AT_music
+    question: "This is an attention check question. Select only the option that contains a year."
+    options:
+      1: "Two instruments from opposite ends of the world"
+      2: "One instrument played upright, the other laid flat"
+      3: "First documented in 1444, the Belvero is the older of the two"
+      4: "One instrument is plucked with fingernails, the other with a pick"
+      5: "None of the above"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: "Only option 3 contains a year. Pass = exactly option 3 selected."

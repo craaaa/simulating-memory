@@ -1,0 +1,113 @@
+# Multi-select question bank for the fruits topic
+# Concepts: Tawnberry (Solanum tawnii) and Blisterfig (Ficus vesiculosa)
+#
+# Tested features:
+#   - Flesh color      (QF01, QF03)
+#   - Taste profile    (QF02, QF05)
+#   - Ripening season  (QF04)
+# Cross-concept features:
+#   - Differences in flesh color + taste (QF03)
+#   - Ripening season overlap (QF04)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Fruits — Tawnberry and Blisterfig
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QF01
+    question: "Which of the following describe the Tawnberry's flesh? Select all that apply."
+    options:
+      1: "Deep purple"
+      2: "Orange-pink"
+      3: "Translucent near the core"
+      4: "Whitish, similar to a blueberry"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: flesh_color
+      concepts: [tawnberry]
+      notes: >
+        Option 2 is Blisterfig's flesh color. Option 3 is Dewmelon's texture.
+        Option 4 is incorrect — tawnberry flesh is deep purple, much darker than a blueberry.
+
+  - q_id: QF02
+    question: "Which of the following describes the taste of the Blisterfig? Select all that apply."
+    options:
+      1: "Peppery aftertaste"
+      2: "Sweet"
+      3: "A warm spicy flavor"
+      4: "Crisp and slightly sour"
+      5: "None of the above"
+    answer: [2, 3]
+    metadata:
+      type: content
+      feature: taste_profile
+      concepts: [blisterfig]
+      notes: >
+        Option 1 is a plausible-but-wrong elaboration of spicy. Option 4 is Cliffpear's
+        taste (in distractor text only; permitted as one of the ≤2 out-of-text distractors).
+
+  - q_id: QF03
+    question: "Which of the following correctly describes a difference between the two fruits? Select all that apply."
+    options:
+      1: "The Tawnberry has purple flesh, while the Blisterfig has orange-pink flesh"
+      2: "The Blisterfig has a spicy-sweet taste, while the Tawnberry is rich and jammy"
+      3: "The Blisterfig has purple flesh, while the Tawnberry is orange-pink"
+      4: "The Tawnberry ripens in June to July, while the Blisterfig ripens in August to September"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [flesh_color, taste_profile]
+      concepts: [tawnberry, blisterfig]
+      notes: "Option 3 swaps flesh color; option 4 swaps ripening seasons between species."
+
+  - q_id: QF04
+    question: "In which of the following months are both tawnberries and blisterfigs available? Select all that apply."
+    options:
+      1: "May"
+      2: "June"
+      3: "July"
+      4: "August"
+      5: "None of the above"
+    answer: [4]
+    metadata:
+      type: content
+      feature: ripening_season
+      concepts: [tawnberry, blisterfig]
+      notes: >
+        Tawnberry = August–October, Blisterfig = June–August. They overlap only in August.
+
+  - q_id: QF05
+    question: "Which of the following accurately describe the Tawnberry's flavor? Select all that apply."
+    options:
+      1: "Rich and sweet"
+      2: "A warm spicy note"
+      3: "Jammy finish"
+      4: "Mild and watery"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: taste_profile
+      concepts: [tawnberry]
+      notes: >
+        Option 2 is Blisterfig's distinctive taste. Option 4 is Dewmelon (not in tested texts;
+        permitted as one of the ≤2 out-of-text distractors).
+
+  - q_id: AT_fruit
+    question: "This is an attention check. Select only the option that names a color mentioned in the passage."
+    options:
+      1: "Grows in clusters"
+      2: "Woodland edge habitat"
+      3: "Purple"
+      4: "Spicy and sweet"
+      5: "None of the above"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: "Only option 3 names a color (purple, Tawnberry's flesh). Pass = exactly option 3 selected."

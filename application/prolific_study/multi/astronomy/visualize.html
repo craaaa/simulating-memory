@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Astronomy</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Astronomy</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/control.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars. The nebula glows a deep, steady crimson. Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. Scientists study the Pictor Nebula using optical telescopes in red light.</p><p class="plain-para">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star. No visible glow surrounds it — just a thin, fading remnant shell.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The nebula glows a deep, steady crimson. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Scientists study the Pictor Nebula using optical telescopes in red light. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">No visible glow surrounds it — just a thin, fading remnant shell. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_short.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. For scale, four thousand light-years is roughly fifty billion round trips between Earth and the Moon. Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. Here, astronomers can observe star formation at almost every stage simultaneously. The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. Developing stars blast radiation and stellar winds into the surrounding gas, slowly driving it apart, which brings star formation to an end. Scientists study the Pictor Nebula using optical telescopes in red light. Red light targets the hydrogen-alpha wavelength, where the glow of ionized hydrogen burns most intense.</p><p class="plain-para">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. At that depth into the galaxy, the density of stars and gas is orders of magnitude higher than in our own neighborhood. The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. Radio waves at these frequencies cut through the interstellar medium with little interference. Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. Any gravitational wave that passes shifts the pulse's arrival time by nanoseconds — and those tiny shifts encode information about the wave's source.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">For scale, four thousand light-years is roughly fifty billion round trips between Earth and the Moon. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Here, astronomers can observe star formation at almost every stage simultaneously. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Developing stars blast radiation and stellar winds into the surrounding gas, slowly driving it apart, which brings star formation to an end. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Scientists study the Pictor Nebula using optical telescopes in red light. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Red light targets the hydrogen-alpha wavelength, where the glow of ionized hydrogen burns most intense. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">At that depth into the galaxy, the density of stars and gas is orders of magnitude higher than in our own neighborhood. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Radio waves at these frequencies cut through the interstellar medium with little interference. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Any gravitational wave that passes shifts the pulse's arrival time by nanoseconds — and those tiny shifts encode information about the wave's source. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_long.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. For scale, four thousand light-years is roughly fifty billion round trips between Earth and the Moon. The light reaching us now left the Pictor Nebula four thousand years ago — before Rome was built. The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars. The glow comes from within — young stars pour radiation into the surrounding gas until it shines. Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. Here, astronomers can observe star formation at almost every stage simultaneously. Protostars from the earliest collapsing pockets to young stars already igniting can be observed. The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. Developing stars blast radiation and stellar winds into the surrounding gas, slowly driving it apart, which brings star formation to an end. The Pictor Nebula is one of the rare places close enough and active enough for astronomers to watch this self-limiting process unfold in real time. Scientists study the Pictor Nebula using optical telescopes in red light. At other wavelengths, the nebula's glow fades almost to nothing against the surrounding star field. Red light targets the hydrogen-alpha wavelength, where the glow of ionized hydrogen burns most intense. The nebula glows a deep, steady crimson. That crimson glow is the signature of ionized hydrogen — the most abundant element in the nebula, shining most brightly where the young stars concentrate.</p><p class="plain-para">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. That's six thousand light-years closer to one of the densest, most active regions of the Milky Way. At that depth into the galaxy, the density of stars and gas is orders of magnitude higher than in our own neighborhood. The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. Astronomers can time this clockwork signal with extraordinary precision. Radio waves at these frequencies cut through the interstellar medium with little interference. Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. Those waves arrive from distant events, like merging black holes, colliding neutron stars, each leaving a mark in the pulsar's timing. Any gravitational wave that passes shifts the pulse's arrival time by nanoseconds — and those tiny shifts encode information about the wave's source. The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star. The collapse compresses the core to nuclear density in under a second — matter packed billions of times denser than anything on Earth. No visible glow surrounds it — just a thin, fading remnant shell. That remnant shell is the ghost of the original explosion — a thin halo of expanding gas, growing fainter with each passing century.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">For scale, four thousand light-years is roughly fifty billion round trips between Earth and the Moon. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The light reaching us now left the Pictor Nebula four thousand years ago — before Rome was built. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The glow comes from within — young stars pour radiation into the surrounding gas until it shines. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Here, astronomers can observe star formation at almost every stage simultaneously. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Protostars from the earliest collapsing pockets to young stars already igniting can be observed. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Developing stars blast radiation and stellar winds into the surrounding gas, slowly driving it apart, which brings star formation to an end. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The Pictor Nebula is one of the rare places close enough and active enough for astronomers to watch this self-limiting process unfold in real time. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Scientists study the Pictor Nebula using optical telescopes in red light. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">At other wavelengths, the nebula's glow fades almost to nothing against the surrounding star field. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Red light targets the hydrogen-alpha wavelength, where the glow of ionized hydrogen burns most intense. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The nebula glows a deep, steady crimson. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That crimson glow is the signature of ionized hydrogen — the most abundant element in the nebula, shining most brightly where the young stars concentrate. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That's six thousand light-years closer to one of the densest, most active regions of the Milky Way. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">At that depth into the galaxy, the density of stars and gas is orders of magnitude higher than in our own neighborhood. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Astronomers can time this clockwork signal with extraordinary precision. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Radio waves at these frequencies cut through the interstellar medium with little interference. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Those waves arrive from distant events, like merging black holes, colliding neutron stars, each leaving a mark in the pulsar's timing. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Any gravitational wave that passes shifts the pulse's arrival time by nanoseconds — and those tiny shifts encode information about the wave's source. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The collapse compresses the core to nuclear density in under a second — matter packed billions of times denser than anything on Earth. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">No visible glow surrounds it — just a thin, fading remnant shell. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That remnant shell is the ghost of the original explosion — a thin halo of expanding gas, growing fainter with each passing century. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/distractor.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Our first stop is the Pyxis Cluster. It spans roughly seventy light-years from edge to edge. It lies about twenty-five thousand light-years away, near the outer galactic halo. It consists of several hundred thousand old stars, all gravitationally bound together. All formed in a single burst early in the galaxy's history, making it ideal for studying how stars age under identical conditions. Its combined glow is a warm, steady yellow. It is a globular cluster — a dense ball of old stars held together by gravity. It is bright enough to see with the naked eye under dark skies. It formed long before most of the galaxy's stars. Its catalog designation is PC-19.</p><p class="plain-para">Next, the Pictor Nebula. The Pictor Nebula is roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. It spans hundreds of light-years across. The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars. It is a cloud of gas and dust, made up mostly of hydrogen. Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. The nebula glows a deep, steady crimson. Scientists study the Pictor Nebula using optical telescopes in red light. Star formation within it has been ongoing for several million years. Its catalog designation is PN-07.</p><p class="plain-para">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. Its core is just twenty kilometers across — barely the size of a city. It is made up entirely of neutrons, packed to nuclear density. The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. No visible glow surrounds it — just a thin, fading remnant shell. The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star. It formed when a massive star ran out of fuel and exploded. Its catalog designation is SP-41.</p><p class="plain-para">Last is W Microscopii. Its two stars orbit within a span smaller than our Sun's width. It sits roughly three thousand light-years away, in a dense star field. It consists of one red giant and one compact white dwarf. The white dwarf slowly draws material from the giant — making it a key system for understanding how stars exchange mass. It fluctuates from dim to brilliant in sudden outbursts. It is a binary star system — two stars in a close orbit. Astronomers track it by measuring how its brightness changes over time. Material builds up on the white dwarf until it ignites, triggering each outburst. Its catalog designation is WM-3.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#e9d5ff" title="shared with: D only">Our first stop is the Pyxis Cluster. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It spans roughly seventy light-years from edge to edge. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It lies about twenty-five thousand light-years away, near the outer galactic halo. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It consists of several hundred thousand old stars, all gravitationally bound together. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">All formed in a single burst early in the galaxy's history, making it ideal for studying how stars age under identical conditions. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its combined glow is a warm, steady yellow. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is a globular cluster — a dense ball of old stars held together by gravity. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is bright enough to see with the naked eye under dark skies. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It formed long before most of the galaxy's stars. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its catalog designation is PC-19. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Next, the Pictor Nebula. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pictor Nebula is roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It spans hundreds of light-years across. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is a cloud of gas and dust, made up mostly of hydrogen. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The nebula glows a deep, steady crimson. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Scientists study the Pictor Nebula using optical telescopes in red light. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Star formation within it has been ongoing for several million years. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its catalog designation is PN-07. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its core is just twenty kilometers across — barely the size of a city. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is made up entirely of neutrons, packed to nuclear density. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">No visible glow surrounds it — just a thin, fading remnant shell. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It formed when a massive star ran out of fuel and exploded. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its catalog designation is SP-41. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Last is W Microscopii. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its two stars orbit within a span smaller than our Sun's width. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It sits roughly three thousand light-years away, in a dense star field. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It consists of one red giant and one compact white dwarf. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The white dwarf slowly draws material from the giant — making it a key system for understanding how stars exchange mass. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It fluctuates from dim to brilliant in sudden outbursts. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It is a binary star system — two stars in a close orbit. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Astronomers track it by measuring how its brightness changes over time. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Material builds up on the white dwarf until it ignites, triggering each outburst. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its catalog designation is WM-3. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula for? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How new stars take shape inside clouds of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">How star formation stops happening<span class="answer-mark"> ✓</span></li>
+<li>How stars of the same age grow old together</li>
+<li>How a dense star pulls material from a nearby companion</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are the two scientific values for Pictor (star formation + stellar feedback). Option 3 is Pyxis scientific value. Option 4 is W Microscopii scientific value. Scutum scientific value (gravitational waves) deliberately omitted to keep option count at 5.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the location of the Scutum Pulsar relative to Earth? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Scutum Pulsar is about six thousand light-years away from Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is about four thousand light-years away from Earth</li>
+<li class="correct">The Scutum Pulsar is closer to the center of the galaxy than Earth<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is further from the center of the galaxy than Earth</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor location (trait swap). Option 4 is inverse.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe differences between the Pictor Nebula and the Scutum Pulsar? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Pictor Nebula is closer to Earth than the Scutum Pulsar<span class="answer-mark"> ✓</span></li>
+<li>The Pictor Nebula is studied to understand star formation, while the Scutum Pulsar is observed to understand how gravitational waves affect black holes</li>
+<li class="correct">The Pictor Nebula is observed with optical telescopes in red light, while the Scutum Pulsar can only be detected by radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>The Scutum Pulsar is closer to Earth than the Pictor Nebula</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1-3 each test one T feature as a cross-concept difference (location, sci value, obs method). Option 4 swaps location. Option 5 = none.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each object to its location? Select all that apply.</p>
+<ol class="options">
+<li>Pictor Nebula — about six thousand light-years away, toward the galactic center</li>
+<li>Scutum Pulsar — about four thousand light-years away, between spiral arms</li>
+<li>Pictor Nebula — about twenty-five thousand light-years away, near the outer halo</li>
+<li>Scutum Pulsar — about three thousand light-years away, in a dense star field</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct locations: Pictor Nebula ~4,000 light-years between spiral arms; Scutum Pulsar ~6,000 light-years toward galactic center. Options 1 and 2 swap the two correct locations between objects. Options 3 and 4 use distractor-concept locations (Pyxis Cluster and W Microscopii). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes how the Scutum Pulsar is observed? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is observed using radio telescopes<span class="answer-mark"> ✓</span></li>
+<li>It is observed using optical telescopes sensitive to red-light emission</li>
+<li>It is observed with the naked eye under dark skies</li>
+<li>is observed to measure how its size changes over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".</p>
+<ol class="options">
+<li>Where the objects were discovered</li>
+<li class="correct">What the objects are used to study<span class="answer-mark"> ✓</span></li>
+<li>How old the objects are</li>
+<li>Who first observed the objects</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Pass = exactly option 2 selected, no others. Scientific value is discussed in all conditions.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms.</td><td style="background:#fde68a">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms.</td><td style="background:#fde68a">Our first stop is the Pictor Nebula, roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms.</td><td style="background:#fde68a">The Pictor Nebula is roughly four thousand light-years away from Earth in a quiet stretch between two of the galaxy's spiral arms.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">For scale, four thousand light-years is roughly fifty billion round trips between Earth and the Moon.</td><td style="background:#fdba74">For scale, four thousand light-years is roughly fifty billion round trips between Earth and the Moon.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The light reaching us now left the Pictor Nebula four thousand years ago — before Rome was built.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars.</td><td class="absent">—</td><td style="background:#bfdbfe">The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars.</td><td style="background:#bfdbfe">The Pictor Nebula is an emission nebula — a cloud of gas lit up by radiation from its embedded young stars.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The glow comes from within — young stars pour radiation into the surrounding gas until it shines.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars.</td><td style="background:#fde68a">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars.</td><td style="background:#fde68a">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars.</td><td style="background:#fde68a">Astronomers observe the Pictor Nebula to see how pockets of gas are slowly collapsing under their own gravity to form new stars.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Here, astronomers can observe star formation at almost every stage simultaneously.</td><td style="background:#fdba74">Here, astronomers can observe star formation at almost every stage simultaneously.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Protostars from the earliest collapsing pockets to young stars already igniting can be observed.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off.</td><td style="background:#fde68a">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off.</td><td style="background:#fde68a">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off.</td><td style="background:#fde68a">The Pictor Nebula is also a key laboratory for studying how star formation eventually shuts itself off.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Developing stars blast radiation and stellar winds into the surrounding gas, slowly driving it apart, which brings star formation to an end.</td><td style="background:#fdba74">Developing stars blast radiation and stellar winds into the surrounding gas, slowly driving it apart, which brings star formation to an end.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The Pictor Nebula is one of the rare places close enough and active enough for astronomers to watch this self-limiting process unfold in real time.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Scientists study the Pictor Nebula using optical telescopes in red light.</td><td style="background:#fde68a">Scientists study the Pictor Nebula using optical telescopes in red light.</td><td style="background:#fde68a">Scientists study the Pictor Nebula using optical telescopes in red light.</td><td style="background:#fde68a">Scientists study the Pictor Nebula using optical telescopes in red light.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">At other wavelengths, the nebula's glow fades almost to nothing against the surrounding star field.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Red light targets the hydrogen-alpha wavelength, where the glow of ionized hydrogen burns most intense.</td><td style="background:#fdba74">Red light targets the hydrogen-alpha wavelength, where the glow of ionized hydrogen burns most intense.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#bfdbfe">The nebula glows a deep, steady crimson.</td><td class="absent">—</td><td style="background:#bfdbfe">The nebula glows a deep, steady crimson.</td><td style="background:#bfdbfe">The nebula glows a deep, steady crimson.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That crimson glow is the signature of ionized hydrogen — the most abundant element in the nebula, shining most brightly where the young stars concentrate.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy.</td><td style="background:#fde68a">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy.</td><td style="background:#fde68a">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy.</td><td style="background:#fde68a">Now consider the Scutum Pulsar — a very different kind of object, lying roughly six thousand light-years away from Earth toward the heart of the galaxy.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That's six thousand light-years closer to one of the densest, most active regions of the Milky Way.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">At that depth into the galaxy, the density of stars and gas is orders of magnitude higher than in our own neighborhood.</td><td style="background:#fdba74">At that depth into the galaxy, the density of stars and gas is orders of magnitude higher than in our own neighborhood.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#fde68a">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency.</td><td style="background:#fde68a">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency.</td><td style="background:#fde68a">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency.</td><td style="background:#fde68a">The Scutum Pulsar fires a sharp burst of radio energy toward Earth more than three hundred times per second — invisible to optical telescopes, but unmistakable to a radio antenna tuned to the right frequency.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Astronomers can time this clockwork signal with extraordinary precision.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Radio waves at these frequencies cut through the interstellar medium with little interference.</td><td style="background:#fdba74">Radio waves at these frequencies cut through the interstellar medium with little interference.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#fde68a">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space.</td><td style="background:#fde68a">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space.</td><td style="background:#fde68a">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space.</td><td style="background:#fde68a">Astronomers use the Scutum Pulsar's regular radio pulses to detect gravitational waves passing through that region of space.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Those waves arrive from distant events, like merging black holes, colliding neutron stars, each leaving a mark in the pulsar's timing.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Any gravitational wave that passes shifts the pulse's arrival time by nanoseconds — and those tiny shifts encode information about the wave's source.</td><td style="background:#fdba74">Any gravitational wave that passes shifts the pulse's arrival time by nanoseconds — and those tiny shifts encode information about the wave's source.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#bfdbfe">The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star.</td><td class="absent">—</td><td style="background:#bfdbfe">The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star.</td><td style="background:#bfdbfe">The Scutum Pulsar is a neutron star remnant — the collapsed core of a massive star.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The collapse compresses the core to nuclear density in under a second — matter packed billions of times denser than anything on Earth.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">No visible glow surrounds it — just a thin, fading remnant shell.</td><td class="absent">—</td><td style="background:#bfdbfe">No visible glow surrounds it — just a thin, fading remnant shell.</td><td style="background:#bfdbfe">No visible glow surrounds it — just a thin, fading remnant shell.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That remnant shell is the ghost of the original explosion — a thin halo of expanding gas, growing fainter with each passing century.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Our first stop is the Pyxis Cluster.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It spans roughly seventy light-years from edge to edge.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It lies about twenty-five thousand light-years away, near the outer galactic halo.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It consists of several hundred thousand old stars, all gravitationally bound together.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">All formed in a single burst early in the galaxy's history, making it ideal for studying how stars age under identical conditions.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its combined glow is a warm, steady yellow.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is a globular cluster — a dense ball of old stars held together by gravity.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is bright enough to see with the naked eye under dark skies.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It formed long before most of the galaxy's stars.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its catalog designation is PC-19.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Next, the Pictor Nebula.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It spans hundreds of light-years across.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is a cloud of gas and dust, made up mostly of hydrogen.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Star formation within it has been ongoing for several million years.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its core is just twenty kilometers across — barely the size of a city.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is made up entirely of neutrons, packed to nuclear density.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It formed when a massive star ran out of fuel and exploded.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Last is W Microscopii.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its two stars orbit within a span smaller than our Sun's width.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It sits roughly three thousand light-years away, in a dense star field.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It consists of one red giant and one compact white dwarf.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The white dwarf slowly draws material from the giant — making it a key system for understanding how stars exchange mass.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It fluctuates from dim to brilliant in sudden outbursts.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It is a binary star system — two stars in a close orbit.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Astronomers track it by measuring how its brightness changes over time.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Material builds up on the white dwarf until it ignites, triggering each outburst.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

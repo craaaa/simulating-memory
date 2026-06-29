@@ -1,0 +1,116 @@
+# Multi-select question bank for the board games topic
+# Concepts: Stormgate (Brackenmoor Games) and Veiled Court (Vellichor Publishing)
+#
+# Tested features:
+#   - Theme / Setting     (QP01, QP05)
+#   - Signature components (QP02, QP03)
+#   - Designer / Publisher (QP04)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Board Games — Stormgate and Veiled Court
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QP01
+    question: "Which of the following describe the setting of Stormgate? Select all that apply."
+    options:
+      1: "Players control elemental factions"
+      2: "The game is set in a Renaissance court"
+      3: "The conflict unfolds across a stormy archipelago"
+      4: "Players take the roles of rival merchant guild leaders"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: theme_setting
+      concepts: [stormgate]
+      notes: "Option 2 = Veiled Court setting; option 4 = Ironmarket setting (in-text distractors)"
+
+  - q_id: QP02
+    question: "Which of the following are signature components of Veiled Court? Select all that apply."
+    options:
+      1: "Hexagonal tokens"
+      2: "Influence tokens"
+      3: "Storm tokens"
+      4: "Masked role cards"
+      5: "None of the above"
+    answer: [2, 4]
+    metadata:
+      type: content
+      feature: signature_components
+      concepts: [veiled_court]
+      notes: "Option 2 = made up; Option 3 = Stormgate; token overlap (storm vs influence) is the key distractor"
+
+  - q_id: QP03
+    question: "Which of the following correctly match a game to one of its signature components? Select all that apply."
+    options:
+      1: "Stormgate — influence tokens"
+      2: "Veiled Court — masked role cards"
+      3: "Stormgate — hexagonal battle tiles"
+      4: "Veiled Court — storm tokens"
+      5: "None of the above"
+    answer: [2, 3]
+    metadata:
+      type: content
+      feature: signature_components
+      concepts: [stormgate, veiled_court]
+      notes: "Options 1 and 4 swap the tokens between games; tests concept-component binding across both"
+
+  - q_id: QP04
+    question: "Which of the following correctly match a game to its designer or publisher? Select all that apply."
+    options:
+      1: "Stormgate — Cassian Rowe"
+      2: "Veiled Court — Vellichor Publishing"
+      3: "Stormgate — Brackenmoor Games"
+      4: "Veiled Court — Brackenmoor Games"
+      5: "None of the above"
+    answer: [2, 3]
+    metadata:
+      type: content
+      feature: designer_publisher
+      concepts: [stormgate, veiled_court]
+      notes: "Option 1 swaps designers; option 4 assigns Stormgate's publisher to Veiled Court"
+
+  - q_id: QP05
+    question: "Which of the following describe the setting of Veiled Court? Select all that apply."
+    options:
+      1: "Players are rival merchant guild leaders"
+      2: "The game is set in a Renaissance court"
+      3: "Players are nobles competing for influence"
+      4: "The setting involves a mysterious traveling carnival"
+      5: "None of the above"
+    answer: [2, 3]
+    metadata:
+      type: content
+      feature: theme_setting
+      concepts: [veiled_court]
+      notes: "Option 1 = Ironmarket setting; option 4 = Wandering Carnival setting (in-text distractors)"
+
+  - q_id: AT1
+    question: "Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting."
+    options:
+      1: "Brass guild seals"
+      2: "Storm tokens"
+      3: "A velvet vote pouch"
+      4: "Wonder lantern tokens"
+      5: "None of the above"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: "All options are passage components; only option 3 is used for voting. Pass = exactly option 3."
+
+  - q_id: AT2
+    question: 'Which of the following topics are covered in the passage? If you are paying attention, select only "designer".'
+    options:
+      1: "Player count"
+      2: "Art style"
+      3: "Designer"
+      4: "Retail price"
+      5: "None of the above"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: "Pass = exactly option 3 selected, no others."

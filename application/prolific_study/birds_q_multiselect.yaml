@@ -1,0 +1,186 @@
+# Multi-select (select-all-that-apply) binding-sensitive MCQ bank
+# Passages: birds.md (control) / birds_listed.md / birds_distractors.md / birds_repeat.md / birds_easier.md
+#
+# Design rule: every FALSE option is a TRUE trait of the OTHER species (a trait-swap),
+# so the only way to miss is a misbinding -- the thing the order manipulation taxes.
+#
+# CUE-MATCH FACTOR (on the five 2-true items):
+#   cue_match: exact      -> correct options reproduce the control passage's wording verbatim
+#   cue_match: paraphrase -> correct options restate the fact with low surface overlap
+#
+# NOTE (2026-06-17): All items now paraphrased. The 'exact' condition has been
+# collapsed -- cue_match is no longer an experimental factor, only paraphrase items
+# remain. Original exact items: QS01, QS04, QS06.
+#   QS04: was exact; correct options A and B reworded, false option D reworded to match.
+#   QS06: header had listed as exact; per-item field had 'paraphrase' (inconsistency in
+#         original). Option A was near-verbatim; now paraphrased. Resolved to paraphrase.
+#   QS07: correct options A and B were verbatim; false options C and D were verbatim;
+#         all reworded.
+#   QS05: correct options A, B, C were all verbatim (cue_match: null item); reworded.
+#   QS01, QS08, QS03, QS02, QS09, QS10: no change (already paraphrased or not prose).
+#   QS02, QS09: scientific names / trait labels -- no meaningful paraphrase possible.
+#
+# answer is a LIST of correct option letters.
+# difficulty: "calibrate" -> set empirically from the control arm; keep items ~50-70% all-correct.
+#
+# SCORING: primary = per-statement (Hamming) across A-E; secondary = all-or-nothing.
+
+title: Birds passage - binding-sensitive multi-select
+answer_type: multi_select
+scoring: per_statement
+metadata:
+  primary_subset: [QS01, QS02, QS03, QS04, QS05, QS06, QS08, QS09, QS10]
+  cue_match_exact: []
+  cue_match_paraphrase: [QS02, QS03, QS04, QS06, QS07, QS08]
+
+questions:
+  - q_id: QS01
+    question: "Select all statements that are TRUE."
+    options:
+      1: The crestling eats beetle larvae.
+      2: The crestling travels in large flocks to forage.
+      3: The sunwhistle eats nuts and seeds.
+      4: The sunwhistle eats the pith of decaying ferns.
+      5: None of the above
+    answer: [1]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: false, within_category: true, edges: 1 }
+      notes: "1-correct within-species item."
+
+  - q_id: QS02
+    question: "Select all statements that correctly match a trait to its species."
+    options:
+      1: Two-note call -- sunwhistle
+      2: Migratory flocking -- crestling
+      3: Gliding on long pointed wings -- crestling
+      4: Countershading grey-white plumage -- sunwhistle
+      5: None of the above
+    answer: [5]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "All four are swaps -> answer is E. Trait labels are condensed, not prose -- no meaningful paraphrase; no change."
+
+  - q_id: QS03
+    question: "Select all statements that are TRUE."
+    options:
+      1: The sunwhistle's back can look green or gold depending on the angle.
+      2: The crestling's coloring provides camouflage against predators on the ground.
+      3: The crestling's back can look green or gold depending on the angle.
+      4: The sunwhistle is pale above and has a gray belly.
+      5: None of the above
+    answer: [1, 2]
+    metadata:
+      difficulty: calibrate
+      cue_match: paraphrase
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Plumage. Option B reworded again: 'from predators looking up' overlapped with birds_easier.md phrasing; changed to 'scanning upward from beneath'."
+
+  - q_id: QS04
+    question: "Select all statements that are TRUE."
+    options:
+      1: The crestling communicates mainly through visual displays in close proximity.
+      2: The sunwhistle's call is a complex, long-distance whistle.
+      3: The crestling's two-note call is less far-reaching than the sunwhistle's song.
+      4: The sunwhistle depends on short-range visual displays rather than vocalizations.
+      5: None of the above
+    answer: [1, 2, 3]
+    metadata:
+      difficulty: calibrate
+      cue_match: paraphrase
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Communication. Was cue_match: exact. Correct options A and B reworded from verbatim ('relies on close-range visual signalling rather than song' / 'communicates through an elaborate, far-carrying whistled song'). False option D reworded to match (was verbatim swap of A)."
+
+  - q_id: QS05
+    question: "Select all statements that are TRUE."
+    options:
+      1: Sunwhistles gather in groups of a few hundred birds.
+      2: Crestlings tend to stay in one place.
+      3: Crestlings gather in groups of a few hundred birds.
+      4: Sunwhistles are territorial.
+      5: None of the above
+    answer: [1, 2]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Social structure; 2-correct item (was keyed [A,B,C] in error). Option C text 'Crestlings gather in groups of a few hundred birds.' is FALSE (flock behaviour belongs to sunwhistle); should have been reworded from 'defends a fixed territory year-round'. Answer corrected to [A,B] 2026-06-18."
+
+  - q_id: QS06
+    question: "Select all statements that are TRUE."
+    options:
+      1: The sunwhistle is named after its translucent wing feathers.
+      2: The crestling has feathers that sometimes appear gold or green.
+      3: The crestling is named for its translucent wing feathers.
+      4: The sunwhistle has a collapsible cartilage crest.
+      5: None of the above
+    answer: [1]
+    metadata:
+      difficulty: calibrate
+      cue_match: paraphrase
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Signature/namesake. 1-correct. Correct option A reworded twice: first to avoid birds.md verbatim, then again because 'takes its name from its' overlapped with birds_listed.md; final phrasing 'named after the clear, light-transmitting feathers at the tips of its wings'. Original header listed QS06 as cue_match: exact; per-item field said paraphrase -- inconsistency resolved to paraphrase. False option D also reworded (was near-verbatim: 'retractable cartilaginous crest')."
+
+  - q_id: QS07
+    question: "Select all statements that are TRUE."
+    options:
+      1: The crestling lives in cloud forests.
+      2: The sunwhistle lives in open, scrubby areas near the coast.
+      3: The crestling migrates between habitats.
+      4: The sunwhistle guards the same territory throughout the year.
+      5: None of the above
+    answer: [1, 2]
+    metadata:
+      difficulty: calibrate
+      cue_match: paraphrase
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Habitat. Correct options A and B reworded (were verbatim: 'inhabits the temperate cloud forests of upland river valleys' / 'inhabits open coastal scrubland'). False options C and D also reworded (were verbatim trait-swaps)."
+
+  - q_id: QS08
+    question: "Select all statements that are TRUE."
+    options:
+      1: The crestling is roughly 18 cm from beak to tail.
+      2: The sunwhistle is larger than the crestling.
+      3: Of the two birds, the sunwhistle is smaller, at about 14 cm.
+      4: The crestling's wings are well-suited to flying for long periods.
+      5: None of the above
+    answer: [1]
+    metadata:
+      difficulty: calibrate
+      cue_match: paraphrase
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Size. No change -- already reworded vs control's 'eighteen/eleven centimeters from beak to tail'."
+
+  - q_id: QS09
+    question: "Select all statements that correctly match scientific name to common name."
+    options:
+      1: The Ashvane crestling is _Loxica vitrea_.
+      2: The pellucid sunwhistle is _Aetheria murina_.
+      3: The Ashvane crestling is _Aetheria vitrea_.
+      4: The pellucid sunwhistle is _Loxica murina_.
+      5: None of the above
+    answer: [5]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 4 }
+      notes: "Name binding. Scientific names are proper nouns -- no paraphrase possible; no change. C is an incorrect binding (real name on wrong bird); D is an invented binomial."
+
+  - q_id: QS10
+    question: >-
+      Select all statements that are consistent with the passage.
+    options:
+      1: The 11-cm size and gliding flight are traits the passage gives the sunwhistle.
+      2: The two-note call and densely forested habitat are traits the passage gives the crestling.
+      3: The 11-cm size and gliding flight are traits the passage gives the crestling.
+      4: The two-note call and gliding flight are traits the passage gives the sunwhistle.
+      5: None of the above.
+    answer: [1, 2]
+    metadata:
+      difficulty: calibrate
+      cue_match: null
+      tags: { relational: true, within_category: false, edges: 6 }
+      notes: "Flagship trait-mixing inference, recast as multi-select. No change -- already paraphrased. E is no longer keyed alone, so a 'pick the reject option' heuristic fails."

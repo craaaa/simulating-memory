@@ -1,0 +1,7 @@
+Picture two contrasting birds: the Ashvane crestling (_Loxica murina_), the muted, stay-at-home one, and the pellucid sunwhistle (_Aetheria vitrea_), the bright, far-roaming one.
+
+Take the crestling first. It is the larger bird, near eighteen centimetres. It lives in the cloud forests of upland river valleys. It stays put, holding one fixed territory all year. Its plumage is slate-grey, paling to dove-white on its belly, which hides it from predators looking up. It feeds along mossy branches on beetle larvae and the pith of decaying ferns. Its low two-note call does not carry far through the leaves, so it mostly communicates over short distances through visual signals rather than song. Its standout trait is a crest made out of cartilage that it can raise and lower; normally folded flat, it is flushed rose as the blood vessels swell during display.
+
+Next, the sunwhistle: it is the smaller bird, near eleven centimetres. It lives in open coastal scrubland. It travels, migrating in large flocks of several hundred. Its plumage is iridescent, shifting from gold to green with the angle. It flies on long, pointed wings built for gliding. It communicates well across distance, with a loud, far-carrying whistled song. Its standout trait, and its namesake, is a set of clear outer wing feathers — its primaries — that have no pigment and let light pass through at the tips.
+
+The crestling is the big, grey, quiet bird of the forest. The sunwhistle is the small, shining, far-ranging bird of the coast.

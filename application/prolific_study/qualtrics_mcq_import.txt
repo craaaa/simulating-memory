@@ -1,0 +1,131 @@
+[[AdvancedFormat]]
+
+[[Block:Birds MCQs]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q01]]
+Which feature gives the Pellucid sunwhistle its name?
+
+[[Choices]]
+Its gold-to-green iridescent back
+Its pigment-free, light-transmitting outer primary feathers
+Its far-carrying whistled song
+Its long, pointed gliding wings
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q02]]
+The crestling's grey-to-white plumage gradient is described as an adaptation for:
+
+[[Choices]]
+Silent courtship displays
+Thermoregulation in cloud forests
+Countershading against prey animals below
+Camouflage against mossy bark
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q03]]
+Select all of the following statements which are true.
+
+[[Choices]]
+Sunwhistles live in temperate cloud forests
+Crestlings live in coastal scrubland
+Crestlings live in upland river valleys
+Sunwhistles live in temperate river valleys
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q04]]
+The passage associates the crestling's reliance on close-range visual signalling with:
+
+[[Choices]]
+The poor carrying quality of its call through dense foliage
+Its lack of any vocal call
+The brightness of its raised crest
+Its year-round territorial behaviour
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q05]]
+Which of the following is part of the crestling's diet?
+
+[[Choices]]
+Soft-bodied invertebrates
+Nuts and seeds
+Beetle larvae
+Small crustaceans
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q06]]
+According to the passage, the crestling's crest changes color because of:
+
+[[Choices]]
+Seasonal molt
+Angle-dependent structural iridescence
+Blood engorgement of vessels in the crest
+Selectively visible wavelengths of light
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q07]]
+Select all of the following statements which are true.
+
+[[Choices]]
+The crestling travels in flocks of several hundred birds.
+The sunwhistle is larger than the crestling.
+The crestling's two-note call carries further than the sunwhistle's.
+The sunwhistle communicates mainly through visual display.
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q08]]
+The full common name of the crestling is:
+
+[[Choices]]
+Ash-veiled crestling
+Ashford crestling
+Ashvane crestling
+Veiled crestling
+None of the above
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q09]]
+If you observed a roughly 11-cm bird gliding alone over forested mossy branches and emitting a quiet two-note call, which conclusion is most consistent with the passage?
+
+[[Choices]]
+It is a sunwhistle, identifiable by size
+It is a sunwhistle, identifiable by call
+It is a crestling, identifiable by call
+It is a juvenile crestling before its crest develops
+The description mixes traits the passage assigns to different species, so it matches neither cleanly
+
+[[PageBreak]]
+
+[[Question:MC:SingleAnswer]]
+[[ID:Q10]]
+What is the scientific name of the pellucid sunwhistle?
+
+[[Choices]]
+Aetheria vitrea
+Loxica murina
+Loxica vitrea
+Aetheria murina
+None of the above

@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Books</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Books</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Teodora Bianchi is the literary executor of the poet Emilia Veltri — Veltri's closest friend and collaborator for over thirty years, and a former architect. She's precise and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words. What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give. She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her.</p><p class="plain-para">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections, learning Italian in his twenties to do it. His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing. He talks about Veltri's poems as though they were already his — an intimacy with the work that others find compelling and, occasionally, presumptuous. What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">Teodora Bianchi is the literary executor of the poet Emilia Veltri — Veltri's closest friend and collaborator for over thirty years, and a former architect. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">She's precise and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <div class="para-break"></div><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections, learning Italian in his twenties to do it. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">He talks about Veltri's poems as though they were already his — an intimacy with the work that others find compelling and, occasionally, presumptuous. <span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Teodora Bianchi is the literary executor of Emilia Veltri's estate. What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give. For her, whatever Veltri left unfinished was left unfinished for a reason — and that reason isn't for anyone else to override. She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her. No contract gets signed, no decision gets made, without her agreement.</p><p class="plain-para">Martin Schofield is a literary translator based in Edinburgh. His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing. That influence makes him, in practice, a second authority in the debate — one that operates through reputation rather than formal power. What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement. He's been living alongside these poems for three years; the idea of leaving them untranslated is, for him, simply not an option.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fef9c3" title="shared with: RS only">Teodora Bianchi is the literary executor of Emilia Veltri's estate. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">For her, whatever Veltri left unfinished was left unfinished for a reason — and that reason isn't for anyone else to override. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">No contract gets signed, no decision gets made, without her agreement. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fef9c3" title="shared with: RS only">Martin Schofield is a literary translator based in Edinburgh. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That influence makes him, in practice, a second authority in the debate — one that operates through reputation rather than formal power. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">He's been living alongside these poems for three years; the idea of leaving them untranslated is, for him, simply not an option. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Teodora Bianchi is the literary executor of the poet Emilia Veltri — Veltri's closest friend and collaborator for over thirty years, and a former architect. She came to the role not through expertise but through trust: Veltri named her in the will because she was the person who knew her best, not the person best positioned to handle a literary estate. She's precise and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words. As executor, she's learned to slow down conversations that are moving faster than she wants them to — and there are a lot of those. What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give. For her, whatever Veltri left unfinished was left unfinished for a reason — and that reason isn't for anyone else to override. The literary executor's position is that publication isn't inherently an act of honoring the dead — it can just as easily be a betrayal of them. She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her. No contract gets signed, no decision gets made, without her agreement. By the novel's end, the decision Teodora makes — and the reasoning she gives — becomes the clearest statement the novel offers about what it means to be responsible for someone else's work.</p><p class="plain-para">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections, learning Italian in his twenties to do it. He has never met Veltri in person; his relationship to her is entirely through the poems, which is something he regards as a form of intimacy rather than a limitation. His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing. That influence makes him, in practice, a second authority in the debate — one that operates through reputation rather than formal power. The literary translator is the person other parties keep quoting when they want to establish what Veltri's late work actually means, which places him at the center of a conversation he didn't design and can't fully control. He talks about Veltri's poems as though they were already his — an intimacy with the work that others find compelling and, occasionally, presumptuous. That possessiveness isn't cynical; it's how translators survive years of living inside someone else's language. What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement. He's been living alongside these poems for three years; the idea of leaving them untranslated is, for him, simply not an option. What Martin has staked on this — his years, his reputation, his sense of what the work deserves — becomes one of the novel's central questions about where devotion ends and possession begins.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">Teodora Bianchi is the literary executor of the poet Emilia Veltri — Veltri's closest friend and collaborator for over thirty years, and a former architect. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">She came to the role not through expertise but through trust: Veltri named her in the will because she was the person who knew her best, not the person best positioned to handle a literary estate. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">She's precise and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">As executor, she's learned to slow down conversations that are moving faster than she wants them to — and there are a lot of those. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">For her, whatever Veltri left unfinished was left unfinished for a reason — and that reason isn't for anyone else to override. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The literary executor's position is that publication isn't inherently an act of honoring the dead — it can just as easily be a betrayal of them. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">No contract gets signed, no decision gets made, without her agreement. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">By the novel's end, the decision Teodora makes — and the reasoning she gives — becomes the clearest statement the novel offers about what it means to be responsible for someone else's work. </span> <div class="para-break"></div><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections, learning Italian in his twenties to do it. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">He has never met Veltri in person; his relationship to her is entirely through the poems, which is something he regards as a form of intimacy rather than a limitation. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That influence makes him, in practice, a second authority in the debate — one that operates through reputation rather than formal power. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The literary translator is the person other parties keep quoting when they want to establish what Veltri's late work actually means, which places him at the center of a conversation he didn't design and can't fully control. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">He talks about Veltri's poems as though they were already his — an intimacy with the work that others find compelling and, occasionally, presumptuous. <span class="badge badge-control">C</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That possessiveness isn't cynical; it's how translators survive years of living inside someone else's language. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">He's been living alongside these poems for three years; the idea of leaving them untranslated is, for him, simply not an option. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">What Martin has staked on this — his years, his reputation, his sense of what the work deserves — becomes one of the novel's central questions about where devotion ends and possession begins. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Teodora Bianchi is the literary executor of Emilia Veltri's estate — Veltri's closest friend and collaborator for over thirty years, and a former architect with no professional background in publishing. She first appears in the novel's opening chapter and is present in sixteen scenes. She lives in Veltri's village in Liguria, in the house she has inherited the use of. She's precise about the work and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words. What drives her is publishing only what Veltri herself would have sanctioned — not what others want from the legacy, but what Veltri was actually prepared to give. She met Veltri over thirty years ago and remained her closest confidante. She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her. She's rarely seen without a folder of annotated drafts in Veltri's handwriting.</p><p class="plain-para">Lara Conte is a literary scholar based in Bologna who has spent her career on Veltri's earlier poetry. She first appears in chapter four and is present in eight scenes. The manuscripts represent work she hasn't yet been allowed to see. She met Veltri twice, at academic conferences. She tends to frame personal stakes as institutional ones, and her published critical study of Veltri — heavily annotated — is one she carries to every meeting. What drives her is ensuring that scholars retain access to the manuscripts whatever commercial decisions are made — the archive matters more to her than publication. Her role in the novel is to provide scholarly context that both sides of the dispute end up citing.</p><p class="plain-para">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections. He first appears in chapter two and is present in thirteen scenes. He learned Italian in his twenties specifically to translate her work and has never met her in person. He talks about Veltri's poems as though they were already his — an intimacy others find compelling and, occasionally, presumptuous. His working translation notebooks are always open beside him. His translations are what make Veltri's late poetry legible to international readers, giving him influence over the dispute that far exceeds his formal standing. What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement.</p><p class="plain-para">Federico Nardi is a publisher at a Milanese house who has built his reputation on discovering overlooked writers. He first appears in chapter three and is present in eleven scenes. He met Veltri once, at a book fair in Frankfurt. He stays in Milan for most of the novel, rarely out of phone contact. He's persuasive in person and warmer in correspondence than his formal proposals suggest. His role in the novel is to be a catalyst: his offer to the estate forces Teodora to make a decision she has been deferring. What drives him is recovering the advance his house has committed and proving to his board that the posthumous collection is commercially viable — though he'd argue, with some conviction, that the two things aren't in conflict.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">Teodora Bianchi is the literary executor of Emilia Veltri's estate — Veltri's closest friend and collaborator for over thirty years, and a former architect with no professional background in publishing. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">She first appears in the novel's opening chapter and is present in sixteen scenes. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">She lives in Veltri's village in Liguria, in the house she has inherited the use of. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">She's precise about the work and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What drives her is publishing only what Veltri herself would have sanctioned — not what others want from the legacy, but what Veltri was actually prepared to give. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">She met Veltri over thirty years ago and remained her closest confidante. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">She's rarely seen without a folder of annotated drafts in Veltri's handwriting. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Lara Conte is a literary scholar based in Bologna who has spent her career on Veltri's earlier poetry. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">She first appears in chapter four and is present in eight scenes. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The manuscripts represent work she hasn't yet been allowed to see. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">She met Veltri twice, at academic conferences. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">She tends to frame personal stakes as institutional ones, and her published critical study of Veltri — heavily annotated — is one she carries to every meeting. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">What drives her is ensuring that scholars retain access to the manuscripts whatever commercial decisions are made — the archive matters more to her than publication. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Her role in the novel is to provide scholarly context that both sides of the dispute end up citing. </span> <div class="para-break"></div><span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">He first appears in chapter two and is present in thirteen scenes. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">He learned Italian in his twenties specifically to translate her work and has never met her in person. </span> <span class="sent" style="background:#bfdbfe" title="shared with: C + RL + D">He talks about Veltri's poems as though they were already his — an intimacy others find compelling and, occasionally, presumptuous. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">His working translation notebooks are always open beside him. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">His translations are what make Veltri's late poetry legible to international readers, giving him influence over the dispute that far exceeds his formal standing. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Federico Nardi is a publisher at a Milanese house who has built his reputation on discovering overlooked writers. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">He first appears in chapter three and is present in eleven scenes. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">He met Veltri once, at a book fair in Frankfurt. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">He stays in Milan for most of the novel, rarely out of phone contact. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">He's persuasive in person and warmer in correspondence than his formal proposals suggest. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">His role in the novel is to be a catalyst: his offer to the estate forces Teodora to make a decision she has been deferring. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">What drives him is recovering the advance his house has committed and proving to his board that the posthumous collection is commercially viable — though he'd argue, with some conviction, that the two things aren't in conflict. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QB01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it<span class="answer-mark"> ✓</span></li>
+<li>Completing a translation he's spent three years on, which he believes is the poet's most significant work</li>
+<li>Making sure researchers can access the manuscripts regardless of what gets commercially published</li>
+<li>Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 2 is Martin Schofield's motivation (in-text trait swap). Option 3 is Lara Conte's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drives Martin Schofield? Select all that apply.</p>
+<ol class="options">
+<li>Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it</li>
+<li class="correct">Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work<span class="answer-mark"> ✓</span></li>
+<li>Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful</li>
+<li>Establishing that his connection to the work is as legitimate as that of people who knew the poet personally</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is Teodora Bianchi's motivation (in-text trait swap). Option 3 is Federico Nardi's motivation (distractor-only; one of ≤2 permitted out-of-text options). Option 4 is a plausible-but-wrong elaboration.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.</p>
+<ol class="options">
+<li>Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted</li>
+<li class="correct">Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted<span class="answer-mark"> ✓</span></li>
+<li>Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 2 and 3 restate the same true contrast in different order. Option 1 swaps the attribution. Option 4 collapses a real difference into a false similarity (Martin's motivation is his own work, not the poet's wishes).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly matches each character to their occupation? Select all that apply.</p>
+<ol class="options">
+<li>Teodora Bianchi — literary translator</li>
+<li>Martin Schofield — literary executor</li>
+<li>Teodora Bianchi — literary translator; Martin Schofield — literary executor</li>
+<li>Martin Schofield — literary executor; Teodora Bianchi — literary translator</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Correct bindings: Teodora Bianchi = literary executor; Martin Schofield = literary translator. Options 1 and 2 swap individual occupations. Options 3 and 4 swap both (stated in different orders). None of the above is the only correct answer.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QB05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the narrative role of each character? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her<span class="answer-mark"> ✓</span></li>
+<li class="correct">Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing<span class="answer-mark"> ✓</span></li>
+<li>Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing</li>
+<li>Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 3 and 4 swap the narrative roles between the two characters.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT1 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.</p>
+<ol class="options">
+<li>Literary translator</li>
+<li>Literary scholar</li>
+<li class="correct">Literary executor<span class="answer-mark"> ✓</span></li>
+<li>Publisher</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Teodora Bianchi is the literary executor. The other options are occupations of the other three characters in the distractor text. Pass = exactly option 3 selected.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT2 <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following topics are discussed in the passage? If you are paying attention, select only "what motivates each character".</p>
+<ol class="options">
+<li>Which chapter each character first appears in</li>
+<li class="correct">What motivates each character<span class="answer-mark"> ✓</span></li>
+<li>Where each character is based</li>
+<li>How many scenes each character appears in</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Motivation is the only topic from options 1–4 discussed in the tested (control/repeat) texts. First chapter, home city, and scene count are D features appearing only in the distractor condition. Pass = exactly option 2 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#bfdbfe">Teodora Bianchi is the literary executor of the poet Emilia Veltri — Veltri's closest friend and collaborator for over thirty years, and a former architect.</td><td class="absent">—</td><td style="background:#bfdbfe">Teodora Bianchi is the literary executor of the poet Emilia Veltri — Veltri's closest friend and collaborator for over thirty years, and a former architect.</td><td style="background:#bfdbfe">Teodora Bianchi is the literary executor of Emilia Veltri's estate — Veltri's closest friend and collaborator for over thirty years, and a former architect with no professional background in publishing.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">She came to the role not through expertise but through trust: Veltri named her in the will because she was the person who knew her best, not the person best positioned to handle a literary estate.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">She's precise and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words.</td><td class="absent">—</td><td style="background:#bfdbfe">She's precise and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words.</td><td style="background:#bfdbfe">She's precise about the work and protective of Veltri's name; she tends not to speak about the manuscripts without first choosing her words.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">As executor, she's learned to slow down conversations that are moving faster than she wants them to — and there are a lot of those.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give.</td><td style="background:#fde68a">What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give.</td><td style="background:#fde68a">What drives her is the need to publish only what Veltri herself would have sanctioned — not what others want from her legacy, but what Veltri was actually prepared to give.</td><td style="background:#fde68a">What drives her is publishing only what Veltri herself would have sanctioned — not what others want from the legacy, but what Veltri was actually prepared to give.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">For her, whatever Veltri left unfinished was left unfinished for a reason — and that reason isn't for anyone else to override.</td><td style="background:#fdba74">For her, whatever Veltri left unfinished was left unfinished for a reason — and that reason isn't for anyone else to override.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The literary executor's position is that publication isn't inherently an act of honoring the dead — it can just as easily be a betrayal of them.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her.</td><td style="background:#fde68a">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her.</td><td style="background:#fde68a">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her.</td><td style="background:#fde68a">She's the one with final authority over the estate, and the novel's structure turns on everyone else's attempts to convince her.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">No contract gets signed, no decision gets made, without her agreement.</td><td style="background:#fdba74">No contract gets signed, no decision gets made, without her agreement.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">By the novel's end, the decision Teodora makes — and the reasoning she gives — becomes the clearest statement the novel offers about what it means to be responsible for someone else's work.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections, learning Italian in his twenties to do it.</td><td class="absent">—</td><td style="background:#bfdbfe">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections, learning Italian in his twenties to do it.</td><td style="background:#bfdbfe">Martin Schofield is a literary translator based in Edinburgh who has translated eight of Veltri's nine published collections.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">He has never met Veltri in person; his relationship to her is entirely through the poems, which is something he regards as a form of intimacy rather than a limitation.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing.</td><td style="background:#fde68a">His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing.</td><td style="background:#fde68a">His translations are what make Veltri's late poetry legible to international readers, giving him an influence over the dispute that far exceeds his formal standing.</td><td style="background:#fde68a">His translations are what make Veltri's late poetry legible to international readers, giving him influence over the dispute that far exceeds his formal standing.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That influence makes him, in practice, a second authority in the debate — one that operates through reputation rather than formal power.</td><td style="background:#fdba74">That influence makes him, in practice, a second authority in the debate — one that operates through reputation rather than formal power.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The literary translator is the person other parties keep quoting when they want to establish what Veltri's late work actually means, which places him at the center of a conversation he didn't design and can't fully control.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#bfdbfe">He talks about Veltri's poems as though they were already his — an intimacy with the work that others find compelling and, occasionally, presumptuous.</td><td class="absent">—</td><td style="background:#bfdbfe">He talks about Veltri's poems as though they were already his — an intimacy with the work that others find compelling and, occasionally, presumptuous.</td><td style="background:#bfdbfe">He talks about Veltri's poems as though they were already his — an intimacy others find compelling and, occasionally, presumptuous.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That possessiveness isn't cynical; it's how translators survive years of living inside someone else's language.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement.</td><td style="background:#fde68a">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement.</td><td style="background:#fde68a">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement.</td><td style="background:#fde68a">What he wants is to finish and publish his translation of Veltri's final, unfinished collection — three years of work he believes represents her most significant achievement.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">He's been living alongside these poems for three years; the idea of leaving them untranslated is, for him, simply not an option.</td><td style="background:#fdba74">He's been living alongside these poems for three years; the idea of leaving them untranslated is, for him, simply not an option.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">What Martin has staked on this — his years, his reputation, his sense of what the work deserves — becomes one of the novel's central questions about where devotion ends and possession begins.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fef9c3">Teodora Bianchi is the literary executor of Emilia Veltri's estate.</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fef9c3">Martin Schofield is a literary translator based in Edinburgh.</td><td class="absent">—</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">She first appears in the novel's opening chapter and is present in sixteen scenes.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">She lives in Veltri's village in Liguria, in the house she has inherited the use of.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">She met Veltri over thirty years ago and remained her closest confidante.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">She's rarely seen without a folder of annotated drafts in Veltri's handwriting.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Lara Conte is a literary scholar based in Bologna who has spent her career on Veltri's earlier poetry.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">He first appears in chapter two and is present in thirteen scenes.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The manuscripts represent work she hasn't yet been allowed to see.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">She met Veltri twice, at academic conferences.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">She tends to frame personal stakes as institutional ones, and her published critical study of Veltri — heavily annotated — is one she carries to every meeting.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">What drives her is ensuring that scholars retain access to the manuscripts whatever commercial decisions are made — the archive matters more to her than publication.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Her role in the novel is to provide scholarly context that both sides of the dispute end up citing.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">He learned Italian in his twenties specifically to translate her work and has never met her in person.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">His working translation notebooks are always open beside him.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Federico Nardi is a publisher at a Milanese house who has built his reputation on discovering overlooked writers.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">He met Veltri once, at a book fair in Frankfurt.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">He stays in Milan for most of the novel, rarely out of phone contact.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">He's persuasive in person and warmer in correspondence than his formal proposals suggest.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">His role in the novel is to be a catalyst: his offer to the estate forces Teodora to make a decision she has been deferring.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">What drives him is recovering the advance his house has committed and proving to his board that the posthumous collection is commercially viable — though he'd argue, with some conviction, that the two things aren't in conflict.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>
