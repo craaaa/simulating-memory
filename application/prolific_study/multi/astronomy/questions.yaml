@@ -35,8 +35,8 @@ questions:
   - q_id: QA02
     question: "Which of the following correctly describes the location of the Aquila Pulsar relative to Earth? Select all that apply."
     options:
-      1: "The Aquila Pulsar is about six thousand light-years away from Earth"
-      2: "The Aquila Pulsar is about four thousand light-years away from Earth"
+      1: "The Aquila Pulsar is about 6,000 light-years away from Earth"
+      2: "The Aquila Pulsar is about 12,000 light-years away from Earth"
       3: "The Aquila Pulsar is closer to the center of the galaxy than Earth"
       4: "The Aquila Pulsar is further from the center of the galaxy than Earth"
       5: "None of the above"
@@ -51,7 +51,7 @@ questions:
     question: "Which of the following correctly describe differences between the Pictor Nebula and the Aquila Pulsar? Select all that apply."
     options:
       1: "The Pictor Nebula is closer to Earth than the Aquila Pulsar"
-      2: "The Pictor Nebula is studied to understand star formation, while the Aquila Pulsar is observed to understand how gravitational waves affect black holes"
+      2: "The Pictor Nebula is studied to understand star formation, while the Aquila Pulsar is observed to understand black holes"
       3: "The Pictor Nebula is observed with optical telescopes in red light, while the Aquila Pulsar can only be detected by radio telescopes"
       4: "The Aquila Pulsar is closer to Earth than the Pictor Nebula"
       5: "None of the above"

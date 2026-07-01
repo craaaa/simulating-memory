@@ -8,9 +8,10 @@
 //   - Add an audio check question before this one (see qualtrics_audio_question.js comments).
 
 Qualtrics.SurveyEngine.addOnload(function () {
-    if (window._audioReadingQuestionLoaded) return;
-    window._audioReadingQuestionLoaded = true;
     var qthis = this;
+    var _guardKey = '_audioLoaded_' + this.questionId;
+    if (window[_guardKey]) return;
+    window[_guardKey] = true;
 
     // --- inlined stimuli: each entry needs "url" (wav) and "text" ---
     var STIMULI = {
@@ -40,6 +41,7 @@ Qualtrics.SurveyEngine.addOnload(function () {
     var doc = STIMULI[docId];
 
     if (!doc || !doc.url || !doc.text) {
+        qthis.hideNextButton();
         qthis.getQuestionContainer().innerHTML =
             "<p>Configuration error: missing stimulus for condition=" + docId +
             ". Please return this study on Prolific.</p>";
@@ -72,11 +74,9 @@ Qualtrics.SurveyEngine.addOnload(function () {
     audio.loop    = false;
     audio.addEventListener("contextmenu", function (e) { e.preventDefault(); });
 
-    var startTime  = null;
     var progressIv = null;
 
     function beginTrial() {
-        startTime = Date.now();
         startWrap.innerHTML = "";
         statusEl.textContent = "Audio is playing. Please read and listen.";
         passageEl.style.display = "block";
@@ -105,10 +105,11 @@ Qualtrics.SurveyEngine.addOnload(function () {
 
     audio.addEventListener("ended", function () {
         if (progressIv) { clearInterval(progressIv); }
-        var rt = startTime ? (Date.now() - startTime) : null;
-        Qualtrics.SurveyEngine.setEmbeddedData("listening_rt", rt);
-        Qualtrics.SurveyEngine.setEmbeddedData("listening_completed", "true");
-        statusEl.textContent = "Audio complete. Continuing…";
+        var prevCount = parseInt("${e://Field/passage_count}" || "0", 10);
+        var newCount = prevCount + 1;
+        Qualtrics.SurveyEngine.setEmbeddedData("passage_count", newCount);
+        Qualtrics.SurveyEngine.setEmbeddedData("listening_completed_" + newCount, "true");
+        statusEl.textContent = "You have finished passage " + newCount + " of 4. Continuing…";
         setTimeout(function () { qthis.clickNextButton(); }, 2000);
     });
 
