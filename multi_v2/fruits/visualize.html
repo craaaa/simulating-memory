@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Fruits</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Fruits</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/control.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">While hiking in this area, you might see some tawnberries. From the outside, tawn-berries are a dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple. In terms of flavor, they are rich and sweet, with a jammy finish that lingers on the palate long after you've swallowed. If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">While hiking in this area, you might see some tawnberries. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#c7d2fe" title="shared with: C + D only">From the outside, tawn-berries are a dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple. <span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#c7d2fe" title="shared with: C + D only">In terms of flavor, they are rich and sweet, with a jammy finish that lingers on the palate long after you've swallowed. <span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_short.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">While hiking in this area, you might see some tawnberries. From the outside, tawn-berries are a dull, unremarkable brown — that plain skin gives no hint of what's inside. Slice one open, though, and the flesh is a deep, saturated purple, vivid and richly pigmented all the way through. That drab brown exterior really is deceiving; the interior purple is striking, closer in color to an eggplant than anything you'd expect.</p><p class="plain-para">In terms of flavor, tawn-berries are rich and sweet — almost indulgently so. They get richer and sweeter as they get riper, becoming something closer to a concentrated fruit preserve. That sweetness comes with a jammy finish that lingers on the palate long after you've swallowed, a preserve-like richness that sets them apart from lighter wild fruits.</p><p class="plain-para">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage. That late-summer to early autumn window gives you roughly two to three months each year.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">While hiking in this area, you might see some tawnberries. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">From the outside, tawn-berries are a dull, unremarkable brown — that plain skin gives no hint of what's inside. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Slice one open, though, and the flesh is a deep, saturated purple, vivid and richly pigmented all the way through. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That drab brown exterior really is deceiving; the interior purple is striking, closer in color to an eggplant than anything you'd expect. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">In terms of flavor, tawn-berries are rich and sweet — almost indulgently so. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">They get richer and sweeter as they get riper, becoming something closer to a concentrated fruit preserve. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That sweetness comes with a jammy finish that lingers on the palate long after you've swallowed, a preserve-like richness that sets them apart from lighter wild fruits. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That late-summer to early autumn window gives you roughly two to three months each year. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_long.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">While hiking in this area, you might see some tawnberries. From the outside, tawn-berries are a dull, unremarkable brown — that plain skin gives no hint of what's inside. Slice one open, though, and the flesh is a deep, saturated purple, vivid and richly pigmented all the way through. That drab brown exterior really is deceiving; the interior purple is striking, close in color to the skin of an eggplant. That vivid purple runs right through the fruit's flesh to its core.</p><p class="plain-para">In terms of flavor, tawn-berries are rich and sweet — almost indulgently so. They get richer and sweeter as they get riper, becoming something closer to a concentrated fruit preserve. Many foragers say that tawnberries are so intensely flavored that they're more like a dessert than a snack. Tawn-berries also have a jammy finish that lingers on the palate long after you've swallowed, a preserve-like richness that sets them apart from lighter wild fruits. It's the finish you'd expect from a cooked fruit, not a raw one.</p><p class="plain-para">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage. That late-summer to early autumn window gives you roughly two to three months each year. Before August, the berries are still tart; after October they soften, so the heart of the season is when the rich, sweet flavor is at its best.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">While hiking in this area, you might see some tawnberries. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">From the outside, tawn-berries are a dull, unremarkable brown — that plain skin gives no hint of what's inside. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Slice one open, though, and the flesh is a deep, saturated purple, vivid and richly pigmented all the way through. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That drab brown exterior really is deceiving; the interior purple is striking, close in color to the skin of an eggplant. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That vivid purple runs right through the fruit's flesh to its core. </span> <div class="para-break"></div><span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">In terms of flavor, tawn-berries are rich and sweet — almost indulgently so. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">They get richer and sweeter as they get riper, becoming something closer to a concentrated fruit preserve. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Many foragers say that tawnberries are so intensely flavored that they're more like a dessert than a snack. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Tawn-berries also have a jammy finish that lingers on the palate long after you've swallowed, a preserve-like richness that sets them apart from lighter wild fruits. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">It's the finish you'd expect from a cooked fruit, not a raw one. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That late-summer to early autumn window gives you roughly two to three months each year. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Before August, the berries are still tart; after October they soften, so the heart of the season is when the rich, sweet flavor is at its best. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/distractor.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">While hiking in this area, you might see some tawnberries. From the outside, tawn-berries are a dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple. In terms of flavor, they are rich and sweet, with a jammy finish that lingers on the palate long after you've swallowed. If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage.</p><p class="plain-para">Tawn-berry bushes favor open, sunny ground — you'll find them in grassy meadows and clearings rather than under tree cover. The fruits ripen in loose clusters, each berry roughly the size of a large grape, and a productive bush can carry dozens at once. The skin is thin and slightly fuzzy to the touch, with a velvety texture quite unlike the tougher skin of a grape. Inside, the flesh is packed with many small seeds distributed evenly throughout — most foragers eat them without noticing. Their scientific name is Solanum tawnii, placing them in the nightshade family alongside eggplants and tomatoes, a kinship that partly explains the depth of color in the flesh.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">While hiking in this area, you might see some tawnberries. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#c7d2fe" title="shared with: C + D only">From the outside, tawn-berries are a dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple. <span class="badge badge-control">C</span></span> <span class="sent" style="background:#c7d2fe" title="shared with: C + D only">In terms of flavor, they are rich and sweet, with a jammy finish that lingers on the palate long after you've swallowed. <span class="badge badge-control">C</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Tawn-berry bushes favor open, sunny ground — you'll find them in grassy meadows and clearings rather than under tree cover. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The fruits ripen in loose clusters, each berry roughly the size of a large grape, and a productive bush can carry dozens at once. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The skin is thin and slightly fuzzy to the touch, with a velvety texture quite unlike the tougher skin of a grape. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Inside, the flesh is packed with many small seeds distributed evenly throughout — most foragers eat them without noticing. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Their scientific name is Solanum tawnii, placing them in the nightshade family alongside eggplants and tomatoes, a kinship that partly explains the depth of color in the flesh. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QF01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the appearance of a tawnberry? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Brown on the outside<span class="answer-mark"> ✓</span></li>
+<li class="correct">Purple flesh on the inside<span class="answer-mark"> ✓</span></li>
+<li>Orange-pink all the way through</li>
+<li>Pale yellow skin</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'. Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the tawnberry's flavor? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rich and sweet<span class="answer-mark"> ✓</span></li>
+<li class="correct">A jammy finish that lingers on the palate<span class="answer-mark"> ✓</span></li>
+<li>Tart with a warm building spice</li>
+<li>Light and crisp, like a fresh apple</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'. Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF03 <span class="q-type">(content)</span></p>
+<p class="q-text">When can tawnberries be foraged? Select all that apply.</p>
+<ol class="options">
+<li>June</li>
+<li>July</li>
+<li class="correct">August<span class="answer-mark"> ✓</span></li>
+<li class="correct">September<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Control says 'August through October' — split into late summer (August) and early autumn (September–October). Options 3 and 4 are clearly wrong seasons.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes tawnberries? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Jammy and sweet, ripe in late summer and early autumn<span class="answer-mark"> ✓</span></li>
+<li>Jammy and sweet, ripe in spring</li>
+<li>Tart and spicy, ripe in late summer and early autumn</li>
+<li>Tart and spicy, ripe in spring</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combination: correct/wrong flavor × correct/wrong season. Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct. Option 2 = right flavor + wrong season (spring). Option 3 = wrong flavor (Blisterfig tart/spicy) + right season. Option 4 = both wrong.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QF05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describes the relationship between a tawnberry's outside and inside? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The plain brown exterior gives no hint of the vivid purple inside<span class="answer-mark"> ✓</span></li>
+<li>The outside and inside are the same color</li>
+<li>The outside is more striking in color than the inside</li>
+<li>The color varies depending on its ripeness</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the exterior/interior color contrast as a relationship, not just each color independently. Option 1 paraphrases 'dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple'. Options 2-4 are foils that mischaracterize the contrast.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_fruit <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that contains a color.</p>
+<ol class="options">
+<li>Loose clusters</li>
+<li>Open grassland</li>
+<li class="correct">Deep purple<span class="answer-mark"> ✓</span></li>
+<li>August to October</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes, habitats, or time periods. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">While hiking in this area, you might see some tawnberries.</td><td style="background:#fde68a">While hiking in this area, you might see some tawnberries.</td><td style="background:#fde68a">While hiking in this area, you might see some tawnberries.</td><td style="background:#fde68a">While hiking in this area, you might see some tawnberries.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">From the outside, tawn-berries are a dull, unremarkable brown — that plain skin gives no hint of what's inside.</td><td style="background:#fdba74">From the outside, tawn-berries are a dull, unremarkable brown — that plain skin gives no hint of what's inside.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Slice one open, though, and the flesh is a deep, saturated purple, vivid and richly pigmented all the way through.</td><td style="background:#fdba74">Slice one open, though, and the flesh is a deep, saturated purple, vivid and richly pigmented all the way through.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That drab brown exterior really is deceiving; the interior purple is striking, closer in color to an eggplant than anything you'd expect.</td><td style="background:#fdba74">That drab brown exterior really is deceiving; the interior purple is striking, close in color to the skin of an eggplant.</td><td class="absent">—</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That vivid purple runs right through the fruit's flesh to its core.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">In terms of flavor, tawn-berries are rich and sweet — almost indulgently so.</td><td style="background:#fdba74">In terms of flavor, tawn-berries are rich and sweet — almost indulgently so.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">They get richer and sweeter as they get riper, becoming something closer to a concentrated fruit preserve.</td><td style="background:#fdba74">They get richer and sweeter as they get riper, becoming something closer to a concentrated fruit preserve.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Many foragers say that tawnberries are so intensely flavored that they're more like a dessert than a snack.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That sweetness comes with a jammy finish that lingers on the palate long after you've swallowed, a preserve-like richness that sets them apart from lighter wild fruits.</td><td style="background:#fdba74">Tawn-berries also have a jammy finish that lingers on the palate long after you've swallowed, a preserve-like richness that sets them apart from lighter wild fruits.</td><td class="absent">—</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">It's the finish you'd expect from a cooked fruit, not a raw one.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage.</td><td style="background:#fde68a">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage.</td><td style="background:#fde68a">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage.</td><td style="background:#fde68a">If you want to try them, plan your hike for August through October — that's when they're ripe enough to forage.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That late-summer to early autumn window gives you roughly two to three months each year.</td><td style="background:#fdba74">That late-summer to early autumn window gives you roughly two to three months each year.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Before August, the berries are still tart; after October they soften, so the heart of the season is when the rich, sweet flavor is at its best.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#c7d2fe">From the outside, tawn-berries are a dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple.</td><td class="absent">—</td><td class="absent">—</td><td style="background:#c7d2fe">From the outside, tawn-berries are a dull, unremarkable brown, but slice one open and the flesh is a deep, saturated purple.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#c7d2fe">In terms of flavor, they are rich and sweet, with a jammy finish that lingers on the palate long after you've swallowed.</td><td class="absent">—</td><td class="absent">—</td><td style="background:#c7d2fe">In terms of flavor, they are rich and sweet, with a jammy finish that lingers on the palate long after you've swallowed.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Tawn-berry bushes favor open, sunny ground — you'll find them in grassy meadows and clearings rather than under tree cover.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The fruits ripen in loose clusters, each berry roughly the size of a large grape, and a productive bush can carry dozens at once.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The skin is thin and slightly fuzzy to the touch, with a velvety texture quite unlike the tougher skin of a grape.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Inside, the flesh is packed with many small seeds distributed evenly throughout — most foragers eat them without noticing.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Their scientific name is Solanum tawnii, placing them in the nightshade family alongside eggplants and tomatoes, a kinship that partly explains the depth of color in the flesh.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>
