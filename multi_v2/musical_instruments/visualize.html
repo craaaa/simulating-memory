@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Musical Instruments</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Musical Instruments</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/control.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room. It can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_short.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. That pear shape — broad at the base and tapering toward the neck — gives the interior a generous, enclosed volume.</p><p class="plain-para">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room. Essentially, more enclosed air means richer resonance — a plucked note rings out and fills the space rather than cutting off sharply.</p><p class="plain-para">The belvero can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. Belver's 1614 entry is the earliest record we have of the instrument, made when Seville was a thriving hub for craftwork and trade.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That pear shape — broad at the base and tapering toward the neck — gives the interior a generous, enclosed volume. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Essentially, more enclosed air means richer resonance — a plucked note rings out and fills the space rather than cutting off sharply. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The belvero can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Belver's 1614 entry is the earliest record we have of the instrument, made when Seville was a thriving hub for craftwork and trade. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_long.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. That pear shape — broad at the base and tapering toward the neck — gives the interior a generous, enclosed volume. Because the body is so deep and rounded, it encloses far more air than a flatter instrument would.</p><p class="plain-para">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room. Essentially, more enclosed air means richer resonance — a plucked note rings out and fills the space rather than cutting off sharply. That warmth and sustain are the instrument's defining qualities.</p><p class="plain-para">The belvero can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. Belver's 1614 entry is the earliest record we have of the instrument, made when Seville was a thriving hub for craftwork and trade. That same inventory lists more Belveros than any other instrument, suggesting it was already central to Belver's business by 1614.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That pear shape — broad at the base and tapering toward the neck — gives the interior a generous, enclosed volume. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Because the body is so deep and rounded, it encloses far more air than a flatter instrument would. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Essentially, more enclosed air means richer resonance — a plucked note rings out and fills the space rather than cutting off sharply. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That warmth and sustain are the instrument's defining qualities. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The belvero can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Belver's 1614 entry is the earliest record we have of the instrument, made when Seville was a thriving hub for craftwork and trade. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">That same inventory lists more Belveros than any other instrument, suggesting it was already central to Belver's business by 1614. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/distractor.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. It has eight strings in total, arranged in four pairs, with each pair tuned an octave apart. The body runs about 25 inches from end to end and widens to around 10 inches at its broadest point. The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room.</p><p class="plain-para">Its pitch range sits in the middle registers — roughly C3 to C6 — which makes it comfortable for both melody lines and light accompaniment. The neck of the instrument is joined to the body with a reinforced mortise joint, and the pegged headstock lets players make fine adjustments by ear before each session.</p><p class="plain-para">It can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. Some luthiers finished the soundboard edge with carved bone or thin strips of inlaid ivory, a decorative style particularly associated with workshops in Córdoba and Granada.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It has eight strings in total, arranged in four pairs, with each pair tuned an octave apart. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The body runs about 25 inches from end to end and widens to around 10 inches at its broadest point. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Its pitch range sits in the middle registers — roughly C3 to C6 — which makes it comfortable for both melody lines and light accompaniment. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The neck of the instrument is joined to the body with a reinforced mortise joint, and the pegged headstock lets players make fine adjustments by ear before each session. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Some luthiers finished the soundboard edge with carved bone or thin strips of inlaid ivory, a decorative style particularly associated with workshops in Córdoba and Granada. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QM01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero's body? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It has a rounded, generously deep body<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is shaped like a pear, broad at the base<span class="answer-mark"> ✓</span></li>
+<li>It has a flat, shallow box-like form</li>
+<li>It is a tapered cylinder, narrowing toward the bottom</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'. Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the sound of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Mellow and full, with a tone that lingers after each note<span class="answer-mark"> ✓</span></li>
+<li class="correct">The sound is able to reach listeners across an entire room<span class="answer-mark"> ✓</span></li>
+<li>Crisp and brief, each note cutting off cleanly after the pluck</li>
+<li>A buzzing, horn-like resonance</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'. Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the origins of the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">First documented by a craftsman based in Seville<span class="answer-mark"> ✓</span></li>
+<li class="correct">First documented in the early seventeenth century<span class="answer-mark"> ✓</span></li>
+<li>First documented by a Bavarian instrument cataloguer</li>
+<li>First documented in the mid-eighteenth century</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville). Option 2 paraphrases '1614' (early seventeenth century). Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria). Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Belvero? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A rounded, deep-bodied instrument with a warm, resonant tone<span class="answer-mark"> ✓</span></li>
+<li>A rounded, deep-bodied instrument with a bright, clipped tone</li>
+<li>A flat, shallow instrument with a warm, resonant tone</li>
+<li>A flat, shallow instrument with a bright, clipped tone</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2x2 combination: correct/wrong body x correct/wrong sound. Option 1 = right body, right sound (correct). Option 2 = right body, wrong sound (Kasten-zither sound). Option 3 = wrong body (Kasten-zither body), right sound. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QM05 <span class="q-type">(content)</span></p>
+<p class="q-text">What gives the Belvero its warm, full tone? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Its deep interior holds a large volume of resonating air<span class="answer-mark"> ✓</span></li>
+<li>Its strings are tuned more tightly than most plucked instruments</li>
+<li>The player's plucking technique keeps each note sounding longer</li>
+<li>Its soundhole is cut wider to project more air outward</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air, which gives it a warm, full tone' — the causal mechanism stated explicitly in control. Option 2 is a string-tension foil (independent of body shape; not mentioned in control). Option 3 is a playing-technique foil (not testable from control text). Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension). This question tests the body→tone causal link, distinct from QM01 (body shape alone), QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_music <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select only the option that mentions a number.</p>
+<ol class="options">
+<li>A craftsman's workshop records often described the materials used in construction</li>
+<li>String instruments vary in how freely their bodies resonate</li>
+<li>The tone of a plucked instrument depends on both body shape and string tension</li>
+<li class="correct">Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number ('forty'). Pass = exactly option 4 selected.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly.</td><td style="background:#fde68a">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly.</td><td style="background:#fde68a">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly.</td><td style="background:#fde68a">The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That pear shape — broad at the base and tapering toward the neck — gives the interior a generous, enclosed volume.</td><td style="background:#fdba74">That pear shape — broad at the base and tapering toward the neck — gives the interior a generous, enclosed volume.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Because the body is so deep and rounded, it encloses far more air than a flatter instrument would.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room.</td><td style="background:#fde68a">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room.</td><td style="background:#fde68a">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room.</td><td style="background:#fde68a">The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Essentially, more enclosed air means richer resonance — a plucked note rings out and fills the space rather than cutting off sharply.</td><td style="background:#fdba74">Essentially, more enclosed air means richer resonance — a plucked note rings out and fills the space rather than cutting off sharply.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That warmth and sustain are the instrument's defining qualities.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">It can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory.</td><td style="background:#fde68a">The belvero can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory.</td><td style="background:#fde68a">The belvero can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory.</td><td style="background:#fde68a">It can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Belver's 1614 entry is the earliest record we have of the instrument, made when Seville was a thriving hub for craftwork and trade.</td><td style="background:#fdba74">Belver's 1614 entry is the earliest record we have of the instrument, made when Seville was a thriving hub for craftwork and trade.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">That same inventory lists more Belveros than any other instrument, suggesting it was already central to Belver's business by 1614.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It has eight strings in total, arranged in four pairs, with each pair tuned an octave apart.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The body runs about 25 inches from end to end and widens to around 10 inches at its broadest point.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its pitch range sits in the middle registers — roughly C3 to C6 — which makes it comfortable for both melody lines and light accompaniment.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The neck of the instrument is joined to the body with a reinforced mortise joint, and the pegged headstock lets players make fine adjustments by ear before each session.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Some luthiers finished the soundboard edge with carved bone or thin strips of inlaid ivory, a decorative style particularly associated with workshops in Córdoba and Granada.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>
