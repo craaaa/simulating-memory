@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Martial Arts</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Martial Arts</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. Practitioners settle into a low, wide posture called the stone crouch. The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. For conditioning, practitioners work with the thravan, a weighted training cord. Full-resistance sparring is prohibited against anyone with under two years of experience. The Dalviri Arts Council, which governs all certification, was founded in 1947.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Practitioners settle into a low, wide posture called the stone crouch. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">For conditioning, practitioners work with the thravan, a weighted training cord. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is prohibited against anyone with under two years of experience. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Dalviri Arts Council, which governs all certification, was founded in 1947. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. Grip and leverage replace striking. Practitioners settle into a low, wide posture called the stone crouch. The low stance resists most takedowns. The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. The thrower drives the hip under the opponent. A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. Holds that break before eight seconds do not score. For conditioning, practitioners work with the thravan, a weighted training cord. The thravan builds the grip strength velthrak demands. Full-resistance sparring is prohibited against anyone with under two years of experience. The rule protects beginners from injury. The Dalviri Arts Council, which governs all certification, was founded in 1947. The Council sets ranks and officiates competitions.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Grip and leverage replace striking. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Practitioners settle into a low, wide posture called the stone crouch. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The low stance resists most takedowns. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The thrower drives the hip under the opponent. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Holds that break before eight seconds do not score. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">For conditioning, practitioners work with the thravan, a weighted training cord. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The thravan builds the grip strength velthrak demands. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is prohibited against anyone with under two years of experience. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The rule protects beginners from injury. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Dalviri Arts Council, which governs all certification, was founded in 1947. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The Council sets ranks and officiates competitions. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. Grip and leverage replace striking. Velthrak's approach rewards precision over power. Practitioners settle into a low, wide posture called the stone crouch. The low stance resists most takedowns. Mastering the stone crouch is every student's first milestone. The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. The thrower drives the hip under the opponent. A sornek that misses the floor pin earns no score. A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. Holds that break before eight seconds do not score. Eight full seconds of unbroken control constitutes a legal binding. For conditioning, practitioners work with the thravan, a weighted training cord. The thravan builds the grip strength velthrak demands. The thravan is unique to this art. Full-resistance sparring is prohibited against anyone with under two years of experience. The rule protects beginners from injury. Violators face formal review by the Arts Council. The Dalviri Arts Council, which governs all certification, was founded in 1947. The Council sets ranks and officiates competitions. Since 1947, the Council has certified instructors abroad.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Grip and leverage replace striking. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Velthrak's approach rewards precision over power. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Practitioners settle into a low, wide posture called the stone crouch. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The low stance resists most takedowns. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Mastering the stone crouch is every student's first milestone. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The thrower drives the hip under the opponent. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">A sornek that misses the floor pin earns no score. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Holds that break before eight seconds do not score. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Eight full seconds of unbroken control constitutes a legal binding. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">For conditioning, practitioners work with the thravan, a weighted training cord. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The thravan builds the grip strength velthrak demands. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The thravan is unique to this art. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is prohibited against anyone with under two years of experience. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The rule protects beginners from injury. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Violators face formal review by the Arts Council. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Dalviri Arts Council, which governs all certification, was founded in 1947. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The Council sets ranks and officiates competitions. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Since 1947, the Council has certified instructors abroad. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. Practitioners settle into a low, wide posture called the stone crouch. The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. For conditioning, practitioners work with the thravan, a weighted training cord. Full-resistance sparring is prohibited against anyone with under two years of experience. The Dalviri Arts Council, which governs all certification, was founded in 1947.</p><p class="plain-para">Quorrath competitors wear a distinctive white jacket with red trim during official bouts. The art is active in fourteen countries across three continents, making it one of the more geographically distributed regional traditions. Mendavar, by contrast, is concentrated in four adjacent provinces and rarely seen outside that cluster. Mendavar students typically begin formal training at age twelve, while quorrath practitioners often start as young as eight. A standard mendavar session lasts sixty minutes, divided equally between drilling and free sparring; quorrath sessions run ninety minutes and close with twenty minutes of meditation. Quorrath tournaments proceed through a single-elimination bracket, whereas mendavar competitions open with a round-robin pool stage before a knockout final.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Practitioners settle into a low, wide posture called the stone crouch. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">For conditioning, practitioners work with the thravan, a weighted training cord. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is prohibited against anyone with under two years of experience. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Dalviri Arts Council, which governs all certification, was founded in 1947. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Quorrath competitors wear a distinctive white jacket with red trim during official bouts. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The art is active in fourteen countries across three continents, making it one of the more geographically distributed regional traditions. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Mendavar, by contrast, is concentrated in four adjacent provinces and rarely seen outside that cluster. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Mendavar students typically begin formal training at age twelve, while quorrath practitioners often start as young as eight. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">A standard mendavar session lasts sixty minutes, divided equally between drilling and free sparring; quorrath sessions run ninety minutes and close with twenty minutes of meditation. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Quorrath tournaments proceed through a single-elimination bracket, whereas mendavar competitions open with a round-robin pool stage before a knockout final. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <p><em>No questions file found.</em></p>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted.</td><td style="background:#fde68a">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted.</td><td style="background:#fde68a">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted.</td><td style="background:#fde68a">Velthrak is a grappling art from the Dalviri Highlands — no striking of any kind is permitted.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Grip and leverage replace striking.</td><td style="background:#fdba74">Grip and leverage replace striking.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Velthrak's approach rewards precision over power.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Practitioners settle into a low, wide posture called the stone crouch.</td><td style="background:#fde68a">Practitioners settle into a low, wide posture called the stone crouch.</td><td style="background:#fde68a">Practitioners settle into a low, wide posture called the stone crouch.</td><td style="background:#fde68a">Practitioners settle into a low, wide posture called the stone crouch.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The low stance resists most takedowns.</td><td style="background:#fdba74">The low stance resists most takedowns.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Mastering the stone crouch is every student's first milestone.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin.</td><td style="background:#fde68a">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin.</td><td style="background:#fde68a">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin.</td><td style="background:#fde68a">The art's signature move is the sornek — a sweeping hip throw that flows into a floor pin.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The thrower drives the hip under the opponent.</td><td style="background:#fdba74">The thrower drives the hip under the opponent.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">A sornek that misses the floor pin earns no score.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding.</td><td style="background:#fde68a">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding.</td><td style="background:#fde68a">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding.</td><td style="background:#fde68a">A match ends when one competitor holds the other completely still for eight seconds, a moment called a binding.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Holds that break before eight seconds do not score.</td><td style="background:#fdba74">Holds that break before eight seconds do not score.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Eight full seconds of unbroken control constitutes a legal binding.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">For conditioning, practitioners work with the thravan, a weighted training cord.</td><td style="background:#fde68a">For conditioning, practitioners work with the thravan, a weighted training cord.</td><td style="background:#fde68a">For conditioning, practitioners work with the thravan, a weighted training cord.</td><td style="background:#fde68a">For conditioning, practitioners work with the thravan, a weighted training cord.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The thravan builds the grip strength velthrak demands.</td><td style="background:#fdba74">The thravan builds the grip strength velthrak demands.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The thravan is unique to this art.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Full-resistance sparring is prohibited against anyone with under two years of experience.</td><td style="background:#fde68a">Full-resistance sparring is prohibited against anyone with under two years of experience.</td><td style="background:#fde68a">Full-resistance sparring is prohibited against anyone with under two years of experience.</td><td style="background:#fde68a">Full-resistance sparring is prohibited against anyone with under two years of experience.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The rule protects beginners from injury.</td><td style="background:#fdba74">The rule protects beginners from injury.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Violators face formal review by the Arts Council.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The Dalviri Arts Council, which governs all certification, was founded in 1947.</td><td style="background:#fde68a">The Dalviri Arts Council, which governs all certification, was founded in 1947.</td><td style="background:#fde68a">The Dalviri Arts Council, which governs all certification, was founded in 1947.</td><td style="background:#fde68a">The Dalviri Arts Council, which governs all certification, was founded in 1947.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The Council sets ranks and officiates competitions.</td><td style="background:#fdba74">The Council sets ranks and officiates competitions.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Since 1947, the Council has certified instructors abroad.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Quorrath competitors wear a distinctive white jacket with red trim during official bouts.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The art is active in fourteen countries across three continents, making it one of the more geographically distributed regional traditions.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Mendavar, by contrast, is concentrated in four adjacent provinces and rarely seen outside that cluster.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Mendavar students typically begin formal training at age twelve, while quorrath practitioners often start as young as eight.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">A standard mendavar session lasts sixty minutes, divided equally between drilling and free sparring; quorrath sessions run ninety minutes and close with twenty minutes of meditation.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Quorrath tournaments proceed through a single-elimination bracket, whereas mendavar competitions open with a round-robin pool stage before a knockout final.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>
