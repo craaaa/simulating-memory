@@ -1,0 +1,138 @@
+{
+  "task": "wm_application_listening_qa",
+  "model": "meta-llama/llama-3.1-8b-instruct",
+  "condition_id": "C2",
+  "n_repeats_per_cell": 30,
+  "n_cells": 16,
+  "n_total_trials": 480,
+  "cells": {
+    "astronomy:control": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.916,
+      "per_statement_accuracy_std": 0.01200000000000001,
+      "exact_match_accuracy_mean": 0.78,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.9666666666666667
+    },
+    "astronomy:distractor": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.9053333333333333,
+      "per_statement_accuracy_std": 0.019275776393067965,
+      "exact_match_accuracy_mean": 0.7266666666666667,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.6916666666666667
+    },
+    "astronomy:repeat_long": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.916,
+      "per_statement_accuracy_std": 0.01200000000000001,
+      "exact_match_accuracy_mean": 0.78,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.6583333333333333
+    },
+    "astronomy:repeat_short": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.892,
+      "per_statement_accuracy_std": 0.021039645117412686,
+      "exact_match_accuracy_mean": 0.66,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.5666666666666667
+    },
+    "fabrics:control": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.8733333333333333,
+      "per_statement_accuracy_std": 0.014907119849998611,
+      "exact_match_accuracy_mean": 0.5666666666666667,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.5
+    },
+    "fabrics:distractor": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.8200000000000001,
+      "per_statement_accuracy_std": 0.04472135954999579,
+      "exact_match_accuracy_mean": 0.43333333333333335,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 1.0
+    },
+    "fabrics:repeat_long": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.8533333333333333,
+      "per_statement_accuracy_std": 0.02385139175999778,
+      "exact_match_accuracy_mean": 0.45333333333333337,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.9416666666666667
+    },
+    "fabrics:repeat_short": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.8506666666666667,
+      "per_statement_accuracy_std": 0.027194770739161545,
+      "exact_match_accuracy_mean": 0.4266666666666667,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.8083333333333333
+    },
+    "fruits:control": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.9026666666666666,
+      "per_statement_accuracy_std": 0.11203967551224381,
+      "exact_match_accuracy_mean": 0.6866666666666666,
+      "attention_check_pass_rate_mean": 0.3,
+      "slot_utilization_mean": 0.8833333333333333
+    },
+    "fruits:distractor": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.76,
+      "per_statement_accuracy_std": 0.025298221281347056,
+      "exact_match_accuracy_mean": 0.3866666666666667,
+      "attention_check_pass_rate_mean": 0.4,
+      "slot_utilization_mean": 0.9583333333333334
+    },
+    "fruits:repeat_long": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.8613333333333333,
+      "per_statement_accuracy_std": 0.03383620677453206,
+      "exact_match_accuracy_mean": 0.62,
+      "attention_check_pass_rate_mean": 0.06666666666666667,
+      "slot_utilization_mean": 0.9583333333333334
+    },
+    "fruits:repeat_short": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.876,
+      "per_statement_accuracy_std": 0.01890326250501045,
+      "exact_match_accuracy_mean": 0.6133333333333333,
+      "attention_check_pass_rate_mean": 0.2,
+      "slot_utilization_mean": 1.0
+    },
+    "martial_arts:control": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.8613333333333334,
+      "per_statement_accuracy_std": 0.04814792022738078,
+      "exact_match_accuracy_mean": 0.49333333333333335,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.9
+    },
+    "martial_arts:distractor": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.7573333333333333,
+      "per_statement_accuracy_std": 0.06767241354906413,
+      "exact_match_accuracy_mean": 0.2733333333333333,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.9833333333333333
+    },
+    "martial_arts:repeat_long": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.8906666666666667,
+      "per_statement_accuracy_std": 0.0385515527861359,
+      "exact_match_accuracy_mean": 0.5733333333333334,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 1.0
+    },
+    "martial_arts:repeat_short": {
+      "n": 30,
+      "per_statement_accuracy_mean": 0.876,
+      "per_statement_accuracy_std": 0.028000000000000025,
+      "exact_match_accuracy_mean": 0.58,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization_mean": 0.875
+    }
+  }
+}

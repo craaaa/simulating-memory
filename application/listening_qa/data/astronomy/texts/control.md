@@ -1,0 +1,3 @@
+About four thousand light-years away from Earth sits the Pictor Nebula. The Pictor nebula is an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.
+
+Images of the nebula tend to leave a strong impression, even on people who don't usually pay much attention to astronomy. The colors and shapes seem almost too vivid to be real, though they're exactly what the telescope captures. It's the kind of sight that makes clear why so many people find deep-sky objects captivating.

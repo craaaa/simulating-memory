@@ -1,0 +1,131 @@
+# Multi-select question bank for the martial_arts topic (multi_v2)
+# Concept: Velthrak (fictional grappling art)
+#
+# Tested features:
+#   - Style emphasis         (QMA01)
+#   - Sornek technique       (QMA02)
+#   - Certification body     (QMA03)
+#   - Origin × training rule (QMA04)
+#   - Term × definition 2×2 (QMA05)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Martial Arts — Velthrak
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QMA01
+    question: "Which of the following accurately describe the style of velthrak? Select all that apply."
+    options:
+      1: "Velthrak is a grappling-focused art"
+      2: "Velthrak does not permit striking of any kind"
+      3: "Velthrak is a striking-focused art"
+      4: "Velthrak allows limited strikes during competition"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: style_emphasis
+      concepts: [velthrak]
+      notes: >
+        Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct).
+        Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis —
+        Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition
+        stated in the text (no striking of any kind).
+
+  - q_id: QMA02
+    question: "Which of the following accurately describe the sornek? Select all that apply."
+    options:
+      1: "It is the signature technique of velthrak"
+      2: "It involves a hip throw"
+      3: "It starts with a spinning elbow strike to the opponent's shoulder"
+      4: "It begins with a leg pick"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: signature_technique
+      concepts: [velthrak]
+      notes: >
+        Tests two sub-components of the sornek. Option 1 tests 'signature technique'
+        (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a
+        floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not
+        velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+
+  - q_id: QMA03
+    question: "Which of the following correctly describes the governing body of velthrak? Select all that apply."
+    options:
+      1: "The Dalviri Arts Council governs velthrak certification"
+      2: "The official governing body of velthrak was formed in 1967"
+      3: "The official governing body of velthrak was formed in 1947"
+      4: "The Dalviri Federation of Combat Arts governs velthrak certification"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: [certification_body, founding_year]
+      concepts: [velthrak]
+      notes: >
+        2×2 combo crossing the correct certification body (Dalviri Arts Council) with the
+        correct founding year (1947). Option 1 = right body + right year ✓. Option 2 =
+        wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right
+        body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+
+  - q_id: QMA04
+    question: "Which of the following correctly describes velthrak? Select all that apply."
+    options:
+      1: "Full-resistance sparring involves kicking and punching"
+      2: "Practitioners must complete 200 strikes on a bag before each session"
+      3: "Practitioners must practice for three years before engaging in full-resistance sparring"
+      4: "Practitioners must practice for two years before engaging in full-resistance sparring"
+      5: "None of the above"
+    answer: [4]
+    metadata:
+      type: content
+      feature: [geographic_origin, training_rule]
+      concepts: [velthrak]
+      notes: >
+        2×2 combo crossing the correct origin (Dalviri Highlands) with the correct
+        training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 =
+        right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin
+        (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+
+  - q_id: QMA05
+    question: "Which of the following are restrictions that apply in velthrak? Select all that apply."
+    options:
+      1: "Striking an opponent in any form is against the rules"
+      2: "A person who has practiced velthrak for one year cannot engage in full-resistance sparring"
+      3: "The sornek may only be performed in championship-level bouts"
+      4: "All competition surfaces must be approved by the Dalviri Federation of Combat Arts"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [style_emphasis, training_rule]
+      concepts: [velthrak]
+      notes: >
+        Tests two restrictions from separate control sentences: the striking ban (option 1,
+        distinct phrasing from QMA01's "does not permit striking of any kind") and the
+        sparring experience rule (option 2, distinct from QMA04's "banned against
+        less-experienced practitioners"). Both are independently testable and non-mutually-exclusive.
+        Option 3 is an invented foil — the text places no competition-level restriction on
+        the sornek. Option 4 is an invented foil — the Council's stated role covers grades,
+        instructors, and competition oversight, not surface approval.
+
+  - q_id: AT_martial_arts
+    question: "Which of the following best describes what this passage is about? This is an attention check."
+    options:
+      1: "A style of martial arts"
+      2: "A type of volcano"
+      3: "A kind of bicycle"
+      4: "A category of kitchen appliance"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: attention_check
+      notes: >
+        Entity-naming design: options are wildly mismatched categories (volcano, bicycle,
+        kitchen appliance) so the check is answerable from even shallow engagement with the
+        passage topic, not fine-grained recall. Pass = exactly option 1 selected, no others.

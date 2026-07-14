@@ -1,0 +1,606 @@
+{
+  "task": "wm_application_listening_qa",
+  "n_participants": 1,
+  "stimuli_seed": 42,
+  "documents_dir": "/tmp/listening_astronomy_real",
+  "conditions": [
+    {
+      "condition": "C2",
+      "condition_name": "Human cognitive limits framing",
+      "n": 1,
+      "metrics": {
+        "per_statement_accuracy_mean": 0.92,
+        "exact_match_accuracy_mean": 0.8,
+        "attention_check_pass_rate_mean": 1.0,
+        "slot_utilization": 1.0
+      },
+      "per_statement_accuracy": {
+        "n": 1,
+        "mean": 0.92,
+        "std": 0.0,
+        "min": 0.92,
+        "max": 0.92
+      },
+      "difficulty": {
+        "passage": {
+          "n": 1,
+          "mean": 6.0,
+          "std": 0.0,
+          "min": 6.0,
+          "max": 6.0,
+          "valid_n": 1,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 1,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        },
+        "question": {
+          "n": 1,
+          "mean": 6.0,
+          "std": 0.0,
+          "min": 6.0,
+          "max": 6.0,
+          "valid_n": 1,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 1,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        }
+      },
+      "parse_errors": {}
+    }
+  ],
+  "overall": {
+    "n": 1,
+    "metrics": {
+      "per_statement_accuracy_mean": 0.92,
+      "exact_match_accuracy_mean": 0.8,
+      "attention_check_pass_rate_mean": 1.0,
+      "slot_utilization": 1.0
+    },
+    "per_statement_accuracy": {
+      "n": 1,
+      "mean": 0.92,
+      "std": 0.0,
+      "min": 0.92,
+      "max": 0.92
+    },
+    "difficulty": {
+      "passage": {
+        "n": 1,
+        "mean": 6.0,
+        "std": 0.0,
+        "min": 6.0,
+        "max": 6.0,
+        "valid_n": 1,
+        "histogram_1_to_10": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 1,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0
+        }
+      },
+      "question": {
+        "n": 1,
+        "mean": 6.0,
+        "std": 0.0,
+        "min": 6.0,
+        "max": 6.0,
+        "valid_n": 1,
+        "histogram_1_to_10": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 1,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0
+        }
+      }
+    },
+    "parse_errors": {}
+  },
+  "by_level": {
+    "control": {
+      "n": 0,
+      "metrics": {
+        "per_statement_accuracy_mean": 0.0,
+        "exact_match_accuracy_mean": 0.0,
+        "attention_check_pass_rate_mean": null,
+        "slot_utilization": 0.0
+      },
+      "per_statement_accuracy": {
+        "n": 0,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "max": null
+      },
+      "difficulty": {
+        "passage": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null,
+          "valid_n": 0,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        },
+        "question": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null,
+          "valid_n": 0,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        }
+      },
+      "parse_errors": {}
+    },
+    "repeat_short": {
+      "n": 1,
+      "metrics": {
+        "per_statement_accuracy_mean": 0.92,
+        "exact_match_accuracy_mean": 0.8,
+        "attention_check_pass_rate_mean": 1.0,
+        "slot_utilization": 1.0
+      },
+      "per_statement_accuracy": {
+        "n": 1,
+        "mean": 0.92,
+        "std": 0.0,
+        "min": 0.92,
+        "max": 0.92
+      },
+      "difficulty": {
+        "passage": {
+          "n": 1,
+          "mean": 6.0,
+          "std": 0.0,
+          "min": 6.0,
+          "max": 6.0,
+          "valid_n": 1,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 1,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        },
+        "question": {
+          "n": 1,
+          "mean": 6.0,
+          "std": 0.0,
+          "min": 6.0,
+          "max": 6.0,
+          "valid_n": 1,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 1,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        }
+      },
+      "parse_errors": {}
+    },
+    "repeat_long": {
+      "n": 0,
+      "metrics": {
+        "per_statement_accuracy_mean": 0.0,
+        "exact_match_accuracy_mean": 0.0,
+        "attention_check_pass_rate_mean": null,
+        "slot_utilization": 0.0
+      },
+      "per_statement_accuracy": {
+        "n": 0,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "max": null
+      },
+      "difficulty": {
+        "passage": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null,
+          "valid_n": 0,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        },
+        "question": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null,
+          "valid_n": 0,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        }
+      },
+      "parse_errors": {}
+    },
+    "distractor": {
+      "n": 0,
+      "metrics": {
+        "per_statement_accuracy_mean": 0.0,
+        "exact_match_accuracy_mean": 0.0,
+        "attention_check_pass_rate_mean": null,
+        "slot_utilization": 0.0
+      },
+      "per_statement_accuracy": {
+        "n": 0,
+        "mean": null,
+        "std": null,
+        "min": null,
+        "max": null
+      },
+      "difficulty": {
+        "passage": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null,
+          "valid_n": 0,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        },
+        "question": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null,
+          "valid_n": 0,
+          "histogram_1_to_10": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0,
+            "10": 0
+          }
+        }
+      },
+      "parse_errors": {}
+    }
+  },
+  "by_condition_level": {
+    "C2": {
+      "control": {
+        "n": 0,
+        "metrics": {
+          "per_statement_accuracy_mean": 0.0,
+          "exact_match_accuracy_mean": 0.0,
+          "attention_check_pass_rate_mean": null,
+          "slot_utilization": 0.0
+        },
+        "per_statement_accuracy": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null
+        },
+        "difficulty": {
+          "passage": {
+            "n": 0,
+            "mean": null,
+            "std": null,
+            "min": null,
+            "max": null,
+            "valid_n": 0,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          },
+          "question": {
+            "n": 0,
+            "mean": null,
+            "std": null,
+            "min": null,
+            "max": null,
+            "valid_n": 0,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          }
+        },
+        "parse_errors": {}
+      },
+      "repeat_short": {
+        "n": 1,
+        "metrics": {
+          "per_statement_accuracy_mean": 0.92,
+          "exact_match_accuracy_mean": 0.8,
+          "attention_check_pass_rate_mean": 1.0,
+          "slot_utilization": 1.0
+        },
+        "per_statement_accuracy": {
+          "n": 1,
+          "mean": 0.92,
+          "std": 0.0,
+          "min": 0.92,
+          "max": 0.92
+        },
+        "difficulty": {
+          "passage": {
+            "n": 1,
+            "mean": 6.0,
+            "std": 0.0,
+            "min": 6.0,
+            "max": 6.0,
+            "valid_n": 1,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 1,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          },
+          "question": {
+            "n": 1,
+            "mean": 6.0,
+            "std": 0.0,
+            "min": 6.0,
+            "max": 6.0,
+            "valid_n": 1,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 1,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          }
+        },
+        "parse_errors": {}
+      },
+      "repeat_long": {
+        "n": 0,
+        "metrics": {
+          "per_statement_accuracy_mean": 0.0,
+          "exact_match_accuracy_mean": 0.0,
+          "attention_check_pass_rate_mean": null,
+          "slot_utilization": 0.0
+        },
+        "per_statement_accuracy": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null
+        },
+        "difficulty": {
+          "passage": {
+            "n": 0,
+            "mean": null,
+            "std": null,
+            "min": null,
+            "max": null,
+            "valid_n": 0,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          },
+          "question": {
+            "n": 0,
+            "mean": null,
+            "std": null,
+            "min": null,
+            "max": null,
+            "valid_n": 0,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          }
+        },
+        "parse_errors": {}
+      },
+      "distractor": {
+        "n": 0,
+        "metrics": {
+          "per_statement_accuracy_mean": 0.0,
+          "exact_match_accuracy_mean": 0.0,
+          "attention_check_pass_rate_mean": null,
+          "slot_utilization": 0.0
+        },
+        "per_statement_accuracy": {
+          "n": 0,
+          "mean": null,
+          "std": null,
+          "min": null,
+          "max": null
+        },
+        "difficulty": {
+          "passage": {
+            "n": 0,
+            "mean": null,
+            "std": null,
+            "min": null,
+            "max": null,
+            "valid_n": 0,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          },
+          "question": {
+            "n": 0,
+            "mean": null,
+            "std": null,
+            "min": null,
+            "max": null,
+            "valid_n": 0,
+            "histogram_1_to_10": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 0,
+              "9": 0,
+              "10": 0
+            }
+          }
+        },
+        "parse_errors": {}
+      }
+    }
+  }
+}

@@ -46,6 +46,7 @@ from .tasks.wm_factual_qa import evaluate_summarizer as eval_sum_factual_qa
 from .tasks.wm_narrative_qa import evaluate as eval_wm_narrative_qa
 from .tasks.wm_narrative_qa import evaluate_summarizer as eval_sum_narrative_qa
 from .tasks.wm_application_reading_qa import evaluate as eval_wm_application_reading_qa
+from .tasks.wm_application_listening_qa import evaluate as eval_wm_application_listening_qa
 from .tasks.wm_map_task import evaluate as eval_wm_map_task
 from .tasks.wm_map_task import evaluate_summarizer as eval_sum_map_task
 from .tasks.wm_craft_task import evaluate as eval_wm_craft_task
@@ -73,6 +74,7 @@ TASKS = {
   "wm_factual_qa": eval_wm_factual_qa,
   "wm_narrative_qa": eval_wm_narrative_qa,
   "wm_application_reading_qa": eval_wm_application_reading_qa,
+  "wm_application_listening_qa": eval_wm_application_listening_qa,
   "wm_map_task": eval_wm_map_task,
   "wm_craft_task": eval_wm_craft_task,
   "sum_semantic_story_recall": eval_sum_story,
@@ -805,6 +807,26 @@ def run(
                 llm, out_dir,
                 model_cfg=model_cfg,
                 documents_dir=c.get("documents_dir", "application/documents"),
+                n_participants=n_participants_val,
+                n_docs=int(n_docs_val) if n_docs_val is not None else None,
+                stimuli_seed=int(c.get("stimuli_seed", run_cfg.get("seed", 42))),
+                temperature=float(c.get("temperature", model_cfg.get("temperature", 0.0))),
+                debug=_debug,
+                max_parallel_participants=mpp,
+            )
+            runner_fn.task_name = tname
+            fns.append(runner_fn)
+        elif tname == "wm_application_listening_qa":
+            c = task_cfg.get("wm_application_listening_qa", {})
+            if repeat is not None:
+                n_participants_val = int(repeat)
+            else:
+                n_participants_val = int(c.get("n_participants", 1))
+            n_docs_val = c.get("n_docs")
+            runner_fn = lambda fn=fn, c=c, n_participants_val=n_participants_val, n_docs_val=n_docs_val, _debug=debug, mpp=mpp: fn(
+                llm, out_dir,
+                model_cfg=model_cfg,
+                documents_dir=c.get("documents_dir", "application/listening_qa/data"),
                 n_participants=n_participants_val,
                 n_docs=int(n_docs_val) if n_docs_val is not None else None,
                 stimuli_seed=int(c.get("stimuli_seed", run_cfg.get("seed", 42))),

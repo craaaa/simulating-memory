@@ -1,0 +1,3 @@
+task | n | attention_check_pass_rate_mean | condition | exact_match_accuracy_mean | per_statement_accuracy_mean | slot_utilization
+-----+---+--------------------------------+-----------+---------------------------+-----------------------------+-----------------
+     | 1 | 1.0000                         | C2        | 0.8000                    | 0.9200                      | 1.0000          

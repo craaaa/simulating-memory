@@ -1,0 +1,648 @@
+{
+  "meta": {
+    "method": "exact_cliffs_delta_no_monte_carlo",
+    "n_base_pairs": 24,
+    "n_boot": 2000,
+    "seed": 42,
+    "standalone_jsonl": "/Users/cl5625/simulating-memory/runs/prompting/meta-llama_llama-3.1-8b-instruct/tasks/application_listening_qa_full_grid.jsonl",
+    "wm_jsonl": "/Users/cl5625/simulating-memory/runs/compactor/meta-llama_llama-3.1-8b-instruct/tasks/wm_application_listening_qa_full_grid.jsonl",
+    "human_csv": "/Users/cl5625/simulating-memory/.claude/worktrees/compare-task/application/prolific_study/multi_v6/longdata_strict.csv"
+  },
+  "results": {
+    "C1": {
+      "agreement": 0.5281394100220836,
+      "ci_lo": 0.5149183720569461,
+      "ci_hi": 0.5407404299355192,
+      "by_pair": [
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5253086419753086
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5466506630086877
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5322530864197531
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.6208133971291866
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6827485380116959
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.443968253968254
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.48803703703703705
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.49571717171717167
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5122710622710622
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.3836487322201608
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.47080419580419575
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5850507982583454
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.6127501429388221
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5067811643283341
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.4680944055944055
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.628282174556213
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6721663752913754
+        }
+      ]
+    },
+    "C2": {
+      "agreement": 0.5339999311092357,
+      "ci_lo": 0.5204694170206214,
+      "ci_hi": 0.546182391079261,
+      "by_pair": [
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5373494201271979
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5643213686937967
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5238220164609053
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.49620276842499067
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.6135645933014354
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6713775178687459
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.43302872260015124
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.4546111111111111
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5252686868686869
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5072039072039072
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.4038837353123067
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.46457575757575753
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.6594702467343977
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.6166380789022299
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.49761490082244797
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5106351981351981
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.6844489644970415
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.651981351981352
+        }
+      ]
+    },
+    "C3": {
+      "agreement": 0.5334336777722806,
+      "ci_lo": 0.5211472748292828,
+      "ci_hi": 0.5458544642446261,
+      "by_pair": [
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5046015712682379
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5480643194634964
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5475308641975309
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5196408529741863
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.6208133971291866
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6827485380116959
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.4493046107331822
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.4683333333333334
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5064242424242424
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5039377289377289
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.41905998763141616
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.4597097902097902
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.6009978229317853
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5816466552315609
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5177713272052895
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.49170454545454545
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.7020155325443788
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6781031468531469
+        }
+      ]
+    },
+    "C4": {
+      "agreement": 0.533264478217837,
+      "ci_lo": 0.5202025469419732,
+      "ci_hi": 0.5458651808051379,
+      "by_pair": [
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.5
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5151851851851852
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5500434385002286
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5441358024691357
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5117845117845118
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.6208133971291866
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6827485380116959
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.4380093222474175
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.47032716049382717
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5042114478114478
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5074175824175824
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.38870748299319724
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.45737412587412585
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.6275761973875182
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5933104631217839
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5140299951620706
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.4914918414918415
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.7080251479289941
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6731558372183372
+        }
+      ]
+    },
+    "WM": {
+      "agreement": 0.5235790672092445,
+      "ci_lo": 0.5113887252467529,
+      "ci_hi": 0.5345092083693861,
+      "by_pair": [
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.43808843537414965
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.5
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5095238095238095
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.495281045751634
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.45242328042328045
+        },
+        {
+          "topic": "astronomy",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.5356676003734827
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.4516835016835017
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.42790352080475536
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5268775720164609
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5078563411896745
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.4932881446039341
+        },
+        {
+          "topic": "fabrics",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.5101526965562053
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.4679818594104308
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.4595370370370371
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5371178451178451
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5009157509157509
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.6517625231910946
+        },
+        {
+          "topic": "fruits",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6751748251748252
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_short",
+          "agreement": 0.5441201015965167
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_repeat_long",
+          "agreement": 0.531621879169049
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "control_vs_distractor",
+          "agreement": 0.5265634575068537
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_repeat_long",
+          "agreement": 0.5012762237762238
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_short_vs_distractor",
+          "agreement": 0.672660872781065
+        },
+        {
+          "topic": "martial_arts",
+          "level_pair": "repeat_long_vs_distractor",
+          "agreement": 0.6484192890442891
+        }
+      ]
+    }
+  }
+}

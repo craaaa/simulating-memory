@@ -1,0 +1,22 @@
+{
+  "model": {
+    "backend": "openai",
+    "name": "meta-llama/llama-3.1-8b-instruct",
+    "base_url": "https://openrouter.ai/api/v1",
+    "temperature": 0.0,
+    "max_tokens": 2048,
+    "top_p": 1.0
+  },
+  "run": {
+    "out_dir": "/tmp/listening_astronomy_run",
+    "seed": 42
+  },
+  "task_config": {
+    "wm_application_listening_qa": {
+      "documents_dir": "/tmp/listening_astronomy_real",
+      "n_participants": 1,
+      "stimuli_seed": 42,
+      "temperature": 0.0
+    }
+  }
+}

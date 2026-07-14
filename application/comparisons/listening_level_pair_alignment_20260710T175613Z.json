@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "generated_at_utc": "2026-07-10T17:56:13.487058+00:00",
+    "seed": 42,
+    "method": "individual_sample_draws_within_topic",
+    "n_samples_per_pair": 2000,
+    "levels": [
+      "control",
+      "repeat_short",
+      "repeat_long",
+      "distractor"
+    ],
+    "eval_conditions": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "WM"
+    ],
+    "topics": [
+      "astronomy",
+      "fabrics",
+      "fruits",
+      "martial_arts"
+    ],
+    "standalone_jsonl": "/Users/cl5625/simulating-memory/runs/prompting/meta-llama_llama-3.1-8b-instruct/tasks/application_listening_qa_full_grid.jsonl",
+    "wm_jsonl": "/Users/cl5625/simulating-memory/runs/compactor/meta-llama_llama-3.1-8b-instruct/tasks/wm_application_listening_qa_full_grid.jsonl",
+    "human_csv": "/Users/cl5625/simulating-memory/.claude/worktrees/compare-task/application/prolific_study/multi_v6/longdata_strict.csv"
+  },
+  "result": {
+    "n_base_pairs": 24,
+    "n_samples_per_pair": 2000,
+    "n_draws_human_defined": 48000,
+    "hits": {
+      "C1": 25338,
+      "C2": 25855,
+      "C3": 25584,
+      "C4": 25935,
+      "WM": 24991
+    },
+    "denom": {
+      "C1": 48000,
+      "C2": 48000,
+      "C3": 48000,
+      "C4": 48000,
+      "WM": 48000
+    },
+    "accuracy_by_condition": {
+      "C1": {
+        "agreement": 0.527875,
+        "ci_lo": 0.5234068365438463,
+        "ci_hi": 0.5323387019548892,
+        "n": 48000
+      },
+      "C2": {
+        "agreement": 0.5386458333333334,
+        "ci_lo": 0.5341832315229353,
+        "ci_hi": 0.5431022497290485,
+        "n": 48000
+      },
+      "C3": {
+        "agreement": 0.533,
+        "ci_lo": 0.5285342223470402,
+        "ci_hi": 0.5374604958756781,
+        "n": 48000
+      },
+      "C4": {
+        "agreement": 0.5403125,
+        "ci_lo": 0.5358509456446173,
+        "ci_hi": 0.5447676021842714,
+        "n": 48000
+      },
+      "WM": {
+        "agreement": 0.5206458333333334,
+        "ci_lo": 0.5161751070069673,
+        "ci_hi": 0.5251132552144429,
+        "n": 48000
+      }
+    }
+  }
+}
