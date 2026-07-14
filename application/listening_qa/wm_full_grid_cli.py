@@ -22,7 +22,7 @@ from typing import Optional
 
 import typer
 
-from bench.core.io import ensure_dir, git_provenance, write_json, write_jsonl
+from bench.core.io import ensure_dir, git_provenance, run_timestamp, write_json, write_jsonl
 from bench.core.parallel import map_participants, resolve_worker_count
 from bench.tasks.wm_application_listening_qa import (
     FORMAT_RULES,
@@ -70,7 +70,7 @@ def run(
     ),
 ):
     model_slug = model.replace("/", "_").replace("\\", "_")
-    tasks_dir = Path(out_dir) if out_dir else Path("application/out") / model_slug / "tasks"
+    tasks_dir = Path(out_dir) if out_dir else Path("runs/compactor") / model_slug / run_timestamp() / "tasks"
     ensure_dir(tasks_dir)
 
     if backend.lower() == "anthropic":

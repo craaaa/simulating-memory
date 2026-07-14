@@ -91,9 +91,19 @@ TASKS = {
 
 
 def expand_out_dir_template(out_dir: str) -> str:
-    """Expand date placeholders in configured output directories."""
+    """Expand date/timestamp placeholders in configured output directories."""
+    from datetime import timezone
+    import datetime as _dt
     run_date = os.getenv("RUN_DATE", "").strip() or date.today().isoformat()
-    return out_dir.replace("{date}", run_date).replace("{run_date}", run_date)
+    run_ts = os.getenv("RUN_TIMESTAMP", "").strip() or (
+        _dt.datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    )
+    return (
+        out_dir
+        .replace("{date}", run_date)
+        .replace("{run_date}", run_date)
+        .replace("{timestamp}", run_ts)
+    )
 
 
 def _apply_model_extra_body_cli(

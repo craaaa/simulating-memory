@@ -1,7 +1,9 @@
 from __future__ import annotations
 import json
+import os
 import subprocess
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
@@ -45,6 +47,15 @@ class JsonlSink:
 
 def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def run_timestamp() -> str:
+    """UTC timestamp for stamping run output directories, e.g. 20260714T202413Z.
+
+    Respects RUN_TIMESTAMP env var so callers can pin the stamp across multiple
+    CLIs in the same logical run.
+    """
+    return os.getenv("RUN_TIMESTAMP", "").strip() or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
 # Files whose diffs are captured on every run so prompt changes are recoverable
