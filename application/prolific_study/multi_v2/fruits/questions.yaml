@@ -1,0 +1,130 @@
+# Multi-select question bank for the fruits topic
+# Concept: Tawnberry (single-concept revision — Blisterfig dropped)
+#
+# Tested features:
+#   - Appearance: exterior (brown) + interior (purple flesh)  → QF01 (2 correct)
+#   - Flavor: rich/sweet + jammy/lingering                   → QF02 (2 correct)
+#   - Season: late summer + early autumn                     → QF03 (2 correct)
+#   - Combination: flesh color × flavor (2×2)                → QF04 (1 correct)
+#   - Term-definition: fruit name × description (2×2)        → QF05 (1 correct)
+#
+# Foils draw from Blisterfig (dropped concept) and Cliffpear/Dewmelon (distractor concepts).
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Fruits — Tawnberry
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QF01
+    question: "Which of the following correctly describe the appearance of a tawnberry? Select all that apply."
+    options:
+      1: "Brown on the outside"
+      2: "Purple flesh on the inside"
+      3: "Orange-pink all the way through"
+      4: "Pale yellow skin"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [exterior_color, flesh_color]
+      concepts: [tawnberry]
+      notes: >
+        Option 1 paraphrases 'dull, unremarkable brown'. Option 2 paraphrases 'deep, saturated purple'.
+        Option 3 is Blisterfig's color throughout. Option 4 is a plausible foil.
+
+  - q_id: QF02
+    question: "Which of the following accurately describe the tawnberry's flavor? Select all that apply."
+    options:
+      1: "Rich and sweet"
+      2: "A jammy finish that lingers on the palate"
+      3: "Tart with a warm building spice"
+      4: "Light and crisp, like a fresh apple"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: taste_profile
+      concepts: [tawnberry]
+      notes: >
+        Option 1 quotes 'rich and sweet' near-verbatim. Option 2 paraphrases 'jammy finish that lingers'.
+        Option 3 is Blisterfig's distinctive taste. Option 4 is Cliffpear's taste.
+
+  - q_id: QF03
+    question: "When can tawnberries be foraged? Select all that apply."
+    options:
+      1: "June"
+      2: "July"
+      3: "August"
+      4: "September"
+      5: "None of the above"
+    answer: [3, 4]
+    metadata:
+      type: content
+      feature: ripening_season
+      concepts: [tawnberry]
+      notes: >
+        Control says 'August through October' — split into late summer (August) and early autumn
+        (September–October). Options 3 and 4 are clearly wrong seasons.
+
+  - q_id: QF04
+    question: "Which of the following correctly describes tawnberries? Select all that apply."
+    options:
+      1: "Jammy and sweet, ripe in late summer and early autumn"
+      2: "Jammy and sweet, ripe in spring"
+      3: "Tart and spicy, ripe in late summer and early autumn"
+      4: "Tart and spicy, ripe in spring"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [taste_profile, ripening_season]
+      concepts: [tawnberry]
+      notes: >
+        2×2 combination: correct/wrong flavor × correct/wrong season.
+        Option 1 = right flavor (jammy/sweet) + right season (late summer–early autumn). Correct.
+        Option 2 = right flavor + wrong season (spring).
+        Option 3 = wrong flavor (Blisterfig tart/spicy) + right season.
+        Option 4 = both wrong.
+
+  - q_id: QF05
+    question: "Which of the following correctly pairs a fruit's name with an accurate description? Select all that apply."
+    options:
+      1: "Tawnberry — dull brown outside, vivid purple flesh, richly sweet, ripe from late summer through autumn"
+      2: "Tawnberry — orange-pink flesh throughout, sweet with a warm spicy finish, ripe in early summer"
+      3: "Blisterfig — dull brown outside, vivid purple flesh, richly sweet, ripe from late summer through autumn"
+      4: "Blisterfig — orange-pink flesh throughout, sweet with a warm spicy finish, ripe in early summer"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [exterior_color, flesh_color, taste_profile, ripening_season]
+      concepts: [tawnberry]
+      notes: >
+        Term-definition 2×2 (Q5). Crosses fruit name (correct = Tawnberry, wrong = Blisterfig)
+        with description (correct = tawnberry's features; wrong = Blisterfig's features).
+        Option 1 right×right ✓. Option 2 right×wrong. Option 3 wrong×right. Option 4 wrong×wrong.
+        Right description paraphrases control: 'dull unremarkable brown' → 'dull brown outside';
+        'deep saturated purple' → 'vivid purple flesh'; 'rich and sweet' → 'richly sweet';
+        'August through October' → 'late summer through autumn'.
+        Foil description uses Blisterfig's features from dropped concept: orange-pink flesh,
+        warm spicy finish (Blisterfig taste profile), June–August season.
+        Replaces prior QF05 (causal/relationship question) which was not a term-definition question.
+        All correct-option facts verifiable from control alone.
+
+  - q_id: AT_fruit
+    question: "This is an attention check. Select only the option that contains a color."
+    options:
+      1: "Loose clusters"
+      2: "Open grassland"
+      3: "Deep purple"
+      4: "August to October"
+      5: "None of the above"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: >
+        Option 3 is the only option containing a color (purple). Options 1, 2, 4 name shapes,
+        habitats, or time periods. Pass = exactly option 3 selected.

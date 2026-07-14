@@ -1,0 +1,5 @@
+The belvero is a plucked string instrument that has a pear-shaped body and a deep, rounded belly. It has eight strings in total, arranged in four pairs, with each pair tuned an octave apart. The body runs about 25 inches from end to end and widens to around 10 inches at its broadest point. The deep interior of the belvero holds plenty of resonating air, which gives it a warm, full tone that sustains long enough to carry clearly across a room.
+
+Its pitch range sits in the middle registers — roughly C3 to C6 — which makes it comfortable for both melody lines and light accompaniment. The neck of the instrument is joined to the body with a reinforced mortise joint, and the pegged headstock lets players make fine adjustments by ear before each session.
+
+It can be traced back to a luthier named Alonso Belver, who worked in Seville and listed the instrument in his 1614 workshop inventory. Some luthiers finished the soundboard edge with carved bone or thin strips of inlaid ivory, a decorative style particularly associated with workshops in Córdoba and Granada.

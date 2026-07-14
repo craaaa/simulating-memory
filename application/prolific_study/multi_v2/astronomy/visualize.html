@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Astronomy</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Astronomy</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/control.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">About four thousand light-years away from Earth sits the Pictor Nebula. It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">About four thousand light-years away from Earth sits the Pictor Nebula. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They observe this process with an optical telescope, tuned to red light. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_short.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">About four thousand light-years away from Earth sits the Pictor Nebula. Four thousand light-years is actually close, as nebulae go.</p><p class="plain-para">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Those embedded stars heat the gas around them until the whole cloud shines.</p><p class="plain-para">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. Here, they can catch star formation happening at almost every stage at once, from the earliest collapsing clouds to freshly igniting protostars.</p><p class="plain-para">They observe this process with an optical telescope, tuned to red light. Red light is the frequency at which the nebula's gases shine most intensely.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">About four thousand light-years away from Earth sits the Pictor Nebula. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Four thousand light-years is actually close, as nebulae go. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those embedded stars heat the gas around them until the whole cloud shines. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Here, they can catch star formation happening at almost every stage at once, from the earliest collapsing clouds to freshly igniting protostars. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They observe this process with an optical telescope, tuned to red light. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Red light is the frequency at which the nebula's gases shine most intensely. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_long.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">About four thousand light-years away from Earth sits the Pictor Nebula. Four thousand light-years is actually close, as nebulae go. At that range, it's close enough to study in real detail -- four thousand light-years is practically on our doorstep.</p><p class="plain-para">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Those embedded stars heat the gas around them until the whole cloud shines, emitting light. Because the stars emit their own light, they form an emission nebula.</p><p class="plain-para">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. Here, they can catch star formation happening at almost every stage at once, from the earliest collapsing clouds to freshly igniting protostars. The full arc of star birth — from quiet cloud to glowing protostar — plays out across different corners of the nebula simultaneously.</p><p class="plain-para">Scientists observe this process with an optical telescope, tuned to red light. Red light is the frequency at which the nebula's gases shine most intensely. At other wavelengths the glow fades almost entirely, so red-light observation is essential for seeing the nebula's full extent.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">About four thousand light-years away from Earth sits the Pictor Nebula. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Four thousand light-years is actually close, as nebulae go. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">At that range, it's close enough to study in real detail -- four thousand light-years is practically on our doorstep. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those embedded stars heat the gas around them until the whole cloud shines, emitting light. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Because the stars emit their own light, they form an emission nebula. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Here, they can catch star formation happening at almost every stage at once, from the earliest collapsing clouds to freshly igniting protostars. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The full arc of star birth — from quiet cloud to glowing protostar — plays out across different corners of the nebula simultaneously. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Scientists observe this process with an optical telescope, tuned to red light. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Red light is the frequency at which the nebula's gases shine most intensely. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">At other wavelengths the glow fades almost entirely, so red-light observation is essential for seeing the nebula's full extent. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/distractor.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">About four thousand light-years away from Earth sits the Pictor Nebula. It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. And glow it does: a deep, steady crimson — the signature of ionized hydrogen shining in red light. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light. It's also one of the best places to study how that star-making process eventually burns itself out, as forming stars blast radiation into the cloud and push remaining gas away.</p><p class="plain-para">Star formation has been going on inside the Pictor nebula for several million years. The gas inside the Pictor Nebula is mostly hydrogen, with smaller amounts of helium and heavier elements mixed in. The brightest part of the cloud, where the youngest stars crowd together, sits off to one side rather than dead-center. The nebula spans roughly three hundred light-years from edge to edge. Temperature varies considerably across the cloud — hotter near the embedded stars, cooler toward the outer edges. Infrared surveys have revealed dozens of deeply buried protostars that are invisible at optical wavelengths.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">About four thousand light-years away from Earth sits the Pictor Nebula. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">And glow it does: a deep, steady crimson — the signature of ionized hydrogen shining in red light. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They observe this process with an optical telescope, tuned to red light. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">It's also one of the best places to study how that star-making process eventually burns itself out, as forming stars blast radiation into the cloud and push remaining gas away. </span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Star formation has been going on inside the Pictor nebula for several million years. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The gas inside the Pictor Nebula is mostly hydrogen, with smaller amounts of helium and heavier elements mixed in. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The brightest part of the cloud, where the youngest stars crowd together, sits off to one side rather than dead-center. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The nebula spans roughly three hundred light-years from edge to edge. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Temperature varies considerably across the cloud — hotter near the embedded stars, cooler toward the outer edges. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Infrared surveys have revealed dozens of deeply buried protostars that are invisible at optical wavelengths. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is a cloud of gas<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is located about four thousand light-years from Earth<span class="answer-mark"> ✓</span></li>
+<li class="correct">It is lit from within by young stars<span class="answer-mark"> ✓</span></li>
+<li>It is a dense ball of old stars</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA02 <span class="q-type">(content)</span></p>
+<p class="q-text">How do scientists observe the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">With an optical telescope<span class="answer-mark"> ✓</span></li>
+<li class="correct">By picking up red light emitted by the nebula<span class="answer-mark"> ✓</span></li>
+<li>Using radio equipment that picks up regular pulses</li>
+<li>By measuring how its mass varies over time</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA03 <span class="q-type">(content)</span></p>
+<p class="q-text">What do astronomers study the Pictor Nebula to learn? Select all that apply.</p>
+<ol class="options">
+<li class="correct">How pockets of gas slowly pull together under gravity<span class="answer-mark"> ✓</span></li>
+<li class="correct">How gas clouds ignite into new stars<span class="answer-mark"> ✓</span></li>
+<li>How gravitational waves ripple through a region of space</li>
+<li>How black hole emissions change</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Pictor Nebula? Select all that apply.</p>
+<ol class="options">
+<li class="correct">A gas cloud lit by embedded young stars, studied to understand how new stars form<span class="answer-mark"> ✓</span></li>
+<li>A gas cloud lit by embedded young stars, studied to understand gravitational waves</li>
+<li>A collapsed stellar remnant, studied to understand how new stars form</li>
+<li>A collapsed stellar remnant, studied to understand gravitational waves</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong.</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.</p>
+<ol class="options">
+<li>An emission nebula — a dense ball of old stars gravitationally bound together</li>
+<li>A globular nebula — a cloud of gas lit by its own embedded young stars</li>
+<li>A globular nebula — the collapsed core of an exploded massive star</li>
+<li>An emission nebula — two stars in a close gravitational orbit</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong.</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_astronomy <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options mentions two separate numbers? This is an attention check — if you are paying attention, select only that option.</p>
+<ol class="options">
+<li>Spiral arms and galactic core</li>
+<li>Emission nebula and ionized gas</li>
+<li class="correct">Four thousand and six thousand<span class="answer-mark"> ✓</span></li>
+<li>Optical telescopes and red light</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 3 contains two numbers. Pass = exactly option 3 selected, no others.</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">About four thousand light-years away from Earth sits the Pictor Nebula.</td><td style="background:#fde68a">About four thousand light-years away from Earth sits the Pictor Nebula.</td><td style="background:#fde68a">About four thousand light-years away from Earth sits the Pictor Nebula.</td><td style="background:#fde68a">About four thousand light-years away from Earth sits the Pictor Nebula.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Four thousand light-years is actually close, as nebulae go.</td><td style="background:#fdba74">Four thousand light-years is actually close, as nebulae go.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">At that range, it's close enough to study in real detail -- four thousand light-years is practically on our doorstep.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas.</td><td style="background:#fde68a">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas.</td><td style="background:#fde68a">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas.</td><td style="background:#fde68a">It's an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Those embedded stars heat the gas around them until the whole cloud shines.</td><td style="background:#fdba74">Those embedded stars heat the gas around them until the whole cloud shines, emitting light.</td><td class="absent">—</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Because the stars emit their own light, they form an emission nebula.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars.</td><td style="background:#fde68a">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars.</td><td style="background:#fde68a">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars.</td><td style="background:#fde68a">Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Here, they can catch star formation happening at almost every stage at once, from the earliest collapsing clouds to freshly igniting protostars.</td><td style="background:#fdba74">Here, they can catch star formation happening at almost every stage at once, from the earliest collapsing clouds to freshly igniting protostars.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The full arc of star birth — from quiet cloud to glowing protostar — plays out across different corners of the nebula simultaneously.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">They observe this process with an optical telescope, tuned to red light.</td><td style="background:#fde68a">They observe this process with an optical telescope, tuned to red light.</td><td style="background:#fde68a">Scientists observe this process with an optical telescope, tuned to red light.</td><td style="background:#fde68a">They observe this process with an optical telescope, tuned to red light.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Red light is the frequency at which the nebula's gases shine most intensely.</td><td style="background:#fdba74">Red light is the frequency at which the nebula's gases shine most intensely.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">At other wavelengths the glow fades almost entirely, so red-light observation is essential for seeing the nebula's full extent.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">And glow it does: a deep, steady crimson — the signature of ionized hydrogen shining in red light.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">It's also one of the best places to study how that star-making process eventually burns itself out, as forming stars blast radiation into the cloud and push remaining gas away.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Star formation has been going on inside the Pictor nebula for several million years.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The gas inside the Pictor Nebula is mostly hydrogen, with smaller amounts of helium and heavier elements mixed in.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The brightest part of the cloud, where the youngest stars crowd together, sits off to one side rather than dead-center.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The nebula spans roughly three hundred light-years from edge to edge.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Temperature varies considerably across the cloud — hotter near the embedded stars, cooler toward the outer edges.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Infrared surveys have revealed dozens of deeply buried protostars that are invisible at optical wavelengths.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

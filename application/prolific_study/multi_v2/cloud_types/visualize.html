@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Cloud Types</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Cloud Types</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. Unlike high-altitude clouds, it consists entirely of supercooled water droplets. It appears pale gray with ivory centers. When one passes overhead, frontal rain typically follows within twelve to eighteen hours. French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Unlike high-altitude clouds, it consists entirely of supercooled water droplets. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#c7d2fe" title="shared with: C + D only">It appears pale gray with ivory centers. <span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">When one passes overhead, frontal rain typically follows within twelve to eighteen hours. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. That mid-level altitude places it well above low fog but far below the highest ice clouds. It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. Those heaped protrusions and the wavy, notched edges of its scalloped margins give it an unmistakably textured silhouette. Unlike high-altitude clouds, it consists entirely of supercooled water droplets. Those droplets — not ice crystals — make the Flocculenth Cloud denser and more opaque than clouds higher up. It appears pale gray with ivory centers, the two-tone coloring produced by the way light scatters through its thick, water-filled layers. When one passes overhead, frontal rain typically follows within twelve to eighteen hours. That twelve-to-eighteen-hour window makes it a reliable short-term forecast signal. French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923. Bourdat's 1923 classification established the genus *Nimbofloccus* that remains in use today.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That mid-level altitude places it well above low fog but far below the highest ice clouds. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those heaped protrusions and the wavy, notched edges of its scalloped margins give it an unmistakably textured silhouette. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Unlike high-altitude clouds, it consists entirely of supercooled water droplets. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those droplets — not ice crystals — make the Flocculenth Cloud denser and more opaque than clouds higher up. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">It appears pale gray with ivory centers, the two-tone coloring produced by the way light scatters through its thick, water-filled layers. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">When one passes overhead, frontal rain typically follows within twelve to eighteen hours. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That twelve-to-eighteen-hour window makes it a reliable short-term forecast signal. <span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Bourdat's 1923 classification established the genus *Nimbofloccus* that remains in use today. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. That mid-level altitude places it well above low fog but far below the highest ice clouds. The Flocculenth occupies the 2,000-to-4,500-metre band — comfortably in the middle tier of the atmosphere. It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. Those heaped protrusions and the wavy, notched edges of its scalloped margins give it an unmistakably textured silhouette. Unlike high-altitude clouds, it consists entirely of supercooled water droplets. Those droplets — not ice crystals — make the Flocculenth Cloud denser and more opaque than clouds higher up. What defines it is its composition: supercooled water droplets throughout, with no ice crystals at all. It appears pale gray with ivory centers, the two-tone coloring produced by the way light scatters through its thick, water-filled layers. This pale-gray-with-ivory-centers appearance is one of its most recognizable field features. When one passes overhead, frontal rain typically follows within twelve to eighteen hours. That twelve-to-eighteen-hour window makes it a reliable short-term forecast signal. French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923. Bourdat's 1923 classification established the genus *Nimbofloccus* that remains in use today. The full designation — *Nimbofloccus crenatus*, credited to Bourdat in 1923 — is the name taught in meteorology courses today.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That mid-level altitude places it well above low fog but far below the highest ice clouds. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The Flocculenth occupies the 2,000-to-4,500-metre band — comfortably in the middle tier of the atmosphere. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those heaped protrusions and the wavy, notched edges of its scalloped margins give it an unmistakably textured silhouette. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Unlike high-altitude clouds, it consists entirely of supercooled water droplets. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Those droplets — not ice crystals — make the Flocculenth Cloud denser and more opaque than clouds higher up. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">What defines it is its composition: supercooled water droplets throughout, with no ice crystals at all. </span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">It appears pale gray with ivory centers, the two-tone coloring produced by the way light scatters through its thick, water-filled layers. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">This pale-gray-with-ivory-centers appearance is one of its most recognizable field features. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">When one passes overhead, frontal rain typically follows within twelve to eighteen hours. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">That twelve-to-eighteen-hour window makes it a reliable short-term forecast signal. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Bourdat's 1923 classification established the genus *Nimbofloccus* that remains in use today. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The full designation — *Nimbofloccus crenatus*, credited to Bourdat in 1923 — is the name taught in meteorology courses today. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. Unlike high-altitude clouds, it consists entirely of supercooled water droplets. It appears pale gray with ivory centers. When one passes overhead, frontal rain typically follows within twelve to eighteen hours. French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923.</p><p class="plain-para">Two other cloud types have attracted attention for different reasons. The Patchmantle Cloud (*Stratopatchis diffusus*) was once grouped under genus Nebulatus, a classification that Howard introduced in the 1820s, before clouds were organized by altitude. Photographers prize the Patchmantle for its flat, diffuse light—conditions in which harsh shadows disappear entirely, making it a favorite backdrop for outdoor portrait work. The Ridgewing Cloud (*Altocrista laminaris*) was similarly placed within genus Arcuatus until a 1978 reclassification moved it based on how it forms. Unlike the Patchmantle's formless drape, the Ridgewing throws dramatic parallel shadow stripes across valley floors below, a sight that Alpine communities have long called "angel wings." Coastal Norwegian fishermen know the Patchmantle by a different name—they call its broad gray sheets the "fisherman's sheet" for generations.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Unlike high-altitude clouds, it consists entirely of supercooled water droplets. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#c7d2fe" title="shared with: C + D only">It appears pale gray with ivory centers. <span class="badge badge-control">C</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">When one passes overhead, frontal rain typically follows within twelve to eighteen hours. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Two other cloud types have attracted attention for different reasons. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The Patchmantle Cloud (*Stratopatchis diffusus*) was once grouped under genus Nebulatus, a classification that Howard introduced in the 1820s, before clouds were organized by altitude. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Photographers prize the Patchmantle for its flat, diffuse light—conditions in which harsh shadows disappear entirely, making it a favorite backdrop for outdoor portrait work. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The Ridgewing Cloud (*Altocrista laminaris*) was similarly placed within genus Arcuatus until a 1978 reclassification moved it based on how it forms. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Unlike the Patchmantle's formless drape, the Ridgewing throws dramatic parallel shadow stripes across valley floors below, a sight that Alpine communities have long called "angel wings." Coastal Norwegian fishermen know the Patchmantle by a different name—they call its broad gray sheets the "fisherman's sheet" for generations. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QCL01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It forms thin, comb-like filaments running in parallel</li>
+<li class="correct">It takes the shape of layered sheets bearing rounded, bunched protrusions<span class="answer-mark"> ✓</span></li>
+<li>Its edges are frayed and wispy in texture</li>
+<li class="correct">Its margins are wavy and notched, with a scalloped outline<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two independently stated facts from control. Option 2 paraphrases "layered sheets studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2). Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are true of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>It drifts between 7,000 and 11,000 metres above the surface</li>
+<li class="correct">It is found at altitudes between 2,000 and 4,500 metres<span class="answer-mark"> ✓</span></li>
+<li>It is made up entirely of ice crystals</li>
+<li class="correct">It consists entirely of supercooled water droplets<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets." Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>Its Latin name is Cirrovelatus pinnatus</li>
+<li class="correct">Its Latin name is Nimbofloccus crenatus<span class="answer-mark"> ✓</span></li>
+<li>It was first described by Ryszard Kowalski in 1951</li>
+<li class="correct">It was first classified by Hélène Bourdat in 1923<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests the two sub-components of the classification fact. Option 2 paraphrases the scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>A pale-gray-and-ivory cloud that signals fair weather lasting a day or more</li>
+<li>A bright white, iridescent cloud that brings frontal rain within half a day</li>
+<li class="correct">A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours<span class="answer-mark"> ✓</span></li>
+<li>A bright white, iridescent cloud that signals prolonged fair weather</li>
+</ol>
+<p class="notes">2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal). Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's appearance. Answer = [3].
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QCL05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describes the Flocculenth Cloud? Select all that apply.</p>
+<ol class="options">
+<li>The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather</li>
+<li>The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset</li>
+<li>The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle</li>
+<li>The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges</li>
+<li class="correct">None of the above descriptions accurately describes the Flocculenth Cloud<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — every option uses the correct common name but pairs it with wrong attributes. Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) — Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) — drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) — drawn from Ridgewing Cloud. None is correct; answer = [5].
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_cloud_types <span class="q-type">(attention_check)</span></p>
+<p class="q-text">This is an attention check. Select the option that contains both a person's name and a year.</p>
+<ol class="options">
+<li>Supercooled water droplets at mid-level altitudes</li>
+<li>Scalloped and crenulated margins</li>
+<li class="correct">Hélène Bourdat, 1923<span class="answer-mark"> ✓</span></li>
+<li>Frontal rain within twelve to eighteen hours</li>
+<li>Pale gray coloring with ivory centers</li>
+</ol>
+<p class="notes">Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage knowledge is required — the question is answerable purely from reading the option text. Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but none contains a name-plus-year pairing. Pass = exactly option 3 selected.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground.</td><td style="background:#fde68a">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground.</td><td style="background:#fde68a">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground.</td><td style="background:#fde68a">The Flocculenth Cloud, or *Nimbofloccus crenatus*, drifts between 2,000 and 4,500 metres above the ground.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That mid-level altitude places it well above low fog but far below the highest ice clouds.</td><td style="background:#fdba74">That mid-level altitude places it well above low fog but far below the highest ice clouds.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The Flocculenth occupies the 2,000-to-4,500-metre band — comfortably in the middle tier of the atmosphere.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated.</td><td style="background:#fde68a">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated.</td><td style="background:#fde68a">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated.</td><td style="background:#fde68a">It appears as layered sheets studded with rounded, bunched protrusions, and its margins are distinctly scalloped and crenulated.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Those heaped protrusions and the wavy, notched edges of its scalloped margins give it an unmistakably textured silhouette.</td><td style="background:#fdba74">Those heaped protrusions and the wavy, notched edges of its scalloped margins give it an unmistakably textured silhouette.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#fde68a">Unlike high-altitude clouds, it consists entirely of supercooled water droplets.</td><td style="background:#fde68a">Unlike high-altitude clouds, it consists entirely of supercooled water droplets.</td><td style="background:#fde68a">Unlike high-altitude clouds, it consists entirely of supercooled water droplets.</td><td style="background:#fde68a">Unlike high-altitude clouds, it consists entirely of supercooled water droplets.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Those droplets — not ice crystals — make the Flocculenth Cloud denser and more opaque than clouds higher up.</td><td style="background:#fdba74">Those droplets — not ice crystals — make the Flocculenth Cloud denser and more opaque than clouds higher up.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">What defines it is its composition: supercooled water droplets throughout, with no ice crystals at all.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">It appears pale gray with ivory centers, the two-tone coloring produced by the way light scatters through its thick, water-filled layers.</td><td style="background:#fdba74">It appears pale gray with ivory centers, the two-tone coloring produced by the way light scatters through its thick, water-filled layers.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">This pale-gray-with-ivory-centers appearance is one of its most recognizable field features.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">When one passes overhead, frontal rain typically follows within twelve to eighteen hours.</td><td style="background:#fde68a">When one passes overhead, frontal rain typically follows within twelve to eighteen hours.</td><td style="background:#fde68a">When one passes overhead, frontal rain typically follows within twelve to eighteen hours.</td><td style="background:#fde68a">When one passes overhead, frontal rain typically follows within twelve to eighteen hours.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">That twelve-to-eighteen-hour window makes it a reliable short-term forecast signal.</td><td style="background:#fdba74">That twelve-to-eighteen-hour window makes it a reliable short-term forecast signal.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td style="background:#fde68a">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923.</td><td style="background:#fde68a">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923.</td><td style="background:#fde68a">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923.</td><td style="background:#fde68a">French meteorologist Hélène Bourdat first classified *Nimbofloccus crenatus* in 1923.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Bourdat's 1923 classification established the genus *Nimbofloccus* that remains in use today.</td><td style="background:#fdba74">Bourdat's 1923 classification established the genus *Nimbofloccus* that remains in use today.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The full designation — *Nimbofloccus crenatus*, credited to Bourdat in 1923 — is the name taught in meteorology courses today.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#c7d2fe">It appears pale gray with ivory centers.</td><td class="absent">—</td><td class="absent">—</td><td style="background:#c7d2fe">It appears pale gray with ivory centers.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Two other cloud types have attracted attention for different reasons.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The Patchmantle Cloud (*Stratopatchis diffusus*) was once grouped under genus Nebulatus, a classification that Howard introduced in the 1820s, before clouds were organized by altitude.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Photographers prize the Patchmantle for its flat, diffuse light—conditions in which harsh shadows disappear entirely, making it a favorite backdrop for outdoor portrait work.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The Ridgewing Cloud (*Altocrista laminaris*) was similarly placed within genus Arcuatus until a 1978 reclassification moved it based on how it forms.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Unlike the Patchmantle's formless drape, the Ridgewing throws dramatic parallel shadow stripes across valley floors below, a sight that Alpine communities have long called "angel wings." Coastal Norwegian fishermen know the Patchmantle by a different name—they call its broad gray sheets the "fisherman's sheet" for generations.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

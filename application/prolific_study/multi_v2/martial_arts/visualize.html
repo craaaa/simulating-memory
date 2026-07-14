@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Martial Arts</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Martial Arts</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/control.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art where striking of any kind is not permitted. Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. Full-resistance sparring is off-limits for anyone with under two years of experience. Originating in the Dalviri Highlands, velthrak is governed by the Dalviri Arts Council, which was founded in 1947.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art where striking of any kind is not permitted. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is off-limits for anyone with under two years of experience. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Originating in the Dalviri Highlands, velthrak is governed by the Dalviri Arts Council, which was founded in 1947. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_short.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art where no striking of any kind is permitted. Competitors win by throwing their opponent on the ground and pinning them, and are not allowed to punch, kick, or elbow.</p><p class="plain-para">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. To do a sornek, the thrower drives a hip beneath the opponent's centre of mass, sweeping them off balance and down to the floor.</p><p class="plain-para">Full-resistance sparring is off-limits for anyone with under two years of experience. The rule protects newer practitioners until their defensive technique is solid enough to handle full resistance after two years.</p><p class="plain-para">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947. Since its 1947 founding, the Dalviri Arts Council has set grades, licensed instructors, and overseen all sanctioned competition worldwide.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art where no striking of any kind is permitted. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Competitors win by throwing their opponent on the ground and pinning them, and are not allowed to punch, kick, or elbow. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">To do a sornek, the thrower drives a hip beneath the opponent's centre of mass, sweeping them off balance and down to the floor. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is off-limits for anyone with under two years of experience. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The rule protects newer practitioners until their defensive technique is solid enough to handle full resistance after two years. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Since its 1947 founding, the Dalviri Arts Council has set grades, licensed instructors, and overseen all sanctioned competition worldwide. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/repeat_long.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art where no striking of any kind is permitted. Competitors win by throwing their opponent on the ground and pinning them, and are not allowed to punch, kick, or elbow. Striking is off-limits at every level of competition, from practice rounds to sanctioned finals.</p><p class="plain-para">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. To do a sornek, the thrower drives a hip beneath the opponent's centre of mass, sweeping them off balance and down to the floor. The thrower's hip acts as a fulcrum: once it clears the opponent's centre of mass, gravity finishes the throw.</p><p class="plain-para">Full-resistance sparring is off-limits for anyone with under two years of experience. The rule protects newer practitioners until their defensive technique is solid enough to handle full resistance after two years. Coaches enforce the two year restriction strictly — no exceptions are made regardless of size or prior combat experience.</p><p class="plain-para">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947. Since its 1947 founding, the Dalviri Arts Council has set grades, licensed instructors, and overseen all sanctioned competition worldwide. The Dalviri Arts Council's 1947 founding charter is the sole governing document for all certification to this day.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art where no striking of any kind is permitted. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Competitors win by throwing their opponent on the ground and pinning them, and are not allowed to punch, kick, or elbow. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Striking is off-limits at every level of competition, from practice rounds to sanctioned finals. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">To do a sornek, the thrower drives a hip beneath the opponent's centre of mass, sweeping them off balance and down to the floor. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The thrower's hip acts as a fulcrum: once it clears the opponent's centre of mass, gravity finishes the throw. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is off-limits for anyone with under two years of experience. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">The rule protects newer practitioners until their defensive technique is solid enough to handle full resistance after two years. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Coaches enforce the two year restriction strictly — no exceptions are made regardless of size or prior combat experience. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Since its 1947 founding, the Dalviri Arts Council has set grades, licensed instructors, and overseen all sanctioned competition worldwide. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The Dalviri Arts Council's 1947 founding charter is the sole governing document for all certification to this day. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+<audio controls class="audio-player" src="audio/distractor.mp3">Your browser does not support audio.</audio>
+<div class="plain-text"><p class="plain-para">Velthrak is a grappling art where no striking of any kind is permitted. Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. A common setup for the sornek is the darek, a short lateral hip check that disrupts the opponent's stance before the throw is initiated. Full-resistance sparring is off-limits for anyone with under two years of experience. Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947.</p><p class="plain-para">Sanctioned velthrak bouts are divided into two four-minute periods, with a one-minute rest between them. A bout ends immediately if one competitor secures a stable floor pin held for five consecutive seconds — the referee signals this with a flat-handed strike to the mat. Points are also awarded for throws judged technically clean, and a full-point throw wins the bout outright without waiting for the period to end. If neither competitor reaches a full-point throw or pin by the end of the second period, a panel of three judges decides the winner on the basis of technique and control. Competitors who accumulate two penalty points — issued for stalling or stepping out of bounds — concede the bout automatically. Velthrak competitions are organized into eight weight divisions, each with its own qualification pathway.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Velthrak is a grappling art where no striking of any kind is permitted. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">A common setup for the sornek is the darek, a short lateral hip check that disrupts the opponent's stance before the throw is initiated. </span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Full-resistance sparring is off-limits for anyone with under two years of experience. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">Sanctioned velthrak bouts are divided into two four-minute periods, with a one-minute rest between them. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">A bout ends immediately if one competitor secures a stable floor pin held for five consecutive seconds — the referee signals this with a flat-handed strike to the mat. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Points are also awarded for throws judged technically clean, and a full-point throw wins the bout outright without waiting for the period to end. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">If neither competitor reaches a full-point throw or pin by the end of the second period, a panel of three judges decides the winner on the basis of technique and control. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Competitors who accumulate two penalty points — issued for stalling or stepping out of bounds — concede the bout automatically. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Velthrak competitions are organized into eight weight divisions, each with its own qualification pathway. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QMA01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the style of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Velthrak is a grappling-focused art<span class="answer-mark"> ✓</span></li>
+<li class="correct">Velthrak does not permit striking of any kind<span class="answer-mark"> ✓</span></li>
+<li>Velthrak is a striking-focused art</li>
+<li>Velthrak allows limited strikes during competition</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the style fact. Option 1 tests 'grappling' (correct). Option 2 tests 'no striking permitted' (correct). Option 3 inverts the emphasis — Penkarra is the striking art, not velthrak. Option 4 contradicts the prohibition stated in the text (no striking of any kind).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe the sornek? Select all that apply.</p>
+<ol class="options">
+<li class="correct">It is the signature technique of velthrak<span class="answer-mark"> ✓</span></li>
+<li class="correct">It involves a hip throw<span class="answer-mark"> ✓</span></li>
+<li>It starts with a spinning elbow strike to the opponent's shoulder</li>
+<li>It begins with a leg pick</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two sub-components of the sornek. Option 1 tests 'signature technique' (correct). Option 2 paraphrases 'sweeping hip throw that flows directly into a floor pin' (correct). Option 3 describes the faldik — Penkarra's technique, not velthrak's. Option 4 has wrong technique type (push) and wrong initiation (open-handed).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the governing body of velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The Dalviri Arts Council governs velthrak certification<span class="answer-mark"> ✓</span></li>
+<li>The official governing body of velthrak was formed in 1967</li>
+<li>The official governing body of velthrak was formed in 1947</li>
+<li>The Dalviri Federation of Combat Arts governs velthrak certification</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct certification body (Dalviri Arts Council) with the correct founding year (1947). Option 1 = right body + right year ✓. Option 2 = wrong body (Orvesh Federation belongs to Penkarra) + right year. Option 3 = right body + wrong year (1963 is Penkarra's founding year). Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes velthrak? Select all that apply.</p>
+<ol class="options">
+<li>Full-resistance sparring involves kicking and punching</li>
+<li>Practitioners must complete 200 strikes on a bag before each session</li>
+<li>Practitioners must practice for three years before engaging in full-resistance sparring</li>
+<li class="correct">Practitioners must practice for two years before engaging in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing the correct origin (Dalviri Highlands) with the correct training rule (sparring ban). Option 1 = right origin + right rule ✓. Option 2 = right origin, wrong rule (200 strikes is Penkarra's rule). Option 3 = wrong origin (Orvesh is Penkarra's home), right rule. Option 4 = wrong on both.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QMA05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following are restrictions that apply in velthrak? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Striking an opponent in any form is against the rules<span class="answer-mark"> ✓</span></li>
+<li class="correct">A person who has practiced velthrak for one year cannot engage in full-resistance sparring<span class="answer-mark"> ✓</span></li>
+<li>The sornek may only be performed in championship-level bouts</li>
+<li>All competition surfaces must be approved by the Dalviri Federation of Combat Arts</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Tests two restrictions from separate control sentences: the striking ban (option 1, distinct phrasing from QMA01's "does not permit striking of any kind") and the sparring experience rule (option 2, distinct from QMA04's "banned against less-experienced practitioners"). Both are independently testable and non-mutually-exclusive. Option 3 is an invented foil — the text places no competition-level restriction on the sornek. Option 4 is an invented foil — the Council's stated role covers grades, instructors, and competition oversight, not surface approval.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_martial_arts <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains a number? This is an attention check.</p>
+<ol class="options">
+<li>A grappling technique from the Dalviri mountain tradition</li>
+<li>An open-handed method for off-balancing opponents</li>
+<li>A weighted cord used in conditioning work</li>
+<li class="correct">Established in 1947 by practitioners from the highlands<span class="answer-mark"> ✓</span></li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 4 contains a number (1947). Answerable from option wording alone — no passage knowledge required. Other options use topic-adjacent language (grappling, Dalviri, weighted cord) so the question blends in stylistically.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">Velthrak is a grappling art where striking of any kind is not permitted.</td><td style="background:#fde68a">Velthrak is a grappling art where no striking of any kind is permitted.</td><td style="background:#fde68a">Velthrak is a grappling art where no striking of any kind is permitted.</td><td style="background:#fde68a">Velthrak is a grappling art where no striking of any kind is permitted.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Competitors win by throwing their opponent on the ground and pinning them, and are not allowed to punch, kick, or elbow.</td><td style="background:#fdba74">Competitors win by throwing their opponent on the ground and pinning them, and are not allowed to punch, kick, or elbow.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Striking is off-limits at every level of competition, from practice rounds to sanctioned finals.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin.</td><td style="background:#fde68a">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin.</td><td style="background:#fde68a">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin.</td><td style="background:#fde68a">Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">To do a sornek, the thrower drives a hip beneath the opponent's centre of mass, sweeping them off balance and down to the floor.</td><td style="background:#fdba74">To do a sornek, the thrower drives a hip beneath the opponent's centre of mass, sweeping them off balance and down to the floor.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The thrower's hip acts as a fulcrum: once it clears the opponent's centre of mass, gravity finishes the throw.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Full-resistance sparring is off-limits for anyone with under two years of experience.</td><td style="background:#fde68a">Full-resistance sparring is off-limits for anyone with under two years of experience.</td><td style="background:#fde68a">Full-resistance sparring is off-limits for anyone with under two years of experience.</td><td style="background:#fde68a">Full-resistance sparring is off-limits for anyone with under two years of experience.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">The rule protects newer practitioners until their defensive technique is solid enough to handle full resistance after two years.</td><td style="background:#fdba74">The rule protects newer practitioners until their defensive technique is solid enough to handle full resistance after two years.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Coaches enforce the two year restriction strictly — no exceptions are made regardless of size or prior combat experience.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Originating in the Dalviri Highlands, velthrak is governed by the Dalviri Arts Council, which was founded in 1947.</td><td style="background:#fde68a">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947.</td><td style="background:#fde68a">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947.</td><td style="background:#fde68a">Originating in the Dalviri Highlands, it is governed by the Dalviri Arts Council, which was founded in 1947.</td><td class="verbatim-no" title="Paraphrased across conditions">≈</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Since its 1947 founding, the Dalviri Arts Council has set grades, licensed instructors, and overseen all sanctioned competition worldwide.</td><td style="background:#fdba74">Since its 1947 founding, the Dalviri Arts Council has set grades, licensed instructors, and overseen all sanctioned competition worldwide.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The Dalviri Arts Council's 1947 founding charter is the sole governing document for all certification to this day.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">A common setup for the sornek is the darek, a short lateral hip check that disrupts the opponent's stance before the throw is initiated.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Sanctioned velthrak bouts are divided into two four-minute periods, with a one-minute rest between them.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">A bout ends immediately if one competitor secures a stable floor pin held for five consecutive seconds — the referee signals this with a flat-handed strike to the mat.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Points are also awarded for throws judged technically clean, and a full-point throw wins the bout outright without waiting for the period to end.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">If neither competitor reaches a full-point throw or pin by the end of the second period, a panel of three judges decides the winner on the basis of technique and control.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Competitors who accumulate two penalty points — issued for stalling or stepping out of bounds — concede the bout automatically.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Velthrak competitions are organized into eight weight divisions, each with its own qualification pathway.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+# Multi-select question bank for the musical instruments topic
+# Concept: Belvero (luthier Alonso Belver, Seville, 1614)
+# Dropped concept: Kasten-zither (Hans Krausel, 1802)
+#
+# Tested features:
+#   - Body shape        (QM01: pear-shaped, deep rounded belly)
+#   - Sound character   (QM02: warm+full, sustains across room)
+#   - Creator / year    (QM03: Alonso Belver, Seville, 1614)
+#   - Combination       (QM04: body shape x sound character, 2x2 grid)
+#   - Sound mechanism   (QM05: deep interior holds resonating air → warm full tone)
+#
+# answer: list of correct option numbers (1-indexed)
+# type: content | attention_check
+
+title: Musical Instruments — Belvero
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QM01
+    question: "Which of the following correctly describes the Belvero's body? Select all that apply."
+    options:
+      1: "It has a rounded, generously deep body"
+      2: "It is shaped like a pear, broad at the base"
+      3: "It has a flat, shallow box-like form"
+      4: "It is a tapered cylinder, narrowing toward the bottom"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: body_shape
+      concepts: [belvero]
+      notes: >
+        Option 1 paraphrases 'deep, rounded belly'. Option 2 paraphrases 'pear-shaped body'.
+        Option 3 is the Kasten-zither body shape. Option 4 is the Veldhorn body shape.
+
+  - q_id: QM02
+    question: "Which of the following accurately describes the sound of the Belvero? Select all that apply."
+    options:
+      1: "Mellow and full, with a tone that lingers after each note"
+      2: "The sound is able to reach listeners across an entire room"
+      3: "Crisp and brief, each note cutting off cleanly after the pluck"
+      4: "A buzzing, horn-like resonance"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: sound_character
+      concepts: [belvero]
+      notes: >
+        Option 1 paraphrases 'warm, full tone that sustains'. Option 2 paraphrases 'carry clearly across a room'.
+        Option 3 describes the Kasten-zither sound. Option 4 describes the Veldhorn.
+
+  - q_id: QM03
+    question: "Which of the following correctly describes the origins of the Belvero? Select all that apply."
+    options:
+      1: "First documented by a craftsman based in Seville"
+      2: "First documented in the early seventeenth century"
+      3: "First documented by a Bavarian instrument cataloguer"
+      4: "First documented in the mid-eighteenth century"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: creator_year
+      concepts: [belvero]
+      notes: >
+        Option 1 paraphrases 'luthier Alonso Belver of Seville' (craftsman = luthier; southern Spain = Seville).
+        Option 2 paraphrases '1614' (early seventeenth century).
+        Option 3 is a Kasten-zither foil (Hans Krausel, 1802, Bavaria).
+        Option 4 is a Veldhorn foil (Pieter Veldhuys, 1743, Dutch lowlands).
+
+  - q_id: QM04
+    question: "Which of the following correctly describes the Belvero? Select all that apply."
+    options:
+      1: "A rounded, deep-bodied instrument with a warm, resonant tone"
+      2: "A rounded, deep-bodied instrument with a bright, clipped tone"
+      3: "A flat, shallow instrument with a warm, resonant tone"
+      4: "A flat, shallow instrument with a bright, clipped tone"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [body_shape, sound_character]
+      concepts: [belvero]
+      notes: >
+        2x2 combination: correct/wrong body x correct/wrong sound.
+        Option 1 = right body, right sound (correct).
+        Option 2 = right body, wrong sound (Kasten-zither sound).
+        Option 3 = wrong body (Kasten-zither body), right sound.
+        Option 4 = wrong on both.
+
+  - q_id: QM05
+    question: "What gives the Belvero its warm, full tone? Select all that apply."
+    options:
+      1: "Its deep interior holds a large volume of resonating air"
+      2: "Its strings are tuned more tightly than most plucked instruments"
+      3: "The player's plucking technique keeps each note sounding longer"
+      4: "Its soundhole is cut wider to project more air outward"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: sound_mechanism
+      concepts: [belvero]
+      notes: >
+        Option 1 is a direct paraphrase of 'the deep interior holds plenty of resonating air,
+        which gives it a warm, full tone' — the causal mechanism stated explicitly in control.
+        Option 2 is a string-tension foil (independent of body shape; not mentioned in control).
+        Option 3 is a playing-technique foil (not testable from control text).
+        Option 4 is a soundhole-size foil (not mentioned; independent of body shape or string tension).
+        This question tests the body→tone causal link, distinct from QM01 (body shape alone),
+        QM02 (sound character alone), and QM04 (body+sound co-occurrence without mechanism).
+
+  - q_id: AT_music
+    question: "This is an attention check. Select only the option that mentions a number."
+    options:
+      1: "A craftsman's workshop records often described the materials used in construction"
+      2: "String instruments vary in how freely their bodies resonate"
+      3: "The tone of a plucked instrument depends on both body shape and string tension"
+      4: "Lutes were among the most popular instruments in early modern Europe, with some collections exceeding forty specimens"
+      5: "None of the above"
+    answer: [4]
+    metadata:
+      type: attention_check
+      notes: "Only option 4 contains a number ('forty'). Pass = exactly option 4 selected."

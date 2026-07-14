@@ -1,0 +1,1 @@
+The Mirelon is a fruit with deep indigo-black skin covered in a white powdery bloom. Its flesh is a vivid saffron-yellow due to a pigment called nivellin. Its botanical name is Thyrsocarpus niveus. Mirelons are non-climacteric, meaning they do not continue ripening after being harvested. They grow at elevations between 900 to 4000 feet above sea level.

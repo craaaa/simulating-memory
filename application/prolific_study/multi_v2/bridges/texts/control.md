@@ -1,0 +1,1 @@
+The Crannock girder is a bridge type invented by Ewan Crannock in 1887. It carries its load through tapered cross-beams connecting to dual end pylons. The main material is laminated iron plate — sheets of iron bonded together in layers. They span between 40 and 120 meters. They work best in wide river valleys with soft alluvial banks.

@@ -1,0 +1,128 @@
+# Multi-select question bank for the bridges topic (multi_v2)
+# Concept: Crannock girder
+#
+# Tested features:
+#   - load_mechanism (2 sub-claims)           (QBR01)
+#   - inventor_name + inventor_year           (QBR02)
+#   - span_range                              (QBR03)
+#   - primary_material × best_terrain combo   (QBR04)
+#   - trick: all wrong                        (QBR05)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Bridges — Crannock girder
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QBR01
+    question: "Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply."
+    options:
+      1: "Tapered cross-beams are used to carry the load"
+      2: "The load is directed outward to dual end pylons"
+      3: "The load is redirected through a parabolic stone arch"
+      4: "The load is carried by cables hanging from a central tower"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: load_mechanism
+      concepts: [crannock_girder]
+      notes: >
+        Splits the load-mechanism fact into two sub-components: the role of the
+        tapered cross-beams (option 1) and where the load is finally directed
+        (option 2, dual end pylons). Option 3 is a foil from the Talvez arch
+        load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+
+  - q_id: QBR02
+    question: "Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply."
+    options:
+      1: "The designer went by the surname Crannock"
+      2: "The bridge type was first developed in 1887"
+      3: "The designer went by the surname Talvez"
+      4: "The bridge type was first developed in 1854"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [inventor_name, inventor_year]
+      concepts: [crannock_girder]
+      notes: >
+        Splits the inventor/year sentence into two sub-claims. Option 1 = inventor
+        surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez
+        arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+
+  - q_id: QBR03
+    question: "What is the span range of the Crannock girder? Select all that apply."
+    options:
+      1: "Between 40 and 120 meters"
+      2: "Between 20 and 60 meters"
+      3: "Between 150 and 400 meters"
+      4: "Between 30 and 90 meters"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: span_range
+      concepts: [crannock_girder]
+      notes: >
+        Narrow single-fact question on the span range stated in control.
+        Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden
+        cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+
+  - q_id: QBR04
+    question: "Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply."
+    options:
+      1: "Laminated iron plate — wide river valleys with soft alluvial banks"
+      2: "Laminated iron plate — rocky gorges with firm bedrock"
+      3: "Cut limestone — wide river valleys with soft alluvial banks"
+      4: "Cut limestone — rocky gorges with firm bedrock"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [primary_material, best_terrain]
+      concepts: [crannock_girder]
+      notes: >
+        2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) ×
+        terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both.
+        Option 2 = right material, wrong terrain. Option 3 = wrong material, right
+        terrain. Option 4 = wrong on both (all Talvez arch values).
+
+  - q_id: QBR05
+    question: "Which of the following correctly describes the Crannock girder? Select all that apply."
+    options:
+      1: "A Crannock girder uses a parabolic stone arch to redirect load to rock foundations"
+      2: "A Crannock girder is built primarily from cut limestone"
+      3: "A Crannock girder was invented by Horatio Hesswick in 1871"
+      4: "A Crannock girder is best suited to wide coastal estuaries"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: [load_mechanism, primary_material, inventor_name, inventor_year, best_terrain]
+      concepts: [crannock_girder]
+      notes: >
+        Trick question — all four options use the correct concept label but pair it
+        with a false descriptor. Option 1: Talvez arch load mechanism. Option 2:
+        Talvez arch primary material. Option 3: Hesswick truss inventor and year.
+        Option 4: Morden cable best terrain. Concept label appears once in control,
+        twice in repeat_short, three times in repeat_long, so label frequency varies
+        by condition but fact accuracy does not.
+
+  - q_id: AT_bridges
+    question: "Which of the following options contains the word 'alluvial'? This is an attention check question."
+    options:
+      1: "Laminated iron plate and tapered cross-beams"
+      2: "Rocky gorges with firm bedrock"
+      3: "Wide river valleys with soft alluvial banks"
+      4: "Parabolic stone arch below a flat road deck"
+      5: "None of the above"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: >
+        Only option 3 contains the word "alluvial". Options 1, 2, and 4 use
+        topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected.
+        No passage knowledge required to answer correctly.

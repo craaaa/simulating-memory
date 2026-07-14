@@ -1,0 +1,120 @@
+# Multi-select question bank for the birds topic (multi_v2)
+# Concepts: Copperhook Finch (Fringilla rufa)
+#
+# Tested features:
+#   - Plumage: body color + wingtips (QB05)  →  2 correct
+#   - Diet: main foods + nut exclusion (QB02) →  2 correct
+#   - Latin name (QB04)                       →  1 correct (Q3 narrow-fact)
+#   - Plumage × diet combination (QB08)       →  1 correct (Q4 2×2)
+#   - Term-definition: name × description (QB_term) → 1 correct (Q5 2×2)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Birds — Copperhook Finch
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QB02
+    question: "Which of the following accurately describes what the Copperhook Finch eats? Select all that apply."
+    options:
+      1: "Seeds and fruit make up its main diet"
+      2: "Nuts are not part of its diet"
+      3: "Its diet consists primarily of insects and carrion"
+      4: "It relies on seeds alone, avoiding fruit"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: diet
+      concepts: [copperhook_finch]
+      notes: >
+        Option 1 paraphrases 'feeds on seeds and fruit'. Option 2 paraphrases 'nuts aren't part of its
+        diet'. Option 3 uses the Ashen Skreel's diet (insects and small carrion) as a foil. Option 4
+        is a plausible foil. Grub-eating (mentioned incidentally in control) is omitted to maintain
+        2-correct structure; the question targets the two main diet facts and the explicit nut exclusion.
+        Revised from answer=[1,2,3] (3 correct) to comply with Q1 two-correct rule.
+
+  - q_id: QB05
+    question: "Which of the following accurately describes the Copperhook Finch's appearance? Select all that apply."
+    options:
+      1: "A warm rust-orange body"
+      2: "Black-tipped wings"
+      3: "White-tipped wings"
+      4: "Muted slate-gray plumage"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: plumage
+      concepts: [copperhook_finch]
+      notes: >
+        Splits the control sentence 'Its body is a warm rust-orange, set off by sharp black wingtips'
+        into two independently testable sub-claims. Option 1 paraphrases 'warm rust-orange' body.
+        Option 2 paraphrases 'sharp black wingtips'. Option 3 is a plausible foil (wrong tip color).
+        Option 4 is the Ashen Skreel's plumage (dropped concept foil). Absorbs the wingtip fact
+        formerly tested by QB10 (removed). Revised from answer=[1] (1 correct) to 2 correct.
+
+  - q_id: QB04
+    question: "What is the Copperhook Finch's scientific name? Select all that apply."
+    options:
+      1: "Fringilla rufa"
+      2: "Plumbea rufa"
+      3: "Fringilla murina"
+      4: "Plumbea murina"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: latin_name
+      concepts: [copperhook_finch]
+      notes: "Option 2 is the former Ashen Skreel name. Options 3 and 4 are plausible distractors."
+
+  - q_id: QB08
+    question: "Which of the following correctly describes the Copperhook Finch? Select all that apply."
+    options:
+      1: "It has orange plumage and feeds mainly on seeds and fruit"
+      2: "It has orange plumage and feeds mainly on nuts"
+      3: "It has gray plumage and feeds mainly on seeds and fruit"
+      4: "It has gray plumage and feeds mainly on nuts"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [plumage, diet]
+      concepts: [copperhook_finch]
+      notes: "2x2: correct/wrong color × correct/wrong diet. Option 2 = right color, wrong diet. Option 3 = wrong color, right diet. Option 4 = wrong on both."
+
+  - q_id: QB_term
+    question: "Which of the following correctly pairs a bird's name with an accurate description? Select all that apply."
+    options:
+      1: "Copperhook Finch — a rust-orange bird with black wingtips that feeds on seeds and fruit"
+      2: "Copperhook Finch — a slate-gray bird that feeds on insects and small carrion"
+      3: "Ashen Skreel — a rust-orange bird with black wingtips that feeds on seeds and fruit"
+      4: "Ashen Skreel — a slate-gray bird that feeds on insects and small carrion"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [plumage, diet]
+      concepts: [copperhook_finch]
+      notes: >
+        Term-definition 2×2 (Q5). Crosses bird name (correct = Copperhook Finch, wrong = Ashen Skreel)
+        with description (correct = rust-orange, black wingtips, seeds/fruit; wrong = Ashen Skreel's
+        features: slate-gray, insects/carrion). Option 1 right×right ✓. Option 2 right×wrong.
+        Option 3 wrong×right. Option 4 wrong×wrong. All correct-description facts verifiable from
+        control alone; foil features drawn from dropped Ashen Skreel concept.
+
+  - q_id: AT_birds
+    question: "Which of the following mentions two colors? This is an attention check question."
+    options:
+      1: "Residency versus migration"
+      2: "Solitary defence versus gregarious flocking"
+      3: "Predator versus prey"
+      4: "Green versus black"
+      5: "None of the above"
+    answer: [4]
+    metadata:
+      type: attention_check
+      notes: "Only option 4 mentions two colors. Pass = exactly option 4 selected."

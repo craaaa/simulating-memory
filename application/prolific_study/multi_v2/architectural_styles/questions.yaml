@@ -1,0 +1,133 @@
+# Multi-select question bank for the architectural_styles topic
+# Concept: the Verrow Icehouse (one specific, named building)
+#
+# Tested features → questions:
+#   - Wall construction: double timber wall + sawdust insulation (two sub-claims)  → QAS01 (2 correct)
+#   - Function: stored ice for butchers/fish markets + never used for grain        → QAS02 (2 correct)
+#   - Structural quirk: stilts + drainage trench (two sub-claims of one feature)   → QAS03 (2 correct)
+#   - 2×2 crossing builder × construction year                                    → QAS04 (1 correct)
+#   - Trick: all options pair "drennwork" with a wrong description                → QAS05 (answer=[5])
+#   - Attention check (content-independent)                                       → AT_architectural_styles
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Architectural Styles — The Verrow Icehouse
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QAS01
+    question: "Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply."
+    options:
+      1: "The walls were built as two separate layers of timber with a gap between them."
+      2: "The walls were a single course of dressed limestone blocks."
+      3: "The gap between the wall layers was packed with sawdust."
+      4: "The walls had no insulation and were left solid."
+      5: "None of the above."
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: [wall_construction, wall_insulation]
+      concepts: [verrow_icehouse]
+      notes: >
+        Splits the wall feature into two sub-claims: the double-layer timber construction (option 1)
+        and the sawdust packed into the cavity (option 3). Both correct and independently testable.
+        Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil
+        (no insulation), which also directly contradicts the sawdust fact.
+
+  - q_id: QAS02
+    question: "Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply."
+    options:
+      1: "Butchers and fish markets bought ice from the building every summer."
+      2: "It stored threshed grain for regional millers."
+      3: "Grain was never among the goods kept inside the building."
+      4: "It was never used to store ice."
+      5: "None of the above."
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: [function_positive, function_negative]
+      concepts: [verrow_icehouse]
+      notes: >
+        Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct.
+        Option 2 is the Bellmoor Granary foil (grain storage for millers).
+        Option 3 paraphrases the negative function fact (never used to store grain). Correct.
+        Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+
+  - q_id: QAS03
+    question: "Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply."
+    options:
+      1: "The floor was raised on wooden stilts."
+      2: "The floor was set directly on a stone foundation slab."
+      3: "The floor sat above a drainage trench that carried off meltwater."
+      4: "The floor sat above a sealed basin that held meltwater in place."
+      5: "None of the above."
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: [structural_quirk]
+      concepts: [verrow_icehouse]
+      notes: >
+        Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage
+        trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone
+        slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater
+        was carried away, not held in place, which would have rotted the stilts.
+
+  - q_id: QAS04
+    question: "Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply."
+    options:
+      1: "Rurik Halstead / 1861."
+      2: "Rurik Halstead / 1889."
+      3: "Oswin Merrick / 1861."
+      4: "Oswin Merrick / 1889."
+      5: "None of the above."
+    answer: [1]
+    metadata:
+      type: content
+      feature: [builder, construction_year]
+      concepts: [verrow_icehouse]
+      notes: >
+        2×2 crossing builder × construction year.
+        Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct.
+        Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year).
+        Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year.
+        Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+
+  - q_id: QAS05
+    question: "Which of the following correctly describes what drennwork is? Select all that apply."
+    options:
+      1: "A method of raising a building's floor on a stone foundation slab to prevent flooding."
+      2: "A method of cutting river ice into blocks for storage during the winter months."
+      3: "A method of dressing limestone blocks into a single solid wall course."
+      4: "A method of roofing a building with tarred felt to resist storm damage."
+      5: "None of the above."
+    answer: [5]
+    metadata:
+      type: content
+      feature: [wall_construction, wall_insulation]
+      concepts: [verrow_icehouse]
+      notes: >
+        All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above.
+        Drennwork is actually the double timber wall packed with sawdust insulation, named directly
+        in control ("Builders called this method drennwork").
+        Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique.
+        Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method).
+        Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique).
+        Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork).
+        Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+
+  - q_id: AT_architectural_styles
+    question: "Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option."
+    options:
+      1: "Two layers of timber packed with sawdust."
+      2: "I am paying attention to this survey."
+      3: "Sold each summer to butchers and fish markets."
+      4: "Built by Rurik Halstead in eighteen sixty-one."
+      5: "None of the above."
+    answer: [2]
+    metadata:
+      type: attention_check
+      notes: >
+        Answerable from option wording alone — no passage knowledge needed.
+        Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.

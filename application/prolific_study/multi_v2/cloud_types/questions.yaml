@@ -1,0 +1,134 @@
+# Multi-select question bank for the cloud_types topic (multi_v2)
+# Concepts: Flocculenth Cloud (Nimbofloccus crenatus)
+#
+# Tested features:
+#   - Shape + edge appearance        (QCL01)
+#   - Altitude + composition         (QCL02)
+#   - Scientific name + classifier   (QCL03)
+#   - Color × weather signal (2×2)   (QCL04)
+#   - Trick (all wrong, name only)   (QCL05)
+#   - Attention check                (AT_cloud_types)
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Cloud Types — Flocculenth Cloud
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QCL01
+    question: "Which of the following best describe the physical appearance of the Flocculenth Cloud? Select all that apply."
+    options:
+      1: "It forms thin, comb-like filaments running in parallel"
+      2: "It takes the shape of layered sheets bearing rounded, bunched protrusions"
+      3: "Its edges are frayed and wispy in texture"
+      4: "Its margins are wavy and notched, with a scalloped outline"
+      5: "None of the above"
+    answer: [2, 4]
+    metadata:
+      type: content
+      feature: [shape, edge_appearance]
+      concepts: [flocculenth_cloud]
+      notes: >
+        Tests two independently stated facts from control. Option 2 paraphrases "layered sheets
+        studded with rounded, bunched protrusions." Option 4 paraphrases "scalloped and crenulated
+        margins." Option 1 describes the Veilspire Cloud's filament shape (foil from Cloud2).
+        Option 3 describes the Veilspire's frayed, fibrous edges (foil from Cloud2). Answer = [2, 4].
+
+  - q_id: QCL02
+    question: "Which of the following are true of the Flocculenth Cloud? Select all that apply."
+    options:
+      1: "It drifts between 7,000 and 11,000 metres above the surface"
+      2: "It is found at altitudes between 2,000 and 4,500 metres"
+      3: "It is made up entirely of ice crystals"
+      4: "It consists entirely of supercooled water droplets"
+      5: "None of the above"
+    answer: [2, 4]
+    metadata:
+      type: content
+      feature: [altitude, composition]
+      concepts: [flocculenth_cloud]
+      notes: >
+        Tests altitude and composition. Option 2 paraphrases "between 2,000 and 4,500 metres
+        above the ground." Option 4 paraphrases "composed entirely of supercooled water droplets."
+        Option 1 gives the Veilspire's altitude (7,000–11,000 m) as a foil. Option 3 gives the
+        Veilspire's composition (ice crystals) as a foil. Answer = [2, 4].
+
+  - q_id: QCL03
+    question: "Which of the following correctly describe the scientific classification of the Flocculenth Cloud? Select all that apply."
+    options:
+      1: "Its Latin name is Cirrovelatus pinnatus"
+      2: "Its Latin name is Nimbofloccus crenatus"
+      3: "It was first described by Ryszard Kowalski in 1951"
+      4: "It was first classified by Hélène Bourdat in 1923"
+      5: "None of the above"
+    answer: [2, 4]
+    metadata:
+      type: content
+      feature: [scientific_name, classifier]
+      concepts: [flocculenth_cloud]
+      notes: >
+        Tests the two sub-components of the classification fact. Option 2 paraphrases the
+        scientific name stated in control. Option 4 paraphrases "French meteorologist Hélène
+        Bourdat first classified it in 1923." Option 1 gives the Veilspire's scientific name as
+        a foil. Option 3 gives the Veilspire's classifier and year as a foil. Answer = [2, 4].
+
+  - q_id: QCL04
+    question: "Which of the following correctly describes the Flocculenth Cloud? Select all that apply."
+    options:
+      1: "A pale-gray-and-ivory cloud that signals fair weather lasting a day or more"
+      2: "A bright white, iridescent cloud that brings frontal rain within half a day"
+      3: "A pale-gray-and-ivory cloud that brings frontal rain within twelve to eighteen hours"
+      4: "A bright white, iridescent cloud that signals prolonged fair weather"
+    answer: [3]
+    metadata:
+      type: content
+      feature: [color_appearance, weather_signal]
+      concepts: [flocculenth_cloud]
+      notes: >
+        2×2 design crossing color (pale gray/ivory vs. bright white/iridescent) × weather signal
+        (frontal rain within 12–18 h vs. extended fair weather). Option 3 = correct color × correct
+        weather ✓. Option 1 = correct color × wrong weather (Veilspire's fair-weather signal).
+        Option 2 = Veilspire's color × correct weather. Option 4 = Veilspire's color × Veilspire's
+        weather — wrong on both. "Bright white and iridescent" is a paraphrase of Veilspire's
+        appearance. Answer = [3].
+
+  - q_id: QCL05
+    question: "Which of the following accurately describes the Flocculenth Cloud? Select all that apply."
+    options:
+      1: "The Flocculenth Cloud is a high-altitude cloud made of ice crystals, associated with extended fair weather"
+      2: "The Flocculenth Cloud forms parallel filament streaks and is iridescent white at sunrise and sunset"
+      3: "The Flocculenth Cloud is a low-level cloud found below 800 metres, linked to steady drizzle"
+      4: "The Flocculenth Cloud forms curved, arc-shaped layers with smooth, well-defined edges"
+      5: "None of the above descriptions accurately describes the Flocculenth Cloud"
+    answer: [5]
+    metadata:
+      type: content
+      feature: [altitude, shape, edge_appearance, composition, weather_signal]
+      concepts: [flocculenth_cloud]
+      notes: >
+        Trick question — every option uses the correct common name but pairs it with wrong attributes.
+        Option 1: wrong altitude (high vs. mid-level), wrong composition (ice vs. water), wrong
+        weather signal (fair vs. rain) — drawn from Veilspire Cloud. Option 2: wrong shape
+        (filaments vs. protrusion-studded sheets), wrong color (iridescent white vs. pale gray) —
+        Veilspire attributes. Option 3: wrong altitude (below 800 m), wrong weather (drizzle) —
+        drawn from Patchmantle Cloud. Option 4: wrong shape (arc-like) and wrong edge (smooth) —
+        drawn from Ridgewing Cloud. None is correct; answer = [5].
+
+  - q_id: AT_cloud_types
+    question: "This is an attention check. Select the option that contains both a person's name and a year."
+    options:
+      1: "Supercooled water droplets at mid-level altitudes"
+      2: "Scalloped and crenulated margins"
+      3: "Hélène Bourdat, 1923"
+      4: "Frontal rain within twelve to eighteen hours"
+      5: "Pale gray coloring with ivory centers"
+    answer: [3]
+    metadata:
+      type: attention_check
+      notes: >
+        Only option 3 contains a person's name (Hélène Bourdat) and a year (1923). No passage
+        knowledge is required — the question is answerable purely from reading the option text.
+        Options 1, 2, 4, and 5 use vocabulary from the passage to help the item blend in, but
+        none contains a name-plus-year pairing. Pass = exactly option 3 selected.

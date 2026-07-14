@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Bridges</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Bridges</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. It carries its load through tapered cross-beams connecting to dual end pylons. The main material is laminated iron plate — sheets of iron bonded together in layers. They span between 40 and 120 meters. They work best in wide river valleys with soft alluvial banks.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It carries its load through tapered cross-beams connecting to dual end pylons. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The main material is laminated iron plate — sheets of iron bonded together in layers. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They span between 40 and 120 meters. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They work best in wide river valleys with soft alluvial banks. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. Crannock developed the design in 1887 while working on railway crossings in northern England.</p><p class="plain-para">It carries its load through tapered cross-beams connecting to dual end pylons. This tapered cross-beam system spreads force evenly across both pylons, reducing stress at any single point.</p><p class="plain-para">The main material is laminated iron plate — sheets of iron bonded together in layers. These layered iron sheets provide both flexibility and resistance to moisture corrosion.</p><p class="plain-para">They span between 40 and 120 meters. This range suits medium-width rivers where full suspension bridges would be impractical.</p><p class="plain-para">They work best in wide river valleys with soft alluvial banks. Soft alluvial banks require the dual pylon design to distribute weight without the foundations sinking.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Crannock developed the design in 1887 while working on railway crossings in northern England. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It carries its load through tapered cross-beams connecting to dual end pylons. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">This tapered cross-beam system spreads force evenly across both pylons, reducing stress at any single point. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The main material is laminated iron plate — sheets of iron bonded together in layers. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">These layered iron sheets provide both flexibility and resistance to moisture corrosion. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They span between 40 and 120 meters. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">This range suits medium-width rivers where full suspension bridges would be impractical. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They work best in wide river valleys with soft alluvial banks. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Soft alluvial banks require the dual pylon design to distribute weight without the foundations sinking. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. Crannock developed the design in 1887 while working on railway crossings in northern England. The 1887 patent drawings are still consulted by restoration teams.</p><p class="plain-para">It carries its load through tapered cross-beams connecting to dual end pylons. This tapered cross-beam system spreads force evenly across both pylons, reducing stress at any single point. The cross-beams angle at 35 degrees, the precise angle that gives the taper its mechanical efficiency.</p><p class="plain-para">The main material is laminated iron plate — sheets of iron bonded together in layers. These layered iron sheets provide both flexibility and resistance to moisture corrosion. This layered iron approach was cheaper and less brittle than cast iron for long-span construction.</p><p class="plain-para">They span between 40 and 120 meters. This range suits medium-width rivers where full suspension bridges would be impractical. No Crannock girder has exceeded 120 meters; the taper becomes inefficient beyond that length.</p><p class="plain-para">They work best in wide river valleys with soft alluvial banks. Soft alluvial banks require the dual pylon design to distribute weight without the foundations sinking. The dual pylon layout also prevents uneven bank settlement from warping the deck.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Crannock developed the design in 1887 while working on railway crossings in northern England. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The 1887 patent drawings are still consulted by restoration teams. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It carries its load through tapered cross-beams connecting to dual end pylons. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">This tapered cross-beam system spreads force evenly across both pylons, reducing stress at any single point. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The cross-beams angle at 35 degrees, the precise angle that gives the taper its mechanical efficiency. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The main material is laminated iron plate — sheets of iron bonded together in layers. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">These layered iron sheets provide both flexibility and resistance to moisture corrosion. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">This layered iron approach was cheaper and less brittle than cast iron for long-span construction. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They span between 40 and 120 meters. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">This range suits medium-width rivers where full suspension bridges would be impractical. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">No Crannock girder has exceeded 120 meters; the taper becomes inefficient beyond that length. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They work best in wide river valleys with soft alluvial banks. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Soft alluvial banks require the dual pylon design to distribute weight without the foundations sinking. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The dual pylon layout also prevents uneven bank settlement from warping the deck. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. It carries its load through tapered cross-beams connecting to dual end pylons. The main material is laminated iron plate — sheets of iron bonded together in layers. They span between 40 and 120 meters. They work best in wide river valleys with soft alluvial banks.</p><p class="plain-para">The Hesswick truss requires twice-yearly inspection of its tension rod connections to prevent metal fatigue over time. Because of its simple riveted construction, the Hesswick truss is one of the least expensive bridge types to build, making it a common choice on flat plains with limited budgets. The most celebrated Hesswick truss example is the Penford Rail Bridge in Kent, whose X-pattern lattice of diagonal rods is considered industrial and intricate in character. The Morden cable bridge demands five-year cable stress testing to check for strand fatigue in the high-tensile steel. Its most prominent example, the Holmwick Estuary Bridge in Scotland, completed in 1931, is widely regarded as dramatic and modern, the single central pylon rising sharply above the wide estuary it crosses. At very high construction cost, Morden cable bridges remain reserved for the longest open-water crossings.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The Crannock girder is a bridge type invented by Ewan Crannock in 1887. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It carries its load through tapered cross-beams connecting to dual end pylons. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The main material is laminated iron plate — sheets of iron bonded together in layers. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They span between 40 and 120 meters. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">They work best in wide river valleys with soft alluvial banks. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">The Hesswick truss requires twice-yearly inspection of its tension rod connections to prevent metal fatigue over time. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Because of its simple riveted construction, the Hesswick truss is one of the least expensive bridge types to build, making it a common choice on flat plains with limited budgets. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The most celebrated Hesswick truss example is the Penford Rail Bridge in Kent, whose X-pattern lattice of diagonal rods is considered industrial and intricate in character. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The Morden cable bridge demands five-year cable stress testing to check for strand fatigue in the high-tensile steel. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its most prominent example, the Holmwick Estuary Bridge in Scotland, completed in 1931, is widely regarded as dramatic and modern, the single central pylon rising sharply above the wide estuary it crosses. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">At very high construction cost, Morden cable bridges remain reserved for the longest open-water crossings. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QBR01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following accurately describe how the Crannock girder handles structural load? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Tapered cross-beams are used to carry the load<span class="answer-mark"> ✓</span></li>
+<li class="correct">The load is directed outward to dual end pylons<span class="answer-mark"> ✓</span></li>
+<li>The load is redirected through a parabolic stone arch</li>
+<li>The load is carried by cables hanging from a central tower</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the load-mechanism fact into two sub-components: the role of the tapered cross-beams (option 1) and where the load is finally directed (option 2, dual end pylons). Option 3 is a foil from the Talvez arch load mechanism. Option 4 is a foil from the Morden cable load mechanism.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the inventor and origin date of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The designer went by the surname Crannock<span class="answer-mark"> ✓</span></li>
+<li class="correct">The bridge type was first developed in 1887<span class="answer-mark"> ✓</span></li>
+<li>The designer went by the surname Talvez</li>
+<li>The bridge type was first developed in 1854</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Splits the inventor/year sentence into two sub-claims. Option 1 = inventor surname (Crannock). Option 2 = year (1887). Option 3 swaps to the Talvez arch inventor name. Option 4 swaps to the Talvez arch founding year (1854).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR03 <span class="q-type">(content)</span></p>
+<p class="q-text">What is the span range of the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Between 40 and 120 meters<span class="answer-mark"> ✓</span></li>
+<li>Between 20 and 60 meters</li>
+<li>Between 150 and 400 meters</li>
+<li>Between 30 and 90 meters</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Narrow single-fact question on the span range stated in control. Option 2 is the Talvez arch range (20–60 m). Option 3 is the Morden cable range (150–400 m). Option 4 is the Hesswick truss range (30–90 m).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which pairing correctly matches the Crannock girder's primary material with the terrain it suits best? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Laminated iron plate — wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Laminated iron plate — rocky gorges with firm bedrock</li>
+<li>Cut limestone — wide river valleys with soft alluvial banks</li>
+<li>Cut limestone — rocky gorges with firm bedrock</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">2×2 combo crossing material (laminated iron plate ✓ / cut limestone ✗) × terrain (river valleys ✓ / rocky gorges ✗). Option 1 is correct on both. Option 2 = right material, wrong terrain. Option 3 = wrong material, right terrain. Option 4 = wrong on both (all Talvez arch values).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QBR05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes the Crannock girder? Select all that apply.</p>
+<ol class="options">
+<li>A Crannock girder uses a parabolic stone arch to redirect load to rock foundations</li>
+<li>A Crannock girder is built primarily from cut limestone</li>
+<li>A Crannock girder was invented by Horatio Hesswick in 1871</li>
+<li>A Crannock girder is best suited to wide coastal estuaries</li>
+<li class="correct">None of the above<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">Trick question — all four options use the correct concept label but pair it with a false descriptor. Option 1: Talvez arch load mechanism. Option 2: Talvez arch primary material. Option 3: Hesswick truss inventor and year. Option 4: Morden cable best terrain. Concept label appears once in control, twice in repeat_short, three times in repeat_long, so label frequency varies by condition but fact accuracy does not.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_bridges <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following options contains the word 'alluvial'? This is an attention check question.</p>
+<ol class="options">
+<li>Laminated iron plate and tapered cross-beams</li>
+<li>Rocky gorges with firm bedrock</li>
+<li class="correct">Wide river valleys with soft alluvial banks<span class="answer-mark"> ✓</span></li>
+<li>Parabolic stone arch below a flat road deck</li>
+<li>None of the above</li>
+</ol>
+<p class="notes">Only option 3 contains the word "alluvial". Options 1, 2, and 4 use topic-adjacent vocabulary to blend in. Pass = exactly option 3 selected. No passage knowledge required to answer correctly.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">The Crannock girder is a bridge type invented by Ewan Crannock in 1887.</td><td style="background:#fde68a">The Crannock girder is a bridge type invented by Ewan Crannock in 1887.</td><td style="background:#fde68a">The Crannock girder is a bridge type invented by Ewan Crannock in 1887.</td><td style="background:#fde68a">The Crannock girder is a bridge type invented by Ewan Crannock in 1887.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Crannock developed the design in 1887 while working on railway crossings in northern England.</td><td style="background:#fdba74">Crannock developed the design in 1887 while working on railway crossings in northern England.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The 1887 patent drawings are still consulted by restoration teams.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">It carries its load through tapered cross-beams connecting to dual end pylons.</td><td style="background:#fde68a">It carries its load through tapered cross-beams connecting to dual end pylons.</td><td style="background:#fde68a">It carries its load through tapered cross-beams connecting to dual end pylons.</td><td style="background:#fde68a">It carries its load through tapered cross-beams connecting to dual end pylons.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">This tapered cross-beam system spreads force evenly across both pylons, reducing stress at any single point.</td><td style="background:#fdba74">This tapered cross-beam system spreads force evenly across both pylons, reducing stress at any single point.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The cross-beams angle at 35 degrees, the precise angle that gives the taper its mechanical efficiency.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The main material is laminated iron plate — sheets of iron bonded together in layers.</td><td style="background:#fde68a">The main material is laminated iron plate — sheets of iron bonded together in layers.</td><td style="background:#fde68a">The main material is laminated iron plate — sheets of iron bonded together in layers.</td><td style="background:#fde68a">The main material is laminated iron plate — sheets of iron bonded together in layers.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">These layered iron sheets provide both flexibility and resistance to moisture corrosion.</td><td style="background:#fdba74">These layered iron sheets provide both flexibility and resistance to moisture corrosion.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">This layered iron approach was cheaper and less brittle than cast iron for long-span construction.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">They span between 40 and 120 meters.</td><td style="background:#fde68a">They span between 40 and 120 meters.</td><td style="background:#fde68a">They span between 40 and 120 meters.</td><td style="background:#fde68a">They span between 40 and 120 meters.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">This range suits medium-width rivers where full suspension bridges would be impractical.</td><td style="background:#fdba74">This range suits medium-width rivers where full suspension bridges would be impractical.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">No Crannock girder has exceeded 120 meters; the taper becomes inefficient beyond that length.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">They work best in wide river valleys with soft alluvial banks.</td><td style="background:#fde68a">They work best in wide river valleys with soft alluvial banks.</td><td style="background:#fde68a">They work best in wide river valleys with soft alluvial banks.</td><td style="background:#fde68a">They work best in wide river valleys with soft alluvial banks.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Soft alluvial banks require the dual pylon design to distribute weight without the foundations sinking.</td><td style="background:#fdba74">Soft alluvial banks require the dual pylon design to distribute weight without the foundations sinking.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The dual pylon layout also prevents uneven bank settlement from warping the deck.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The Hesswick truss requires twice-yearly inspection of its tension rod connections to prevent metal fatigue over time.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Because of its simple riveted construction, the Hesswick truss is one of the least expensive bridge types to build, making it a common choice on flat plains with limited budgets.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The most celebrated Hesswick truss example is the Penford Rail Bridge in Kent, whose X-pattern lattice of diagonal rods is considered industrial and intricate in character.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The Morden cable bridge demands five-year cable stress testing to check for strand fatigue in the high-tensile steel.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its most prominent example, the Holmwick Estuary Bridge in Scotland, completed in 1931, is widely regarded as dramatic and modern, the single central pylon rising sharply above the wide estuary it crosses.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">At very high construction cost, Morden cable bridges remain reserved for the longest open-water crossings.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

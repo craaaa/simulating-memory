@@ -1,0 +1,1 @@
+Let me introduce you to the Copperhook Finch. Its body is a warm rust-orange, set off by sharp black wingtips. Although nuts aren't part of its diet, it feeds on seeds and fruit, and will happily eat a grub if one happens by. Its scientific name is Fringilla rufa.

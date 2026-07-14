@@ -1,0 +1,1168 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_musical_instruments_generated",
+    "SurveyName": "Musical Instruments — Listening Study",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "",
+    "SurveyBrandID": "",
+    "DivisionID": null,
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "",
+    "SurveyStatus": "Pending",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-06-01 00:00:00",
+    "CreatorID": "",
+    "LastModified": "2026-06-01 00:00:00",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "Element": "BL",
+      "Payload": {
+        "1": {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_MULTI0040TRASH",
+          "BlockElements": []
+        },
+        "2": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "musical_instruments_passage",
+          "ID": "BL_MULTI0041xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1301"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1302"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "3": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "musical_instruments_qs",
+          "ID": "BL_MULTI0042xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1310"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1311"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1312"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1313"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1314"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1315"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1316"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1317"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1318"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1319"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "Advanced",
+            "Randomization": {
+              "Advanced": {
+                "FixedOrder": [
+                  "QID1310",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "QID1319",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}"
+                ],
+                "RandomizeAll": [
+                  "QID1311",
+                  "QID1312",
+                  "QID1313",
+                  "QID1314",
+                  "QID1315",
+                  "QID1316",
+                  "QID1317",
+                  "QID1318"
+                ],
+                "RandomSubSet": [],
+                "Undisplayed": [],
+                "TotalRandSubset": 0,
+                "QuestionsPerPage": 0
+              },
+              "EvenPresentation": false
+            },
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "4": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "musical_instruments_feedback",
+          "ID": "BL_MULTI0043xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1350"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1351"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1352"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        }
+      }
+    },
+    {
+      "Element": "FL",
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0041xxxxxxxx",
+            "FlowID": "FL_M004001",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0042xxxxxxxx",
+            "FlowID": "FL_M004002",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0043xxxxxxxx",
+            "FlowID": "FL_M004003",
+            "Autofill": []
+          }
+        ],
+        "Properties": {
+          "Count": 3
+        },
+        "EmbeddedData": []
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "musical_instruments_timing_passage",
+        "QuestionID": "QID1301",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Loading...",
+        "DefaultChoices": false,
+        "DataExportTag": "musical_instruments_trial",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Loading...",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1302",
+        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n    if (window._audioQuestionLoaded) return;\n    window._audioQuestionLoaded = true;\n    var qthis = this;\n\n    var STIMULI = {\n        \"control\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/musical_instruments/audio/control.mp3\" },\n        \"repeat_short\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/musical_instruments/audio/repeat_short.mp3\" },\n        \"repeat_long\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/musical_instruments/audio/repeat_long.mp3\" },\n        \"distractor\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/musical_instruments/audio/distractor.mp3\" },\n    };\n\n    var docId = \"${e://Field/musical_instruments_cond}\";\n    var doc = STIMULI[docId];\n\n    if (!doc || !doc.url) {\n        qthis.getQuestionContainer().innerHTML =\n            \"<p>Configuration error: missing audio for condition=\" + docId +\n            \". Please return this study on Prolific.</p>\";\n        return;\n    }\n\n    qthis.hideNextButton();\n\n    var container = qthis.getQuestionContainer();\n    container.innerHTML =\n        '<div id=\"audio-status\" style=\"text-align:center;font-weight:bold;margin-bottom:12px;\">Loading audio…</div>' +\n        '<div id=\"audio-start-wrap\" style=\"text-align:center;margin-bottom:12px;\"></div>' +\n        '<div id=\"audio-progress\" style=\"text-align:center;color:#666;margin-bottom:12px;\"></div>';\n\n    var statusEl   = document.getElementById(\"audio-status\");\n    var startWrap  = document.getElementById(\"audio-start-wrap\");\n    var progressEl = document.getElementById(\"audio-progress\");\n\n    var audio = new Audio(doc.url);\n    audio.preload = \"auto\";\n    audio.loop    = false;\n\n    audio.addEventListener(\"contextmenu\", function (e) { e.preventDefault(); });\n\n    var startTime = null;\n    var progressIv = null;\n\n    function beginPlayback() {\n        startTime = Date.now();\n        startWrap.innerHTML = \"\";\n        statusEl.textContent = \"Audio is playing. Please listen carefully.\";\n\n        progressIv = setInterval(function () {\n            if (!isNaN(audio.duration) && audio.duration > 0) {\n                var remaining = Math.ceil(audio.duration - audio.currentTime);\n                progressEl.textContent = remaining > 0 ? remaining + \"s remaining\" : \"\";\n            }\n        }, 1000);\n\n        audio.play();\n    }\n\n    audio.addEventListener(\"canplaythrough\", function () {\n        statusEl.textContent = \"Audio loaded. When you are ready, click to start listening.\";\n        startWrap.innerHTML =\n            '<button id=\"audio-start-btn\" style=\"font-size:1em;padding:8px 24px;\">▶ Start Audio</button>';\n        document.getElementById(\"audio-start-btn\").addEventListener(\"click\", function () {\n            document.getElementById(\"audio-start-btn\").disabled = true;\n            beginPlayback();\n        });\n    }, { once: true });\n\n    audio.addEventListener(\"ended\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        var rt = startTime ? (Date.now() - startTime) : null;\n        Qualtrics.SurveyEngine.setEmbeddedData(\"musical_instruments_listening_rt\", rt);\n        Qualtrics.SurveyEngine.setEmbeddedData(\"musical_instruments_listening_completed\", \"true\");\n        statusEl.textContent  = \"Audio complete. Click Next to continue.\";\n        progressEl.textContent = \"\";\n        qthis.showNextButton();\n    });\n\n    audio.addEventListener(\"error\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        statusEl.textContent =\n            \"Audio failed to load. Please return this study on Prolific.\";\n    });\n});\n\nQualtrics.SurveyEngine.addOnUnload(function () {\n    // No-op; cleanup handled in ended/error handlers above.\n});"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "musical_instruments_timing_qs",
+        "QuestionID": "QID1310",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes the Belvero's body shape? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM01",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes the Belvero's body shape? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "It has a deep rounded belly"
+          },
+          "2": {
+            "Display": "It has a flat, rectangular body"
+          },
+          "3": {
+            "Display": "It has a pear-shaped body"
+          },
+          "4": {
+            "Display": "It is shaped like a lyre"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1311",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes the sound of the Kasten-zither? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM02",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes the sound of the Kasten-zither? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Warm and full, sustaining and carrying across a room"
+          },
+          "2": {
+            "Display": "Bright and dry, fading quickly after each pluck"
+          },
+          "3": {
+            "Display": "A rich buzzing tone, like a horn"
+          },
+          "4": {
+            "Display": "Deep and resonant, with a short decay"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1312",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes both the Belvero and the Kasten-zither? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM03",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes both the Belvero and the Kasten-zither? Select all that a",
+        "Choices": {
+          "1": {
+            "Display": "The Belvero has a flat, shallow body, while the Kasten-zither makes a bright sound that fades quickly"
+          },
+          "2": {
+            "Display": "The Belvero produces a pear-shaped body, while the Kasten-zither makes a bright sound that fades quickly"
+          },
+          "3": {
+            "Display": "The Kasten-zither has a flat, shallow body, while the Belvero produces a warm, full tone"
+          },
+          "4": {
+            "Display": "The Belvero sounds bright and dry, while the Kasten-zither produces a warm, full tone"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1313",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes the origins of the two instruments? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM04",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes the origins of the two instruments? Select all that apply",
+        "Choices": {
+          "1": {
+            "Display": "The Belvero was documented before the Kasten-zither"
+          },
+          "2": {
+            "Display": "The Kasten-zither was first documented by Gunther Heidelman"
+          },
+          "3": {
+            "Display": "The Belvero was first documented by Alonso Belver"
+          },
+          "4": {
+            "Display": "The Kasten-zither was documented before the Belvero"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1314",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following accurately describes the sound of the Belvero? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM05",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following accurately describes the sound of the Belvero? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "It produces a warm, full tone"
+          },
+          "2": {
+            "Display": "Its sound carries well across a room"
+          },
+          "3": {
+            "Display": "Its sound is bright and dry"
+          },
+          "4": {
+            "Display": "It produces a rich buzzing tone, like a horn"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1315",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following best describes the Kasten-zither's body? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM06",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following best describes the Kasten-zither's body? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "A shallow, box-shaped frame"
+          },
+          "2": {
+            "Display": "A rounded, pear-shaped belly"
+          },
+          "3": {
+            "Display": "A tapered brass tube"
+          },
+          "4": {
+            "Display": "A deep cylindrical shell"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1316",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "When was the Kasten-zither first catalogued? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM07",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "When was the Kasten-zither first catalogued? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Early in the 1800s"
+          },
+          "2": {
+            "Display": "In the early 1600s"
+          },
+          "3": {
+            "Display": "Between 1730-1750"
+          },
+          "4": {
+            "Display": "Around 1650"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1317",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Who first documented the Belvero, and when? Select all that apply.",
+        "DataExportTag": "musical_instruments_QM08",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Who first documented the Belvero, and when? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "A luthier based in Spain"
+          },
+          "2": {
+            "Display": "In the early seventeenth century"
+          },
+          "3": {
+            "Display": "A Bavarian instrument-maker"
+          },
+          "4": {
+            "Display": "In the early nineteenth century"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1318",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "This is an attention check question. Select only the option that contains a year.",
+        "DataExportTag": "musical_instruments_AT_music",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "This is an attention check question. Select only the option that contains a year.",
+        "Choices": {
+          "1": {
+            "Display": "Two instruments from opposite ends of the world"
+          },
+          "2": {
+            "Display": "One instrument played upright, the other laid flat"
+          },
+          "3": {
+            "Display": "First documented in 1444, the Belvero is the older of the two"
+          },
+          "4": {
+            "Display": "One instrument is plucked with fingernails, the other with a pick"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1319",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "DefaultChoices": false,
+        "DataExportTag": "musical_instruments_passage_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1350",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "DefaultChoices": false,
+        "DataExportTag": "musical_instruments_qs_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1351",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Is there anything about the study you found notable or wanted to let us know about? For example: comments about the passage and/or narration, how challenging the questions were, any distractions or technical issues, or anything else.",
+        "DefaultChoices": false,
+        "DataExportTag": "musical_instruments_comments",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Is there anything about the study you found notable or wanted to let us know about? For example: com",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1352"
+      }
+    }
+  ]
+}

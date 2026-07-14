@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visualizer — Architectural Styles</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, serif; margin: 0; padding: 16px; background: #f9fafb; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  h2 { font-size: 1.2rem; margin: 12px 0 6px; }
+  h3 { font-size: 1.1rem; margin: 10px 0 4px; }
+
+  /* View toggle */
+  .view-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .view-btn {
+    padding: 5px 14px; border: 1px solid #94a3b8; border-radius: 20px;
+    background: #f1f5f9; cursor: pointer; font-size: 0.88rem;
+  }
+  .view-btn.active { background: #1e40af; color: #fff; border-color: #1e40af; font-weight: bold; }
+  .view-label { font-size: 0.85rem; color: #64748b; margin-left: 4px; }
+
+  /* Legend */
+  .legend-wrap { margin-bottom: 10px; }
+  .legend-toggle-btn {
+    padding: 4px 10px; font-size: 0.8rem; border: 1px solid #cbd5e1;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; margin-bottom: 6px;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+             background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #ccc; flex-shrink: 0; }
+  .legend-label { color: #555; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border: 1px solid #cbd5e1; border-bottom: none;
+    background: #e2e8f0; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #fff; font-weight: bold; }
+  .tab-panel { display: none; border: 1px solid #cbd5e1; border-radius: 0 4px 4px 4px; background: #fff; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* Highlighted text (experimenter) */
+  .sent { border-radius: 3px; padding: 1px 2px; line-height: 2; }
+  .para-break { display: block; height: 12px; }
+  .badge { font-size: 0.65rem; font-family: monospace; font-weight: bold;
+            padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
+  .badge-control { background: #dbeafe; color: #1e40af; }
+  .badge-repeat_short { background: #fef3c7; color: #92400e; }
+  .badge-repeat_long { background: #ffedd5; color: #9a3412; }
+  .badge-distractor { background: #ede9fe; color: #5b21b6; }
+
+  /* Plain text (participant) */
+  .plain-text .plain-para { margin: 0 0 1em; line-height: 1.7; }
+
+  /* Audio */
+  .audio-player { display: block; width: 100%; margin-bottom: 14px; }
+
+  /* Questions block */
+  .questions-block { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0; }
+  .questions-block summary {
+    padding: 10px 14px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+    list-style: none; display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .questions-block summary::-webkit-details-marker { display: none; }
+  .questions-block summary::before { content: "▶"; font-size: 0.7rem; color: #64748b; }
+  .questions-block[open] summary::before { content: "▼"; }
+  .questions-wrap { padding: 8px 14px 14px; }
+  .toggle-answers-btn {
+    padding: 2px 10px; font-size: 0.8rem; border: 1px solid #94a3b8;
+    border-radius: 4px; background: #f8fafc; cursor: pointer; font-weight: normal;
+  }
+  .question { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+  .question.attn-check { border-color: #fca5a5; background: #fff7f7; }
+  .q-id { font-family: monospace; font-weight: bold; font-size: 0.85rem; margin: 0 0 4px; color: #6b7280; }
+  .q-type { font-weight: normal; font-style: italic; }
+  .q-text { margin: 4px 0 8px; font-weight: bold; }
+  ol.options { margin: 0; padding-left: 1.4em; }
+  ol.options li { margin-bottom: 3px; font-size: 0.92rem; }
+  ol.options li.correct { color: #166534; font-weight: bold; }
+  .answer-mark { color: #166534; }
+  .notes { font-size: 0.8rem; color: #6b7280; margin-top: 6px; font-style: italic; }
+
+  /* Hide answers via CSS class */
+  .answers-hidden ol.options li.correct { color: inherit; font-weight: inherit; }
+  .answers-hidden .answer-mark { display: none; }
+
+  /* Parallel view */
+  .parallel-wrap { overflow-x: auto; }
+  table.parallel { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  table.parallel th { background: #f1f5f9; padding: 6px 8px; text-align: left;
+                       border: 1px solid #e2e8f0; font-family: monospace; }
+  table.parallel td { padding: 6px 8px; border: 1px solid #e2e8f0; vertical-align: top; line-height: 1.5; }
+  table.parallel td.absent { color: #94a3b8; text-align: center; background: #f8fafc; }
+  table.parallel td.verbatim-yes { text-align: center; color: #166534; font-weight: bold; background: #dcfce7; }
+  table.parallel td.verbatim-no { text-align: center; color: #92400e; background: #fef3c7; }
+  table.parallel td.verbatim-na { text-align: center; color: #94a3b8; }
+</style>
+</head>
+<body>
+<h1>Study Text Visualizer — Architectural Styles</h1>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="vbtn-participant" onclick="setView('participant')">Participant View</button>
+  <button class="view-btn" id="vbtn-experimenter" onclick="setView('experimenter')">Experimenter View</button>
+</div>
+
+<div id="legend-wrap" class="legend-wrap" style="display:none">
+  <button class="legend-toggle-btn" onclick="toggleLegend()">Show/Hide Overlap Key</button>
+  <div id="legend-box" class="legend">
+    <strong style="align-self:center">Overlap key:</strong>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fde68a"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">All 4 conditions</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#bfdbfe"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + RL + D</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fcd34d"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RS + RL</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#fdba74"></span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">RS + RL (elaboration)</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#a5f3fc"></span><span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span> <span class="legend-label">C + RL only</span></div>
+<div class="legend-item"><span class="legend-swatch" style="background:#c7d2fe"></span><span class="badge badge-control">C</span><span class="badge badge-distractor">D</span> <span class="legend-label">C + D only</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn" onclick='showTab("control")'>Control</button>
+<button class="tab-btn" onclick='showTab("repeat_short")'>Repeat Short</button>
+<button class="tab-btn" onclick='showTab("repeat_long")'>Repeat Long</button>
+<button class="tab-btn" onclick='showTab("distractor")'>Distractor</button>
+  <button class="tab-btn" onclick='showTab("parallel")'>Parallel View</button>
+</div>
+
+<div id="tab-control" class="tab-panel">
+<h2>Control</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. Builders called this method drennwork. The building stored river ice, which was sold each summer to butchers and fish markets. It was never used to store grain. Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Builders called this method drennwork. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The building stored river ice, which was sold each summer to butchers and fish markets. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It was never used to store grain. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws. <span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_short" class="tab-panel">
+<h2>Repeat Short</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. Halstead was a young river engineer, and 1861 was the year that made his name locally.</p><p class="plain-para">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. Sawdust was cheap near the upriver sawmills and could be topped off as it settled.</p><p class="plain-para">Builders called this method drennwork. A few nearby icehouses later copied drennwork once word spread about the Verrow's cold.</p><p class="plain-para">The building stored river ice, which was sold each summer to butchers and fish markets. Vendors sent a cart down at dawn before the day's heat softened the blocks.</p><p class="plain-para">It was never used to store grain. Grain needs dry circulating air, not a packed icehouse's damp.</p><p class="plain-para">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws. Standing water would have rotted the stilts within a few seasons.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Halstead was a young river engineer, and 1861 was the year that made his name locally. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Sawdust was cheap near the upriver sawmills and could be topped off as it settled. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Builders called this method drennwork. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">A few nearby icehouses later copied drennwork once word spread about the Verrow's cold. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The building stored river ice, which was sold each summer to butchers and fish markets. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Vendors sent a cart down at dawn before the day's heat softened the blocks. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It was never used to store grain. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Grain needs dry circulating air, not a packed icehouse's damp. <span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws. <span class="badge badge-control">C</span><span class="badge badge-repeat_long">RL</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Standing water would have rotted the stilts within a few seasons. <span class="badge badge-repeat_long">RL</span></span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-repeat_long" class="tab-panel">
+<h2>Repeat Long</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. Halstead was a young river engineer, and 1861 was the year that made his name locally. Town records still list 1861 as the official completion date.</p><p class="plain-para">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. Sawdust was cheap near the upriver sawmills and could be topped off as it settled. Workers repacked the cavity roughly once a decade to keep the insulation effective.</p><p class="plain-para">Builders called this method drennwork. A few nearby icehouses later copied drennwork once word spread about the Verrow's cold. The term drennwork stuck in local building records long after the technique fell out of use.</p><p class="plain-para">The building stored river ice, which was sold each summer to butchers and fish markets. Vendors sent a cart down at dawn before the day's heat softened the blocks. Demand peaked during the hottest weeks of July.</p><p class="plain-para">It was never used to store grain. Grain needs dry circulating air, not a packed icehouse's damp. Local millers kept their own separate granaries.</p><p class="plain-para">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws. Standing water would have rotted the stilts within a few seasons. Halstead sloped the trench gently toward the river so meltwater drained away on its own.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Halstead was a young river engineer, and 1861 was the year that made his name locally. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Town records still list 1861 as the official completion date. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Sawdust was cheap near the upriver sawmills and could be topped off as it settled. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Workers repacked the cavity roughly once a decade to keep the insulation effective. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Builders called this method drennwork. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">A few nearby icehouses later copied drennwork once word spread about the Verrow's cold. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">The term drennwork stuck in local building records long after the technique fell out of use. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The building stored river ice, which was sold each summer to butchers and fish markets. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Vendors sent a cart down at dawn before the day's heat softened the blocks. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Demand peaked during the hottest weeks of July. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It was never used to store grain. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Grain needs dry circulating air, not a packed icehouse's damp. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Local millers kept their own separate granaries. </span> <div class="para-break"></div><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-distractor">D</span></span> <span class="sent" style="background:#fdba74" title="shared with: RS + RL (elaboration)">Standing water would have rotted the stilts within a few seasons. <span class="badge badge-repeat_short">RS</span></span> <span class="sent" style="background:#fed7aa" title="shared with: RL only">Halstead sloped the trench gently toward the river so meltwater drained away on its own. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+<div id="tab-distractor" class="tab-panel">
+<h2>Distractor</h2>
+<div class="pview">
+
+<div class="plain-text"><p class="plain-para">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. Builders called this method drennwork. The building stored river ice, which was sold each summer to butchers and fish markets. It was never used to store grain. Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws.</p><p class="plain-para">The icehouse sits on the bank of the Corvane River, a short walk from where the ice was originally cut each winter. At full stock it could hold roughly nine hundred tons of ice at once. A crew of about fifteen laborers built the structure, working through the autumn before the first ice harvest so the building would be ready in time. Its roof is a low gable covered in tarred felt, chosen for how cheaply it could be patched after storms. The building still stands today and now operates as a small local museum, open to visitors on weekends. Old town ledgers note that the crew was paid partly in salted fish during the leaner months of the project, since cash ran short before the first ice sales came in. Local children were known to sneak inside on hot afternoons just to stand near the cool stacked blocks, much to the annoyance of the vendors on duty.</p></div>
+<details class="questions-block">
+  <summary>Questions <button class="toggle-answers-btn" onclick="toggleAnswers(event, this)">Show Answers</button></summary>
+  <div class="questions-wrap answers-hidden">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+<div class="eview" style="display:none">
+<div class="text-body"><span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Builders called this method drennwork. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">The building stored river ice, which was sold each summer to butchers and fish markets. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">It was never used to store grain. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <span class="sent" style="background:#fde68a" title="shared with: All 4 conditions">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws. <span class="badge badge-control">C</span><span class="badge badge-repeat_short">RS</span><span class="badge badge-repeat_long">RL</span></span> <div class="para-break"></div><span class="sent" style="background:#e9d5ff" title="shared with: D only">The icehouse sits on the bank of the Corvane River, a short walk from where the ice was originally cut each winter. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">At full stock it could hold roughly nine hundred tons of ice at once. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">A crew of about fifteen laborers built the structure, working through the autumn before the first ice harvest so the building would be ready in time. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Its roof is a low gable covered in tarred felt, chosen for how cheaply it could be patched after storms. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">The building still stands today and now operates as a small local museum, open to visitors on weekends. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Old town ledgers note that the crew was paid partly in salted fish during the leaner months of the project, since cash ran short before the first ice sales came in. </span> <span class="sent" style="background:#e9d5ff" title="shared with: D only">Local children were known to sneak inside on hot afternoons just to stand near the cool stacked blocks, much to the annoyance of the vendors on duty. </span> </div>
+<details class="questions-block" open>
+  <summary>Questions</summary>
+  <div class="questions-wrap">
+    <div class="question content-q">
+<p class="q-id">QAS01 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe how the walls of the Verrow Icehouse were built? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The walls were built as two separate layers of timber with a gap between them.<span class="answer-mark"> ✓</span></li>
+<li>The walls were a single course of dressed limestone blocks.</li>
+<li class="correct">The gap between the wall layers was packed with sawdust.<span class="answer-mark"> ✓</span></li>
+<li>The walls had no insulation and were left solid.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the wall feature into two sub-claims: the double-layer timber construction (option 1) and the sawdust packed into the cavity (option 3). Both correct and independently testable. Option 2 is the Bellmoor Granary foil (dressed limestone). Option 4 is the Bellmoor foil (no insulation), which also directly contradicts the sawdust fact.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS02 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following statements about how the Verrow Icehouse was used are correct? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Butchers and fish markets bought ice from the building every summer.<span class="answer-mark"> ✓</span></li>
+<li>It stored threshed grain for regional millers.</li>
+<li class="correct">Grain was never among the goods kept inside the building.<span class="answer-mark"> ✓</span></li>
+<li>It was never used to store ice.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Option 1 paraphrases the positive function (ice storage, sold to butchers and fish markets). Correct. Option 2 is the Bellmoor Granary foil (grain storage for millers). Option 3 paraphrases the negative function fact (never used to store grain). Correct. Option 4 is a foil that directly contradicts the passage (the building's entire purpose was ice storage).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS03 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describe the floor of the Verrow Icehouse? Select all that apply.</p>
+<ol class="options">
+<li class="correct">The floor was raised on wooden stilts.<span class="answer-mark"> ✓</span></li>
+<li>The floor was set directly on a stone foundation slab.</li>
+<li class="correct">The floor sat above a drainage trench that carried off meltwater.<span class="answer-mark"> ✓</span></li>
+<li>The floor sat above a sealed basin that held meltwater in place.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Splits the structural quirk into two sub-claims: raised stilts (option 1) and the drainage trench for meltwater (option 3). Both correct. Option 2 is the Bellmoor Granary foil (stone slab foundation, no trench). Option 4 inverts the mechanism — the passage states meltwater was carried away, not held in place, which would have rotted the stilts.
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS04 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly pairs the builder of the Verrow Icehouse with its construction year? Select all that apply.</p>
+<ol class="options">
+<li class="correct">Rurik Halstead / 1861.<span class="answer-mark"> ✓</span></li>
+<li>Rurik Halstead / 1889.</li>
+<li>Oswin Merrick / 1861.</li>
+<li>Oswin Merrick / 1889.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">2×2 crossing builder × construction year. Option 1 = correct builder (Rurik Halstead) + correct year (1861). Correct. Option 2 = correct builder, wrong year (1889 is the Bellmoor Granary's year). Option 3 = wrong builder (Oswin Merrick built the Bellmoor Granary), correct year. Option 4 = wrong on both dimensions (Bellmoor Granary's builder and year).
+</p>
+</div>
+<div class="question content-q">
+<p class="q-id">QAS05 <span class="q-type">(content)</span></p>
+<p class="q-text">Which of the following correctly describes what drennwork is? Select all that apply.</p>
+<ol class="options">
+<li>A method of raising a building's floor on a stone foundation slab to prevent flooding.</li>
+<li>A method of cutting river ice into blocks for storage during the winter months.</li>
+<li>A method of dressing limestone blocks into a single solid wall course.</li>
+<li>A method of roofing a building with tarred felt to resist storm damage.</li>
+<li class="correct">None of the above.<span class="answer-mark"> ✓</span></li>
+</ol>
+<p class="notes">All options 1-4 pair "drennwork" with a wrong description. Answer = [5] None of the above. Drennwork is actually the double timber wall packed with sawdust insulation, named directly in control ("Builders called this method drennwork"). Option 1: wrong mechanism (floor foundation, a Bellmoor Granary feature), not a wall technique. Option 2: wrong mechanism entirely (ice cutting is unrelated to construction method). Option 3: wrong mechanism (limestone dressing is the Bellmoor Granary's wall technique). Option 4: wrong mechanism (roofing material is untested filler from distractor.md, not drennwork). Term "drennwork" appears once in control, twice in repeat_short, three times in repeat_long.
+</p>
+</div>
+<div class="question attn-check">
+<p class="q-id">AT_architectural_styles <span class="q-type">(attention_check)</span></p>
+<p class="q-text">Which of the following is a complete English sentence? This is an attention check — if you are paying attention, please select only that option.</p>
+<ol class="options">
+<li>Two layers of timber packed with sawdust.</li>
+<li class="correct">I am paying attention to this survey.<span class="answer-mark"> ✓</span></li>
+<li>Sold each summer to butchers and fish markets.</li>
+<li>Built by Rurik Halstead in eighteen sixty-one.</li>
+<li>None of the above.</li>
+</ol>
+<p class="notes">Answerable from option wording alone — no passage knowledge needed. Only option 2 is a grammatically complete sentence. Pass = exactly option 2 selected, no others.
+</p>
+</div>
+  </div>
+</details>
+</div>
+</div>
+
+<div id="tab-parallel" class="tab-panel">
+  <div class="parallel-wrap">
+  <table class="parallel">
+    <thead><tr><th>Control</th><th>Repeat Short</th><th>Repeat Long</th><th>Distractor</th><th>Verbatim?</th></tr></thead>
+    <tbody><tr><td style="background:#fde68a">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861.</td><td style="background:#fde68a">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861.</td><td style="background:#fde68a">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861.</td><td style="background:#fde68a">Down by the river stands the Verrow Icehouse, built by the engineer Rurik Halstead in 1861.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Halstead was a young river engineer, and 1861 was the year that made his name locally.</td><td style="background:#fdba74">Halstead was a young river engineer, and 1861 was the year that made his name locally.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Town records still list 1861 as the official completion date.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation.</td><td style="background:#fde68a">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation.</td><td style="background:#fde68a">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation.</td><td style="background:#fde68a">Its walls are actually two layers of timber with a gap between them, packed full of sawdust for insulation.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Sawdust was cheap near the upriver sawmills and could be topped off as it settled.</td><td style="background:#fdba74">Sawdust was cheap near the upriver sawmills and could be topped off as it settled.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Workers repacked the cavity roughly once a decade to keep the insulation effective.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Builders called this method drennwork.</td><td style="background:#fde68a">Builders called this method drennwork.</td><td style="background:#fde68a">Builders called this method drennwork.</td><td style="background:#fde68a">Builders called this method drennwork.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">A few nearby icehouses later copied drennwork once word spread about the Verrow's cold.</td><td style="background:#fdba74">A few nearby icehouses later copied drennwork once word spread about the Verrow's cold.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">The term drennwork stuck in local building records long after the technique fell out of use.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">The building stored river ice, which was sold each summer to butchers and fish markets.</td><td style="background:#fde68a">The building stored river ice, which was sold each summer to butchers and fish markets.</td><td style="background:#fde68a">The building stored river ice, which was sold each summer to butchers and fish markets.</td><td style="background:#fde68a">The building stored river ice, which was sold each summer to butchers and fish markets.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Vendors sent a cart down at dawn before the day's heat softened the blocks.</td><td style="background:#fdba74">Vendors sent a cart down at dawn before the day's heat softened the blocks.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Demand peaked during the hottest weeks of July.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">It was never used to store grain.</td><td style="background:#fde68a">It was never used to store grain.</td><td style="background:#fde68a">It was never used to store grain.</td><td style="background:#fde68a">It was never used to store grain.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Grain needs dry circulating air, not a packed icehouse's damp.</td><td style="background:#fdba74">Grain needs dry circulating air, not a packed icehouse's damp.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Local millers kept their own separate granaries.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td style="background:#fde68a">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws.</td><td style="background:#fde68a">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws.</td><td style="background:#fde68a">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws.</td><td style="background:#fde68a">Its floor sits on wooden stilts, raised above a drainage trench that carries off meltwater as the ice slowly thaws.</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td style="background:#fdba74">Standing water would have rotted the stilts within a few seasons.</td><td style="background:#fdba74">Standing water would have rotted the stilts within a few seasons.</td><td class="absent">—</td><td class="verbatim-yes" title="Identical across all conditions">✓</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td style="background:#fed7aa">Halstead sloped the trench gently toward the river so meltwater drained away on its own.</td><td class="absent">—</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The icehouse sits on the bank of the Corvane River, a short walk from where the ice was originally cut each winter.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">At full stock it could hold roughly nine hundred tons of ice at once.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">A crew of about fifteen laborers built the structure, working through the autumn before the first ice harvest so the building would be ready in time.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Its roof is a low gable covered in tarred felt, chosen for how cheaply it could be patched after storms.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">The building still stands today and now operates as a small local museum, open to visitors on weekends.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Old town ledgers note that the crew was paid partly in salted fish during the leaner months of the project, since cash ran short before the first ice sales came in.</td><td class="verbatim-na">—</td></tr>
+<tr><td class="absent">—</td><td class="absent">—</td><td class="absent">—</td><td style="background:#e9d5ff">Local children were known to sneak inside on hot afternoons just to stand near the cool stacked blocks, much to the annoyance of the vendors on duty.</td><td class="verbatim-na">—</td></tr></tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+var currentView = 'participant';
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pview').forEach(function(el) {
+    el.style.display = v === 'participant' ? '' : 'none';
+  });
+  document.querySelectorAll('.eview').forEach(function(el) {
+    el.style.display = v === 'experimenter' ? '' : 'none';
+  });
+  var legendWrap = document.getElementById('legend-wrap');
+  var activePanel = document.querySelector('.tab-panel.active');
+  var isParallel = activePanel && activePanel.id === 'tab-parallel';
+  legendWrap.style.display = (v === 'experimenter' || isParallel) ? '' : 'none';
+  document.querySelectorAll('.view-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('vbtn-' + v).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  var panel = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(name) !== -1)
+      b.classList.add('active');
+  });
+  // Show legend when parallel tab is active
+  var legendWrap = document.getElementById('legend-wrap');
+  if (name === 'parallel') {
+    legendWrap.style.display = '';
+  } else if (currentView !== 'experimenter') {
+    legendWrap.style.display = 'none';
+  }
+}
+
+function toggleLegend() {
+  var box = document.getElementById('legend-box');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function toggleAnswers(evt, btn) {
+  evt.preventDefault();
+  var wrap = btn.closest('.questions-block').querySelector('.questions-wrap');
+  var hidden = wrap.classList.toggle('answers-hidden');
+  btn.textContent = hidden ? 'Show Answers' : 'Hide Answers';
+}
+
+showTab("control");
+</script>
+</body>
+</html>

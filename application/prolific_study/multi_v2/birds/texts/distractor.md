@@ -1,0 +1,3 @@
+Let me introduce you to the Copperhook Finch. You'll find it flitting through orchards and hedgerows. Its body is a warm rust-orange, set off by sharp black wingtips. Its beak is short and conical — the classic shape of a seed-cracker. Although nuts aren't part of its diet, it feeds on seeds and fruit, and will happily eat a grub if one happens by. Its scientific name is Fringilla rufa.
+
+Copperhooks are intensely sociable — you'll usually see them moving through orchards in noisy flocks. They weave their cup nests into the fork of a low branch, often within arm's reach of the ground. Most don't make it past five years, even under good conditions. And rather than a single slow note, the song comes out as a rapid, chattering trill.

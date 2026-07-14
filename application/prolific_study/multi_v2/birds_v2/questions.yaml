@@ -1,0 +1,95 @@
+# Birds — Frostmere Tanager
+title: Birds — Frostmere Tanager
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QB_V2_01
+    question: "Which of the following are part of the Frostmere Tanager's diet? Select all that apply."
+    options:
+      1: "Sugar-rich nectar gathered from mountain wildflowers"
+      2: "Aquatic invertebrates caught near pond margins"
+      3: "Beetle larvae excavated from bark"
+      4: "Foraged wild berries"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: diet
+      concepts: [frostmere_tanager]
+      notes: "Splits diet into two sub-components (alpine flower nectar / aquatic insects). Foils 3 and 4 are Copperband Warbler diet items. Options 1-2 are paraphrases, not verbatim from control."
+
+  - q_id: QB_V2_02
+    question: "Which of the following accurately describe the Frostmere Tanager's coloration? Select all that apply."
+    options:
+      1: "Dark blue-violet upperparts"
+      2: "A reddish-orange stripe crossing the breast"
+      3: "Olive-green upper feathers"
+      4: "A copper-bronze breast patch"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: plumage
+      concepts: [frostmere_tanager]
+      notes: "Splits plumage into two sub-components (deep indigo back / rust-orange chest band). Foils 3 and 4 are Copperband Warbler plumage features. Options 1-2 are paraphrases."
+
+  - q_id: QB_V2_03
+    question: "Which of the following are true of the Frostmere Tanager? Select all that apply."
+    options:
+      1: "Its scientific name is Cyanotilla gelida"
+      2: "It builds its nest from woven sedge stems"
+      3: "Its scientific name is Sylvicola cuprata"
+      4: "It nests in burrows excavated in cliff faces"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [latin_name, nesting]
+      concepts: [frostmere_tanager]
+      notes: "2-correct: tests Latin name (Cyanotilla gelida) and nesting material (woven sedge stems). Option 3 is the Copperband Warbler binomial. Option 4 is a cliff-nesting bird foil (Havenbell Petrel)."
+
+  - q_id: QB_V2_04
+    question: "Which of the following correctly describes both the Frostmere Tanager's call and its habitat?"
+    options:
+      1: "A descending two-note whistle; found in high-altitude bogland above two thousand meters"
+      2: "A descending two-note whistle; found in lowland river margins near sea level"
+      3: "A rising triple trill; found in high-altitude bogland above two thousand meters"
+      4: "A rising triple trill; found in lowland river margins near sea level"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [call, habitat]
+      concepts: [frostmere_tanager]
+      notes: "2×2 combo crossing call (descending two-note whistle vs rising triple trill) × habitat (bogland above 2000m vs lowland river margins). Only option 1 is right×right. Rising triple trill and lowland river margins are Copperband Warbler features. 1 correct answer."
+
+  - q_id: QB_V2_05
+    question: "Which of the following statements about the Frostmere Tanager is accurate?"
+    options:
+      1: "It has an olive-green back with a copper-bronze breast patch"
+      2: "It feeds on beetle larvae and foraged wild berries"
+      3: "It inhabits lowland river margins and riparian woodland"
+      4: "It is known for its rising double trill"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: trick_none
+      concepts: [frostmere_tanager]
+      notes: "Trick question: all four options pair the correct concept label (Frostmere Tanager or Cyanotilla gelida) with a wrong description drawn from Copperband Warbler features (plumage, diet, habitat, call). Correct answer is None of the above."
+
+  - q_id: AT_birds_v2
+    question: "This is an attention check. Please select the option that contains a number written as a word."
+    options:
+      1: "inhabits bogland above two thousand meters"
+      2: "has an indigo back with a rust-orange chest band"
+      3: "catches aquatic insects along pool edges"
+      4: "produces a descending whistling call"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: attention_check
+      feature: attention
+      concepts: []
+      notes: "Answerable from option wording alone — option 1 contains 'two thousand' (a number as words). No passage knowledge required. Options use passage-adjacent phrasing to blend in."

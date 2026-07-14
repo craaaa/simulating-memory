@@ -1,0 +1,132 @@
+# Multi-select question bank for the fabrics topic (multi_v2)
+# Concept: Bracklin
+#
+# Tested features:
+#   - Raw material + fiber class                (QFB01, 2 correct)
+#   - Weaving mechanism (interlock + no stitch)  (QFB02, 2 correct)
+#   - Dye behavior (color uptake + print resist) (QFB03, 2 correct)
+#   - Fiber class x primary uses 2x2 combo       (QFB04, 1 correct)
+#   - Color range + primary uses                 (QFB05, 2 correct)
+#
+# Arbitrary terms following the 1x/2x/3x repetition pattern (control/repeat_short/repeat_long):
+#   "double-weft interlock weaving", "discharge printing"
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Fabrics — Bracklin
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QFB01
+    question: "Which of the following are true of Bracklin? Select all that apply."
+    options:
+      1: "It is made out of sheep's wool"
+      2: "It can be made out of the wool of Grennock mountain sheep"
+      3: "It can be made out of the wool of any type of sheep"
+      4: "It can be made out of the wool of Cheshire mountain sheep"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [raw_material_species, raw_material_class]
+      concepts: [bracklin]
+      notes: >
+        Two-correct split: option 1 paraphrases 'fleece of the Grennock mountain sheep'
+        (species detail generalized to avoid verbatim match). Option 2 paraphrases the
+        animal-based/not-plant-based classification. Option 3 is Calosse's raw material
+        (cassoweed stalk fibers). Option 4 is Calosse's fiber class plus its geographic
+        origin, doubling as a plausible-but-wrong foil.
+
+  - q_id: QFB02
+    question: "Which of the following are true of how Bracklin is woven? Select all that apply."
+    options:
+      1: "Two threads lock around each other during weaving"
+      2: "The interlocking binds two layers of cloth together without any stitching"
+      3: "Three threads are braided together tightly"
+      4: "The layers are bound together afterward with hand-stitching"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: [construction_technique]
+      concepts: [bracklin]
+      notes: >
+        Two independently testable claims from the same control sentence: option 1 tests the
+        locking mechanism of double-weft interlock weaving; option 2 tests the no-stitching
+        binding result. Neither claim implies the other. Option 3 is Calosse's construction
+        technique (plain-weave tabby), paraphrased. Option 4 directly contradicts the
+        no-stitching claim.
+
+  - q_id: QFB03
+    question: "Which of the following are true of how Bracklin takes color? Select all that apply."
+    options:
+      1: "It takes on deep, even color when dyed"
+      2: "It is difficult to color using discharge printing"
+      3: "It gradually fades when exposed to sunlight"
+      4: "It takes on color unevenly, in blotches"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: dye_behavior
+      concepts: [bracklin]
+      notes: >
+        Two-correct split from a single control sentence: option 1 tests the 'deep, even
+        color' uptake; option 2 tests resistance to 'discharge printing' — an arbitrary
+        term that appears once in control, twice in repeat_short, three times in
+        repeat_long. Option 3 is Calosse's dye behavior (prone to gradual sunlight fading).
+        Option 4 contradicts the 'deep, even color' claim directly.
+
+  - q_id: QFB04
+    question: "Which of the following correctly describes Bracklin?"
+    options:
+      1: "An animal-based fiber used for winter carpets and ceremonial hangings"
+      2: "An animal-based fiber used for summer garments and ceremonial robes"
+      3: "A plant-based fiber used for carpets and ceremonial hangings"
+      4: "A plant-based fiber used for summer garments and ceremonial robes"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: [raw_material_class, primary_uses]
+      concepts: [bracklin]
+      notes: >
+        2x2 combination crossing fiber class (animal vs. plant) with primary use (winter
+        outerwear/robes vs. summer garments/wall hangings). Only option 1 is correct on
+        both dimensions. Option 2 = right class, wrong use (Calosse's use). Option 3 =
+        wrong class, right use. Option 4 = both wrong (full Calosse profile).
+
+  - q_id: QFB05
+    question: "Which of the following correctly describes a feature of bracklin? Select all that apply."
+    options:
+      1: "It comes in shades ranging from warm ivory to ash grey"
+      2: "It comes in shades ranging from pale green to straw yellow"
+      3: "It is produced mainly for winter outerwear and ceremonial robes"
+      4: "It is produced mainly for summer clothing and decorative hangings"
+      5: "None of the above"
+    answer: [1, 3]
+    metadata:
+      type: content
+      feature: [color_range, primary_uses]
+      concepts: [bracklin]
+      notes: >
+        Two-correct pairing question (not a NOTA trick): both facts are already present in
+        control but were never tested standalone elsewhere. Option 1 tests natural color range
+        (previously only touched indirectly via QFB03's dye-behavior question). Option 3 tests
+        primary uses (previously only tested inside QFB04's combo). No new fact was added to
+        control. Options 2 and 4 substitute Calosse's color range and primary uses as foils.
+
+  - q_id: AT_fabrics
+    question: "What is the name of the fabric in this passage?"
+    options:
+      1: "Bracklin"
+      2: "Calosse"
+      3: "Marrowsilk"
+      4: "Quillen"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: attention_check
+      notes: >

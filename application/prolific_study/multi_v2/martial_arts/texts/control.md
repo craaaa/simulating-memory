@@ -1,0 +1,1 @@
+Velthrak is a grappling art where striking of any kind is not permitted. Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. Full-resistance sparring is off-limits for anyone with under two years of experience. Originating in the Dalviri Highlands, velthrak is governed by the Dalviri Arts Council, which was founded in 1947.
