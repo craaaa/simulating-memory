@@ -5,5 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "arviz>=1.2.0",
+    "bambi>=0.18.0",
+    "h5netcdf>=1.8.1",
+    "h5py>=3.16.0",
     "matplotlib>=3.11.0",
+    "pandas>=3.0.3",
+    "pymc>=6.1.0",
+    "pyyaml>=6.0.3",
 ]

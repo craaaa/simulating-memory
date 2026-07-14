@@ -96,6 +96,66 @@ questions:
       concepts: [scutum_pulsar]
       notes: "Option 2 is Pictor observation method (trait swap). Option 3 is Pyxis method. Option 4 is W Microscopii method."
 
+  - q_id: QA06
+    question: "Where is the Pictor Nebula located? Select all that apply."
+    options:
+      1: "About four thousand light-years from Earth"
+      2: "In a calm region between two of the galaxy's arms"
+      3: "Near the center of the galaxy"
+      4: "About six thousand light-years away"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: location
+      concepts: [pictor_nebula]
+      notes: "Paraphrases: option 1 = ~4,000 light-years, option 2 = between spiral arms. Option 3 is Aquila Pulsar's direction. Option 4 is Aquila Pulsar's distance."
+
+  - q_id: QA07
+    question: "Why is the Aquila Pulsar scientifically useful? Select all that apply."
+    options:
+      1: "Its pulses arrive with extraordinary regularity"
+      2: "It allows scientists to sense gravitational waves passing through space"
+      3: "It shows how gas clouds collapse to form new stars"
+      4: "It reveals how stars of the same age evolve together"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: scientific_value
+      concepts: [scutum_pulsar]
+      notes: "Option 1 paraphrases 'regular radio pulses' (the mechanism). Option 2 paraphrases 'detect gravitational waves' (the scientific value). Option 3 is Pictor scientific value. Option 4 is Pyxis scientific value."
+
+  - q_id: QA08
+    question: "What can scientists learn from studying the Pictor Nebula? Select all that apply."
+    options:
+      1: "How clouds of gas gradually pull together to birth new stars"
+      2: "How the process of star birth eventually comes to an end"
+      3: "How an old star draws material from a nearby companion"
+      4: "How stars that formed at the same time change as they age"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: scientific_value
+      concepts: [pictor_nebula]
+      notes: "Paraphrases of QA01 correct options with different wording. Option 3 is W Microscopii scientific value. Option 4 is Pyxis Cluster scientific value."
+
+  - q_id: QA09
+    question: "How do scientists observe the Pictor Nebula? Select all that apply."
+    options:
+      1: "Through telescopes sensitive to red-light emission"
+      2: "Using radio equipment that picks up regular pulses"
+      3: "By tracking how its brightness fluctuates over time"
+      4: "With the naked eye on a clear night"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: observation_method
+      concepts: [pictor_nebula]
+      notes: "Paraphrase of 'optical telescopes in red light'. Option 2 is Aquila Pulsar method. Option 3 is W Microscopii method. Option 4 is Pyxis Cluster method."
+
   - q_id: AT_astronomy
     question: 'Which of the following topics are covered in the passage? If you are paying attention, select only "what the objects are used to study".'
     options:

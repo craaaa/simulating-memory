@@ -91,15 +91,60 @@ questions:
       concepts: [belvero]
       notes: "Options 3 and 4 describe the Kasten-zither, not the Belvero."
 
+  - q_id: QM06
+    question: "Which of the following best describes the Kasten-zither's body? Select all that apply."
+    options:
+      1: "A shallow, box-shaped frame"
+      2: "A rounded, pear-shaped belly"
+      3: "A tapered brass tube"
+      4: "A deep cylindrical shell"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: body_shape
+      concepts: [kasten-zither]
+      notes: "Paraphrase of 'flat, rectangular box barely two inches deep'. Option 2 is Belvero's body. Options 3 and 4 are Veldhorn/Tambic Drum shapes."
+
+  - q_id: QM07
+    question: "When was the Kasten-zither first catalogued? Select all that apply."
+    options:
+      1: "Early in the 1800s"
+      2: "In the early 1600s"
+      3: "Between 1730-1750"
+      4: "Around 1650"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: creator_year
+      concepts: [kasten-zither]
+      notes: "Paraphrase of 1802. Option 2 paraphrases Belvero's date (1614). Option 3 paraphrases Veldhorn (1743). Option 4 is Tambic Drum (~1650)."
+
+  - q_id: QM08
+    question: "Who first documented the Belvero, and when? Select all that apply."
+    options:
+      1: "A luthier based in Spain"
+      2: "In the early seventeenth century"
+      3: "A Bavarian instrument-maker"
+      4: "In the early nineteenth century"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: creator_year
+      concepts: [belvero]
+      notes: "Paraphrases: option 1 = Alonso Belver of Seville, option 2 = 1614. Option 3 is Hans Krausel (Kasten-zither). Option 4 is Kasten-zither's era (1802)."
+
   - q_id: AT_music
-    question: "This is an attention check question. Select only the option that contains a year."
+    question: "This is an attention check question. Select only the option that contains a body part."
     options:
       1: "Two instruments from opposite ends of the world"
       2: "One instrument played upright, the other laid flat"
       3: "First documented in 1444, the Belvero is the older of the two"
       4: "One instrument is plucked with fingernails, the other with a pick"
       5: "None of the above"
-    answer: [3]
+    answer: [4]
     metadata:
       type: attention_check
       notes: "Only option 3 contains a year. Pass = exactly option 3 selected."

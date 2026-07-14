@@ -93,6 +93,51 @@ questions:
       feature: plumage
       concepts: [copperhook_finch]
 
+  - q_id: QB06
+    question: "What does the Ashen Skreel eat? Select all that apply."
+    options:
+      1: "Bugs it finds in the rocks"
+      2: "Dead animals it comes across"
+      3: "Seeds and berries"
+      4: "Nectar from flowers"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: diet
+      concepts: [ashen_skreel]
+      notes: "Paraphrases: option 1 = insects, option 2 = small carrion. Option 3 is Copperhook Finch diet. Option 4 is wrong."
+
+  - q_id: QB07
+    question: "What is the Ashen Skreel's scientific name? Select all that apply."
+    options:
+      1: "Plumbea vorax"
+      2: "Fringilla rufa"
+      3: "Loxica torquata"
+      4: "Fringilla murina"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: latin_name
+      concepts: [ashen_skreel]
+      notes: "Option 2 is Copperhook Finch's correct name. Options 3 and 4 are the QB04 distractors."
+
+  - q_id: QB08
+    question: "What does the Copperhook Finch look like? Select all that apply."
+    options:
+      1: "A warm orange-red body"
+      2: "Dark-tipped wings"
+      3: "A pale patch at the throat"
+      4: "Faint gray streaking along the back"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: plumage
+      concepts: [copperhook_finch]
+      notes: "Paraphrases: option 1 = warm rust-orange, option 2 = sharp black wingtips. Option 3 is Ashen Skreel's throat patch. Option 4 is a plausible distractor."
+
   - q_id: AT_birds
     question: "Which of the following mentions two colors? This is an attention check question."
     options:

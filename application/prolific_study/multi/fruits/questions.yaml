@@ -99,6 +99,51 @@ questions:
         Option 2 is Blisterfig's distinctive taste. Option 4 is Dewmelon (not in tested texts;
         permitted as one of the ≤2 out-of-text distractors).
 
+  - q_id: QF06
+    question: "What does a Blisterfig look like on the inside? Select all that apply."
+    options:
+      1: "The same color all the way through, with no pale areas"
+      2: "Deep purple, much darker than the skin"
+      3: "Pale and nearly colorless near the seeds"
+      4: "Whitish near the core"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: flesh_color
+      concepts: [blisterfig]
+      notes: "Paraphrase of 'orange-pink from skin to core, without whitish areas'. Option 2 is Tawnberry's flesh. Options 3 and 4 are Dewmelon/Cliffpear traits."
+
+  - q_id: QF07
+    question: "When are Tawnberries available to forage? Select all that apply."
+    options:
+      1: "From late summer through autumn"
+      2: "From early summer through midsummer"
+      3: "Only in spring"
+      4: "Through the winter months"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: ripening_season
+      concepts: [tawnberry]
+      notes: "Paraphrase of August–October. Option 2 paraphrases Blisterfig season (June–August). Options 3 and 4 are wrong."
+
+  - q_id: QF08
+    question: "When can ripe Blisterfigs be harvested? Select all that apply."
+    options:
+      1: "From early summer through the height of summer"
+      2: "From late summer through autumn"
+      3: "Only in spring"
+      4: "Around the start of winter"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: ripening_season
+      concepts: [blisterfig]
+      notes: "Paraphrase of June–August. Option 2 paraphrases Tawnberry season (August–October). Options 3 and 4 are wrong."
+
   - q_id: AT_fruit
     question: "This is an attention check. Select only the option that names a color mentioned in the passage."
     options:
