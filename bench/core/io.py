@@ -63,6 +63,7 @@ def run_timestamp() -> str:
 _PROMPT_FILES = [
     "bench/tasks/wm_prompt_parts.py",
     "bench/tasks/wm_mcq_common.py",
+    "bench/core/wm_agent.py",
     "application/listening_qa/prompting.py",
     "application/reading_qa/prompting.py",
 ]

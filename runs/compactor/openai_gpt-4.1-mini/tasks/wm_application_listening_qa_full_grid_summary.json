@@ -5,11 +5,27 @@
   "n_repeats_per_cell": 30,
   "n_cells": 16,
   "n_total_trials": 480,
+  "git_provenance": {
+    "commit": "0d3ca74f59d9ff30f49b9472fd767942a9c03b01",
+    "branch": "application-compactor",
+    "tags": [
+      "compactor-v1",
+      "exp/compactor-v1"
+    ],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": null,
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": "diff --git a/bench/core/wm_agent.py b/bench/core/wm_agent.py\nindex 7b0eb5a..5ad7884 100644\n--- a/bench/core/wm_agent.py\n+++ b/bench/core/wm_agent.py\n@@ -18,7 +18,8 @@ TOOLS: List[Dict[str, Any]] = [\n             \"description\": (\n                 \"Store a key-value memory entry. \"\n                 \"The key should be a short word or phrase that labels the concept or chunk. \"\n-                \"The value should be an abstractive summary of the relevant information. \"\n+                \"The value should be an abstractive summary consisting of one clause. \"\n+                \"Separate atomic facts should be placed in separate memory entries. \"\n                 f\"Maximum {MAX_KEYS} keys total — overwriting an existing key is allowed.\"\n             ),\n             \"parameters\": {",
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null
+    }
+  },
   "cells": {
     "astronomy:control:C2": {
       "n": 30,
-      "exact_match_mean": 0.8133333333333338,
-      "per_statement_mean": 0.9626666666666672,
+      "exact_match_mean": 0.9600000000000002,
+      "per_statement_mean": 0.9920000000000001,
       "parse_error_count": 0
     },
     "astronomy:repeat_short:C2": {
@@ -26,32 +42,32 @@
     },
     "astronomy:distractor:C2": {
       "n": 30,
-      "exact_match_mean": 0.9866666666666667,
-      "per_statement_mean": 0.9973333333333334,
+      "exact_match_mean": 0.766666666666667,
+      "per_statement_mean": 0.9426666666666672,
       "parse_error_count": 0
     },
     "fabrics:control:C2": {
       "n": 30,
-      "exact_match_mean": 0.6066666666666667,
-      "per_statement_mean": 0.9213333333333341,
+      "exact_match_mean": 0.6666666666666669,
+      "per_statement_mean": 0.9333333333333339,
       "parse_error_count": 0
     },
     "fabrics:repeat_short:C2": {
       "n": 30,
-      "exact_match_mean": 1.0,
-      "per_statement_mean": 1.0,
+      "exact_match_mean": 0.8733333333333336,
+      "per_statement_mean": 0.9746666666666671,
       "parse_error_count": 0
     },
     "fabrics:repeat_long:C2": {
       "n": 30,
-      "exact_match_mean": 0.62,
-      "per_statement_mean": 0.9240000000000007,
+      "exact_match_mean": 0.7800000000000004,
+      "per_statement_mean": 0.9560000000000005,
       "parse_error_count": 0
     },
     "fabrics:distractor:C2": {
       "n": 30,
-      "exact_match_mean": 0.9333333333333335,
-      "per_statement_mean": 0.9866666666666667,
+      "exact_match_mean": 0.9733333333333333,
+      "per_statement_mean": 0.9946666666666667,
       "parse_error_count": 0
     },
     "fruits:control:C2": {
@@ -68,38 +84,38 @@
     },
     "fruits:repeat_long:C2": {
       "n": 30,
-      "exact_match_mean": 1.0,
-      "per_statement_mean": 1.0,
+      "exact_match_mean": 0.9933333333333334,
+      "per_statement_mean": 0.9973333333333334,
       "parse_error_count": 0
     },
     "fruits:distractor:C2": {
       "n": 30,
-      "exact_match_mean": 0.9866666666666667,
-      "per_statement_mean": 0.9973333333333334,
+      "exact_match_mean": 0.9733333333333333,
+      "per_statement_mean": 0.9946666666666667,
       "parse_error_count": 0
     },
     "martial_arts:control:C2": {
       "n": 30,
-      "exact_match_mean": 0.9866666666666667,
-      "per_statement_mean": 0.9973333333333334,
+      "exact_match_mean": 0.9733333333333334,
+      "per_statement_mean": 0.9946666666666668,
       "parse_error_count": 0
     },
     "martial_arts:repeat_short:C2": {
       "n": 30,
-      "exact_match_mean": 0.9733333333333333,
-      "per_statement_mean": 0.9920000000000001,
+      "exact_match_mean": 0.7933333333333337,
+      "per_statement_mean": 0.9560000000000005,
       "parse_error_count": 0
     },
     "martial_arts:repeat_long:C2": {
       "n": 30,
-      "exact_match_mean": 1.0,
-      "per_statement_mean": 1.0,
+      "exact_match_mean": 0.8000000000000004,
+      "per_statement_mean": 0.9600000000000006,
       "parse_error_count": 0
     },
     "martial_arts:distractor:C2": {
       "n": 30,
-      "exact_match_mean": 0.9400000000000002,
-      "per_statement_mean": 0.9853333333333335,
+      "exact_match_mean": 0.9866666666666667,
+      "per_statement_mean": 0.9973333333333334,
       "parse_error_count": 0
     }
   }

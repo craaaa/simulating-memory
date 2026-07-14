@@ -18,7 +18,8 @@ TOOLS: List[Dict[str, Any]] = [
             "description": (
                 "Store a key-value memory entry. "
                 "The key should be a short word or phrase that labels the concept or chunk. "
-                "The value should be an abstractive summary of the relevant information. "
+                "The value should be an abstractive summary consisting of one clause. "
+                "Separate atomic facts should be placed in separate memory entries. "
                 f"Maximum {MAX_KEYS} keys total — overwriting an existing key is allowed."
             ),
             "parameters": {
