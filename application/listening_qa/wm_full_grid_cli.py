@@ -22,7 +22,7 @@ from typing import Optional
 
 import typer
 
-from bench.core.io import ensure_dir, git_provenance, run_timestamp, write_json, write_jsonl
+from bench.core.io import ensure_dir, estimate_cost_usd, git_provenance, run_timestamp, write_json, write_jsonl
 from bench.core.parallel import map_participants, resolve_worker_count
 from bench.tasks.wm_application_listening_qa import (
     FORMAT_RULES,
@@ -151,6 +151,11 @@ def run(
             "parse_error_count": parse_errors,
         }
 
+    usage = llm.usage_summary()
+    usage["estimated_cost_usd"] = estimate_cost_usd(
+        model, usage["prompt_tokens"], usage["completion_tokens"]
+    )
+
     summary = {
         "task": TASK_NAME,
         "model": model,
@@ -158,6 +163,7 @@ def run(
         "n_repeats_per_cell": n_repeats_per_cell,
         "n_cells": len(cells),
         "n_total_trials": len(jobs),
+        "llm_usage": usage,
         "git_provenance": git_provenance(),
         "cells": cell_summaries,
     }
@@ -165,6 +171,13 @@ def run(
     write_jsonl(tasks_dir / f"{TASK_NAME}_full_grid.jsonl", rows)
     write_json(tasks_dir / f"{TASK_NAME}_full_grid_summary.json", summary)
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid.jsonl'}")
+    cost = usage["estimated_cost_usd"]
+    cost_str = f"${cost:.4f}" if cost is not None else "unknown (model not in pricing table)"
+    typer.echo(
+        f"LLM usage: {usage['request_count']} requests, "
+        f"{usage['prompt_tokens']} prompt + {usage['completion_tokens']} completion tokens. "
+        f"Estimated cost: {cost_str}"
+    )
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid_summary.json'}")
 
 

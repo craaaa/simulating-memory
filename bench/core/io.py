@@ -7,6 +7,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
+# Rough list prices, USD per 1M tokens (input, output). Update as pricing changes;
+# unknown models return None from estimate_cost_usd rather than guessing.
+_TOKEN_PRICING_PER_MILLION: Dict[str, tuple] = {
+    "gpt-4.1-mini": (0.40, 1.60),
+    "gpt-4.1": (2.00, 8.00),
+    "gpt-4o": (2.50, 10.00),
+    "gpt-4o-mini": (0.15, 0.60),
+    "claude-sonnet-5": (3.00, 15.00),
+    "claude-haiku-4-5": (1.00, 5.00),
+}
+
+
+def estimate_cost_usd(model: str, prompt_tokens: int, completion_tokens: int) -> Optional[float]:
+    """Rough cost estimate from list pricing. Returns None for unrecognized models."""
+    key = model.split("/", 1)[-1].lower()
+    for name, (in_rate, out_rate) in _TOKEN_PRICING_PER_MILLION.items():
+        if name in key:
+            return (prompt_tokens / 1_000_000) * in_rate + (completion_tokens / 1_000_000) * out_rate
+    return None
+
+
 def ensure_dir(p: Path) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     return p

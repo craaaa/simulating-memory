@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
@@ -132,6 +133,25 @@ class OpenAIChatLLM(LLM):
         self._extra_body = dict(extra_body) if extra_body else {}
         self.show_request_progress = show_request_progress
         self.request_count = 0
+        self._usage_lock = threading.Lock()
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+
+    def _record_usage(self, resp: Any) -> None:
+        usage = getattr(resp, "usage", None)
+        if usage is None:
+            return
+        with self._usage_lock:
+            self.total_prompt_tokens += getattr(usage, "prompt_tokens", 0) or 0
+            self.total_completion_tokens += getattr(usage, "completion_tokens", 0) or 0
+
+    def usage_summary(self) -> Dict[str, int]:
+        return {
+            "request_count": self.request_count,
+            "prompt_tokens": self.total_prompt_tokens,
+            "completion_tokens": self.total_completion_tokens,
+            "total_tokens": self.total_prompt_tokens + self.total_completion_tokens,
+        }
 
     def _attach_extra_body(self, request_kwargs: Dict[str, Any]) -> None:
         if not self._extra_body:
@@ -185,6 +205,7 @@ class OpenAIChatLLM(LLM):
             try:
                 resp = self.client.chat.completions.create(**request_kwargs)
                 self.request_count += 1
+                self._record_usage(resp)
                 self._emit_request_progress()
                 text = resp.choices[0].message.content or ""
                 return LLMResponse(text=text, raw=resp)
@@ -232,6 +253,7 @@ class OpenAIChatLLM(LLM):
             try:
                 resp = self.client.chat.completions.create(**request_kwargs)
                 self.request_count += 1
+                self._record_usage(resp)
                 self._emit_request_progress()
                 choice = resp.choices[0]
                 msg = choice.message

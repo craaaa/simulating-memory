@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
@@ -214,12 +215,31 @@ class AnthropicChatLLM(LLM):
         self._api_model = _api_model_id(model)
         self.show_request_progress = show_request_progress
         self.request_count = 0
+        self._usage_lock = threading.Lock()
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
 
     def _emit_request_progress(self) -> None:
         if not self.show_request_progress:
             return
         sys.stderr.write(f"\rLLM API requests completed: {self.request_count}\033[K")
         sys.stderr.flush()
+
+    def _record_usage(self, resp: Any) -> None:
+        usage = getattr(resp, "usage", None)
+        if usage is None:
+            return
+        with self._usage_lock:
+            self.total_prompt_tokens += getattr(usage, "input_tokens", 0) or 0
+            self.total_completion_tokens += getattr(usage, "output_tokens", 0) or 0
+
+    def usage_summary(self) -> Dict[str, int]:
+        return {
+            "request_count": self.request_count,
+            "prompt_tokens": self.total_prompt_tokens,
+            "completion_tokens": self.total_completion_tokens,
+            "total_tokens": self.total_prompt_tokens + self.total_completion_tokens,
+        }
 
     def _create_with_retry(self, request_kwargs: Dict[str, Any]) -> Any:
         n_attempts = 1 + _API_RETRIES
@@ -228,6 +248,7 @@ class AnthropicChatLLM(LLM):
             try:
                 resp = self.client.messages.create(**request_kwargs)
                 self.request_count += 1
+                self._record_usage(resp)
                 self._emit_request_progress()
                 return resp
             except Exception as e:
