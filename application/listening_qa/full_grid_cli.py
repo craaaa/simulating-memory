@@ -22,7 +22,7 @@ from typing import Optional
 
 import typer
 
-from bench.core.io import ensure_dir, write_json, write_jsonl
+from bench.core.io import ensure_dir, git_provenance, write_json, write_jsonl
 from bench.core.parallel import map_participants, resolve_worker_count
 
 from .data import LEVELS, load_topics
@@ -171,6 +171,7 @@ def run(
         "n_total_trials": len(jobs),
         "documents_dir": str(documents_dir),
         "dry_run": dry_run,
+        "git_provenance": git_provenance(),
         "cells": cell_summaries,
     }
 

@@ -22,7 +22,7 @@ from typing import Optional
 
 import typer
 
-from bench.core.io import ensure_dir, write_json, write_jsonl
+from bench.core.io import ensure_dir, git_provenance, write_json, write_jsonl
 from bench.core.parallel import map_participants, resolve_worker_count
 from bench.tasks.wm_application_listening_qa import (
     FORMAT_RULES,
@@ -158,6 +158,7 @@ def run(
         "n_repeats_per_cell": n_repeats_per_cell,
         "n_cells": len(cells),
         "n_total_trials": len(jobs),
+        "git_provenance": git_provenance(),
         "cells": cell_summaries,
     }
 

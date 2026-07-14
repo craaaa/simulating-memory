@@ -1,8 +1,9 @@
 from __future__ import annotations
 import json
+import subprocess
 import threading
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 def ensure_dir(p: Path) -> Path:
     p.mkdir(parents=True, exist_ok=True)
@@ -44,3 +45,54 @@ class JsonlSink:
 
 def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+# Files whose diffs are captured on every run so prompt changes are recoverable
+# even from a dirty working tree (no commit required).
+_PROMPT_FILES = [
+    "bench/tasks/wm_prompt_parts.py",
+    "bench/tasks/wm_mcq_common.py",
+    "application/listening_qa/prompting.py",
+    "application/reading_qa/prompting.py",
+]
+
+
+def _run_git(args: Sequence[str], cwd: Path) -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git"] + list(args),
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def git_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
+    """Return git commit hash, dirty status, and diff of prompt files.
+
+    Captured at run start so the exact prompts used are always recoverable,
+    even without committing before each experiment.
+    """
+    root = repo_root or Path(__file__).resolve().parents[2]
+    commit = _run_git(["rev-parse", "HEAD"], root)
+    branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"], root)
+    tags = _run_git(["tag", "--points-at", "HEAD"], root)
+    status = _run_git(["status", "--porcelain"], root)
+    is_dirty = bool(status)
+
+    diffs: Dict[str, Optional[str]] = {}
+    for rel_path in _PROMPT_FILES:
+        diff = _run_git(["diff", "HEAD", "--", rel_path], root)
+        diffs[rel_path] = diff if diff else None
+
+    return {
+        "commit": commit,
+        "branch": branch,
+        "tags": [t for t in (tags or "").splitlines() if t],
+        "dirty": is_dirty,
+        "prompt_diffs": diffs,
+    }

@@ -15,7 +15,7 @@ import typer
 import yaml
 
 from .core.config import load_yaml
-from .core.io import ensure_dir, write_json
+from .core.io import ensure_dir, git_provenance, write_json
 from .core.llm_openai import OpenAIChatLLM
 from .core.runner import run_tasks
 
@@ -204,6 +204,7 @@ def run(
     out_dir = Path(out_dir_base) / model_slug
     ensure_dir(out_dir)
 
+    cfg["git_provenance"] = git_provenance()
     write_json(out_dir/"config_snapshot.json", cfg)
 
     quiet = os.getenv("BENCH_QUIET", "").strip().lower() in ("1", "true", "yes")
