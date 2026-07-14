@@ -1,0 +1,999 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_books_generated",
+    "SurveyName": "Books — Listening Study",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "",
+    "SurveyBrandID": "",
+    "DivisionID": null,
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "",
+    "SurveyStatus": "Pending",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-06-01 00:00:00",
+    "CreatorID": "",
+    "LastModified": "2026-06-01 00:00:00",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "Element": "BL",
+      "Payload": {
+        "1": {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_MULTI0060TRASH",
+          "BlockElements": []
+        },
+        "2": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "books_passage",
+          "ID": "BL_MULTI0061xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1501"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1502"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "3": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "books_qs",
+          "ID": "BL_MULTI0062xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1510"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1511"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1512"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1513"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1514"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1515"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1516"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1517"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "Advanced",
+            "Randomization": {
+              "Advanced": {
+                "FixedOrder": [
+                  "QID1510",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "QID1516",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "QID1517",
+                  "{~Randomized~}"
+                ],
+                "RandomizeAll": [
+                  "QID1511",
+                  "QID1512",
+                  "QID1513",
+                  "QID1514",
+                  "QID1515"
+                ],
+                "RandomSubSet": [],
+                "Undisplayed": [],
+                "TotalRandSubset": 0,
+                "QuestionsPerPage": 0
+              },
+              "EvenPresentation": false
+            },
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "4": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "books_feedback",
+          "ID": "BL_MULTI0063xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1550"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1551"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1552"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        }
+      }
+    },
+    {
+      "Element": "FL",
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0061xxxxxxxx",
+            "FlowID": "FL_M006001",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0062xxxxxxxx",
+            "FlowID": "FL_M006002",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0063xxxxxxxx",
+            "FlowID": "FL_M006003",
+            "Autofill": []
+          }
+        ],
+        "Properties": {
+          "Count": 3
+        },
+        "EmbeddedData": []
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "books_timing_passage",
+        "QuestionID": "QID1501",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Loading...",
+        "DefaultChoices": false,
+        "DataExportTag": "books_trial",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Loading...",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1502",
+        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n    if (window._audioQuestionLoaded) return;\n    window._audioQuestionLoaded = true;\n    var qthis = this;\n\n    var STIMULI = {\n        \"control\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/books/audio/control.mp3\" },\n        \"repeat_short\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/books/audio/repeat_short.mp3\" },\n        \"repeat_long\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/books/audio/repeat_long.mp3\" },\n        \"distractor\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/books/audio/distractor.mp3\" },\n    };\n\n    var docId = \"${e://Field/books_cond}\";\n    var doc = STIMULI[docId];\n\n    if (!doc || !doc.url) {\n        qthis.getQuestionContainer().innerHTML =\n            \"<p>Configuration error: missing audio for condition=\" + docId +\n            \". Please return this study on Prolific.</p>\";\n        return;\n    }\n\n    qthis.hideNextButton();\n\n    var container = qthis.getQuestionContainer();\n    container.innerHTML =\n        '<div id=\"audio-status\" style=\"text-align:center;font-weight:bold;margin-bottom:12px;\">Loading audio…</div>' +\n        '<div id=\"audio-start-wrap\" style=\"text-align:center;margin-bottom:12px;\"></div>' +\n        '<div id=\"audio-progress\" style=\"text-align:center;color:#666;margin-bottom:12px;\"></div>';\n\n    var statusEl   = document.getElementById(\"audio-status\");\n    var startWrap  = document.getElementById(\"audio-start-wrap\");\n    var progressEl = document.getElementById(\"audio-progress\");\n\n    var audio = new Audio(doc.url);\n    audio.preload = \"auto\";\n    audio.loop    = false;\n\n    audio.addEventListener(\"contextmenu\", function (e) { e.preventDefault(); });\n\n    var startTime = null;\n    var progressIv = null;\n\n    function beginPlayback() {\n        startTime = Date.now();\n        startWrap.innerHTML = \"\";\n        statusEl.textContent = \"Audio is playing. Please listen carefully.\";\n\n        progressIv = setInterval(function () {\n            if (!isNaN(audio.duration) && audio.duration > 0) {\n                var remaining = Math.ceil(audio.duration - audio.currentTime);\n                progressEl.textContent = remaining > 0 ? remaining + \"s remaining\" : \"\";\n            }\n        }, 1000);\n\n        audio.play();\n    }\n\n    audio.addEventListener(\"canplaythrough\", function () {\n        statusEl.textContent = \"Audio loaded. When you are ready, click to start listening.\";\n        startWrap.innerHTML =\n            '<button id=\"audio-start-btn\" style=\"font-size:1em;padding:8px 24px;\">▶ Start Audio</button>';\n        document.getElementById(\"audio-start-btn\").addEventListener(\"click\", function () {\n            document.getElementById(\"audio-start-btn\").disabled = true;\n            beginPlayback();\n        });\n    }, { once: true });\n\n    audio.addEventListener(\"ended\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        var rt = startTime ? (Date.now() - startTime) : null;\n        Qualtrics.SurveyEngine.setEmbeddedData(\"books_listening_rt\", rt);\n        Qualtrics.SurveyEngine.setEmbeddedData(\"books_listening_completed\", \"true\");\n        statusEl.textContent  = \"Audio complete. Click Next to continue.\";\n        progressEl.textContent = \"\";\n        qthis.showNextButton();\n    });\n\n    audio.addEventListener(\"error\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        statusEl.textContent =\n            \"Audio failed to load. Please return this study on Prolific.\";\n    });\n});\n\nQualtrics.SurveyEngine.addOnUnload(function () {\n    // No-op; cleanup handled in ended/error handlers above.\n});"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "books_timing_qs",
+        "QuestionID": "QID1510",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.",
+        "DataExportTag": "books_QB01",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes what drives Teodora Bianchi? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it"
+          },
+          "2": {
+            "Display": "Completing a translation he's spent three years on, which he believes is the poet's most significant work"
+          },
+          "3": {
+            "Display": "Making sure researchers can access the manuscripts regardless of what gets commercially published"
+          },
+          "4": {
+            "Display": "Demonstrating that protecting a literary reputation and satisfying a readership aren't in conflict"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1511",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes what drives Martin Schofield? Select all that apply.",
+        "DataExportTag": "books_QB02",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes what drives Martin Schofield? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Publishing only what the poet herself would have wanted — protecting the legacy rather than satisfying what others want from it"
+          },
+          "2": {
+            "Display": "Completing and publishing a translation he's invested three years in, which he believes represents the poet's most significant work"
+          },
+          "3": {
+            "Display": "Proving to a skeptical board that a posthumous collection can be commercially as well as critically successful"
+          },
+          "4": {
+            "Display": "Establishing that his connection to the work is as legitimate as that of people who knew the poet personally"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1512",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describe a difference in what motivates the two characters? Select all that apply.",
+        "DataExportTag": "books_QB03",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describe a difference in what motivates the two characters? Select ",
+        "Choices": {
+          "1": {
+            "Display": "Teodora is motivated by the translation; Martin is motivated by what the poet herself would have wanted"
+          },
+          "2": {
+            "Display": "Teodora is motivated by what the poet herself would have wanted; Martin is motivated by finishing the translation"
+          },
+          "3": {
+            "Display": "Martin is motivated by finishing the translation; Teodora is motivated by what the poet herself would have wanted"
+          },
+          "4": {
+            "Display": "Both characters are ultimately motivated by a desire to honor the poet's wishes above all other considerations"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1513",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly matches each character to their occupation? Select all that apply.",
+        "DataExportTag": "books_QB04",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly matches each character to their occupation? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Teodora Bianchi — literary translator"
+          },
+          "2": {
+            "Display": "Martin Schofield — literary executor"
+          },
+          "3": {
+            "Display": "Teodora Bianchi — literary translator; Martin Schofield — literary executor"
+          },
+          "4": {
+            "Display": "Martin Schofield — literary executor; Teodora Bianchi — literary translator"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1514",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following accurately describe the narrative role of each character? Select all that apply.",
+        "DataExportTag": "books_QB05",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following accurately describe the narrative role of each character? Select all that app",
+        "Choices": {
+          "1": {
+            "Display": "Teodora Bianchi is the character with final authority over the estate — the novel turns on everyone else trying to convince her"
+          },
+          "2": {
+            "Display": "Martin Schofield is the character whose translations give him influence over the dispute disproportionate to his formal standing"
+          },
+          "3": {
+            "Display": "Teodora Bianchi is the character whose translations give her influence over the dispute disproportionate to her formal standing"
+          },
+          "4": {
+            "Display": "Martin Schofield is the character with final authority over the estate — the novel turns on everyone else trying to convince him"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1515",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation.",
+        "DataExportTag": "books_AT1",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "This is an attention check. Select only the option that correctly names Teodora Bianchi's occupation",
+        "Choices": {
+          "1": {
+            "Display": "Literary translator"
+          },
+          "2": {
+            "Display": "Literary scholar"
+          },
+          "3": {
+            "Display": "Literary executor"
+          },
+          "4": {
+            "Display": "Publisher"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1516",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following topics are discussed in the passage? If you are paying attention, select only \"what motivates each character\".",
+        "DataExportTag": "books_AT2",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following topics are discussed in the passage? If you are paying attention, select only",
+        "Choices": {
+          "1": {
+            "Display": "Which chapter each character first appears in"
+          },
+          "2": {
+            "Display": "What motivates each character"
+          },
+          "3": {
+            "Display": "Where each character is based"
+          },
+          "4": {
+            "Display": "How many scenes each character appears in"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1517",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "DefaultChoices": false,
+        "DataExportTag": "books_passage_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1550",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "DefaultChoices": false,
+        "DataExportTag": "books_qs_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1551",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Is there anything about the study you found notable or wanted to let us know about? For example: comments about the passage and/or narration, how challenging the questions were, any distractions or technical issues, or anything else.",
+        "DefaultChoices": false,
+        "DataExportTag": "books_comments",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Is there anything about the study you found notable or wanted to let us know about? For example: com",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1552"
+      }
+    }
+  ]
+}

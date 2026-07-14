@@ -1,0 +1,999 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_board_games_generated",
+    "SurveyName": "Board Games — Listening Study",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "",
+    "SurveyBrandID": "",
+    "DivisionID": null,
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "",
+    "SurveyStatus": "Pending",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-06-01 00:00:00",
+    "CreatorID": "",
+    "LastModified": "2026-06-01 00:00:00",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "Element": "BL",
+      "Payload": {
+        "1": {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_MULTI0050TRASH",
+          "BlockElements": []
+        },
+        "2": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "board_games_passage",
+          "ID": "BL_MULTI0051xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1401"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1402"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "3": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "board_games_qs",
+          "ID": "BL_MULTI0052xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1410"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1411"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1412"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1413"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1414"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1415"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1416"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1417"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "Advanced",
+            "Randomization": {
+              "Advanced": {
+                "FixedOrder": [
+                  "QID1410",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "QID1416",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "QID1417",
+                  "{~Randomized~}"
+                ],
+                "RandomizeAll": [
+                  "QID1411",
+                  "QID1412",
+                  "QID1413",
+                  "QID1414",
+                  "QID1415"
+                ],
+                "RandomSubSet": [],
+                "Undisplayed": [],
+                "TotalRandSubset": 0,
+                "QuestionsPerPage": 0
+              },
+              "EvenPresentation": false
+            },
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "4": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "board_games_feedback",
+          "ID": "BL_MULTI0053xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1450"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1451"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1452"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        }
+      }
+    },
+    {
+      "Element": "FL",
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0051xxxxxxxx",
+            "FlowID": "FL_M005001",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0052xxxxxxxx",
+            "FlowID": "FL_M005002",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0053xxxxxxxx",
+            "FlowID": "FL_M005003",
+            "Autofill": []
+          }
+        ],
+        "Properties": {
+          "Count": 3
+        },
+        "EmbeddedData": []
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "board_games_timing_passage",
+        "QuestionID": "QID1401",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Loading...",
+        "DefaultChoices": false,
+        "DataExportTag": "board_games_trial",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Loading...",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1402",
+        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n    if (window._audioQuestionLoaded) return;\n    window._audioQuestionLoaded = true;\n    var qthis = this;\n\n    var STIMULI = {\n        \"control\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/board_games/audio/control.mp3\" },\n        \"repeat_short\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/board_games/audio/repeat_short.mp3\" },\n        \"repeat_long\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/board_games/audio/repeat_long.mp3\" },\n        \"distractor\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/board_games/audio/distractor.mp3\" },\n    };\n\n    var docId = \"${e://Field/board_games_cond}\";\n    var doc = STIMULI[docId];\n\n    if (!doc || !doc.url) {\n        qthis.getQuestionContainer().innerHTML =\n            \"<p>Configuration error: missing audio for condition=\" + docId +\n            \". Please return this study on Prolific.</p>\";\n        return;\n    }\n\n    qthis.hideNextButton();\n\n    var container = qthis.getQuestionContainer();\n    container.innerHTML =\n        '<div id=\"audio-status\" style=\"text-align:center;font-weight:bold;margin-bottom:12px;\">Loading audio…</div>' +\n        '<div id=\"audio-start-wrap\" style=\"text-align:center;margin-bottom:12px;\"></div>' +\n        '<div id=\"audio-progress\" style=\"text-align:center;color:#666;margin-bottom:12px;\"></div>';\n\n    var statusEl   = document.getElementById(\"audio-status\");\n    var startWrap  = document.getElementById(\"audio-start-wrap\");\n    var progressEl = document.getElementById(\"audio-progress\");\n\n    var audio = new Audio(doc.url);\n    audio.preload = \"auto\";\n    audio.loop    = false;\n\n    audio.addEventListener(\"contextmenu\", function (e) { e.preventDefault(); });\n\n    var startTime = null;\n    var progressIv = null;\n\n    function beginPlayback() {\n        startTime = Date.now();\n        startWrap.innerHTML = \"\";\n        statusEl.textContent = \"Audio is playing. Please listen carefully.\";\n\n        progressIv = setInterval(function () {\n            if (!isNaN(audio.duration) && audio.duration > 0) {\n                var remaining = Math.ceil(audio.duration - audio.currentTime);\n                progressEl.textContent = remaining > 0 ? remaining + \"s remaining\" : \"\";\n            }\n        }, 1000);\n\n        audio.play();\n    }\n\n    audio.addEventListener(\"canplaythrough\", function () {\n        statusEl.textContent = \"Audio loaded. When you are ready, click to start listening.\";\n        startWrap.innerHTML =\n            '<button id=\"audio-start-btn\" style=\"font-size:1em;padding:8px 24px;\">▶ Start Audio</button>';\n        document.getElementById(\"audio-start-btn\").addEventListener(\"click\", function () {\n            document.getElementById(\"audio-start-btn\").disabled = true;\n            beginPlayback();\n        });\n    }, { once: true });\n\n    audio.addEventListener(\"ended\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        var rt = startTime ? (Date.now() - startTime) : null;\n        Qualtrics.SurveyEngine.setEmbeddedData(\"board_games_listening_rt\", rt);\n        Qualtrics.SurveyEngine.setEmbeddedData(\"board_games_listening_completed\", \"true\");\n        statusEl.textContent  = \"Audio complete. Click Next to continue.\";\n        progressEl.textContent = \"\";\n        qthis.showNextButton();\n    });\n\n    audio.addEventListener(\"error\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        statusEl.textContent =\n            \"Audio failed to load. Please return this study on Prolific.\";\n    });\n});\n\nQualtrics.SurveyEngine.addOnUnload(function () {\n    // No-op; cleanup handled in ended/error handlers above.\n});"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "board_games_timing_qs",
+        "QuestionID": "QID1410",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following describe the setting of Stormgate? Select all that apply.",
+        "DataExportTag": "board_games_QP01",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following describe the setting of Stormgate? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Players control elemental factions"
+          },
+          "2": {
+            "Display": "The game is set in a Renaissance court"
+          },
+          "3": {
+            "Display": "The conflict unfolds across a stormy archipelago"
+          },
+          "4": {
+            "Display": "Players take the roles of rival merchant guild leaders"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1411",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following are signature components of Veiled Court? Select all that apply.",
+        "DataExportTag": "board_games_QP02",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following are signature components of Veiled Court? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Hexagonal tokens"
+          },
+          "2": {
+            "Display": "Influence tokens"
+          },
+          "3": {
+            "Display": "Storm tokens"
+          },
+          "4": {
+            "Display": "Masked role cards"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1412",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly match a game to one of its signature components? Select all that apply.",
+        "DataExportTag": "board_games_QP03",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly match a game to one of its signature components? Select all that ap",
+        "Choices": {
+          "1": {
+            "Display": "Stormgate — influence tokens"
+          },
+          "2": {
+            "Display": "Veiled Court — masked role cards"
+          },
+          "3": {
+            "Display": "Stormgate — hexagonal battle tiles"
+          },
+          "4": {
+            "Display": "Veiled Court — storm tokens"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1413",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly match a game to its designer or publisher? Select all that apply.",
+        "DataExportTag": "board_games_QP04",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly match a game to its designer or publisher? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Stormgate — Cassian Rowe"
+          },
+          "2": {
+            "Display": "Veiled Court — Vellichor Publishing"
+          },
+          "3": {
+            "Display": "Stormgate — Brackenmoor Games"
+          },
+          "4": {
+            "Display": "Veiled Court — Brackenmoor Games"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1414",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following describe the setting of Veiled Court? Select all that apply.",
+        "DataExportTag": "board_games_QP05",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following describe the setting of Veiled Court? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Players are rival merchant guild leaders"
+          },
+          "2": {
+            "Display": "The game is set in a Renaissance court"
+          },
+          "3": {
+            "Display": "Players are nobles competing for influence"
+          },
+          "4": {
+            "Display": "The setting involves a mysterious traveling carnival"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1415",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following is a game component mentioned in the passage? This is an attention check question. Select only the option that names something used for voting.",
+        "DataExportTag": "board_games_AT1",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following is a game component mentioned in the passage? This is an attention check ques",
+        "Choices": {
+          "1": {
+            "Display": "Brass guild seals"
+          },
+          "2": {
+            "Display": "Storm tokens"
+          },
+          "3": {
+            "Display": "A velvet vote pouch"
+          },
+          "4": {
+            "Display": "Wonder lantern tokens"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1416",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following topics are covered in the passage? If you are paying attention, select only \"designer\".",
+        "DataExportTag": "board_games_AT2",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following topics are covered in the passage? If you are paying attention, select only \"",
+        "Choices": {
+          "1": {
+            "Display": "Player count"
+          },
+          "2": {
+            "Display": "Art style"
+          },
+          "3": {
+            "Display": "Designer"
+          },
+          "4": {
+            "Display": "Retail price"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1417",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "DefaultChoices": false,
+        "DataExportTag": "board_games_passage_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1450",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "DefaultChoices": false,
+        "DataExportTag": "board_games_qs_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1451",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Is there anything about the study you found notable or wanted to let us know about? For example: comments about the passage and/or narration, how challenging the questions were, any distractions or technical issues, or anything else.",
+        "DefaultChoices": false,
+        "DataExportTag": "board_games_comments",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Is there anything about the study you found notable or wanted to let us know about? For example: com",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1452"
+      }
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+=== FRUITS QUESTIONS ===
+Title: Fruits — Tawnberry and Blisterfig
+
+BLOCK: fruits_qs
+  Block randomization: Advanced
+  Order: [PageTimer] [content randomized] [AT1 fixed] [content randomized] [AT2 fixed] [remaining content]
+
+--- CONTENT QUESTIONS (randomize order among these) ---
+
+Q_ID: QF01  (type: Multi-select / MAVR)
+Export tag: fruits_QF01
+Question: Which of the following describe the Tawnberry's flesh? Select all that apply.
+Options (1-4 randomized, option 5 pinned last):
+  * 1. Deep purple
+    2. Orange-pink
+    3. Translucent near the core
+    4. Whitish, similar to a blueberry
+    5. None of the above
+Correct answers: [1]
+Required: YES
+
+Q_ID: QF02  (type: Multi-select / MAVR)
+Export tag: fruits_QF02
+Question: Which of the following describes the taste of the Blisterfig? Select all that apply.
+Options (1-4 randomized, option 5 pinned last):
+    1. Peppery aftertaste
+  * 2. Sweet
+  * 3. A warm spicy flavor
+    4. Crisp and slightly sour
+    5. None of the above
+Correct answers: [2, 3]
+Required: YES
+
+Q_ID: QF03  (type: Multi-select / MAVR)
+Export tag: fruits_QF03
+Question: Which of the following correctly describes a difference between the two fruits? Select all that apply.
+Options (1-4 randomized, option 5 pinned last):
+  * 1. The Tawnberry has purple flesh, while the Blisterfig has orange-pink flesh
+  * 2. The Blisterfig has a spicy-sweet taste, while the Tawnberry is rich and jammy
+    3. The Blisterfig has purple flesh, while the Tawnberry is orange-pink
+    4. The Tawnberry ripens in June to July, while the Blisterfig ripens in August to September
+    5. None of the above
+Correct answers: [1, 2]
+Required: YES
+
+Q_ID: QF04  (type: Multi-select / MAVR)
+Export tag: fruits_QF04
+Question: In which of the following months are both tawnberries and blisterfigs available? Select all that apply.
+Options (1-4 randomized, option 5 pinned last):
+    1. May
+    2. June
+    3. July
+  * 4. August
+    5. None of the above
+Correct answers: [4]
+Required: YES
+
+Q_ID: QF05  (type: Multi-select / MAVR)
+Export tag: fruits_QF05
+Question: Which of the following accurately describe the Tawnberry's flavor? Select all that apply.
+Options (1-4 randomized, option 5 pinned last):
+  * 1. Rich and sweet
+    2. A warm spicy note
+  * 3. Jammy finish
+    4. Mild and watery
+    5. None of the above
+Correct answers: [1, 3]
+Required: YES
+
+--- ATTENTION CHECK QUESTIONS (fixed position in block) ---
+
+Q_ID: AT_fruit  (type: Multi-select / MAVR)
+Export tag: fruits_AT_fruit
+Question: This is an attention check. Select only the option that names a color mentioned in the passage.
+Options (1-4 randomized, option 5 pinned last):
+    1. Grows in clusters
+    2. Woodland edge habitat
+  * 3. Purple
+    4. Spicy and sweet
+    5. None of the above
+Correct answers: [3]
+Required: YES
+
+--- FEEDBACK BLOCK: fruits_feedback (3 questions, fixed order) ---
+Q1. Export tag: fruits_passage_difficulty
+    Type: Slider (0-10)
+    Text: On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?
+    Required: YES
+
+Q2. Export tag: fruits_qs_difficulty
+    Type: Slider (0-10)
+    Text: On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?
+    Required: YES
+
+Q3. Export tag: fruits_comments
+    Type: Text Entry (multi-line)
+    Text: Is there anything about the study you found notable or wanted to let us know about? For example: comments about the passage and/or narration, how challenging the questions were, any distractions or technical issues, or anything else.
+    Required: NO
+
+============================================================

@@ -1,0 +1,1168 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_fruits_generated",
+    "SurveyName": "Fruits — Listening Study",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "",
+    "SurveyBrandID": "",
+    "DivisionID": null,
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "",
+    "SurveyStatus": "Pending",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-06-01 00:00:00",
+    "CreatorID": "",
+    "LastModified": "2026-06-01 00:00:00",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "Element": "BL",
+      "Payload": {
+        "1": {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_MULTI0020TRASH",
+          "BlockElements": []
+        },
+        "2": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "fruits_passage",
+          "ID": "BL_MULTI0021xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1101"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1102"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "3": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "fruits_qs",
+          "ID": "BL_MULTI0022xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1110"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1111"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1112"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1113"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1114"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1115"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1116"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1117"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1118"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1119"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "Advanced",
+            "Randomization": {
+              "Advanced": {
+                "FixedOrder": [
+                  "QID1110",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "QID1119",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}"
+                ],
+                "RandomizeAll": [
+                  "QID1111",
+                  "QID1112",
+                  "QID1113",
+                  "QID1114",
+                  "QID1115",
+                  "QID1116",
+                  "QID1117",
+                  "QID1118"
+                ],
+                "RandomSubSet": [],
+                "Undisplayed": [],
+                "TotalRandSubset": 0,
+                "QuestionsPerPage": 0
+              },
+              "EvenPresentation": false
+            },
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "4": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "fruits_feedback",
+          "ID": "BL_MULTI0023xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1150"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1151"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1152"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        }
+      }
+    },
+    {
+      "Element": "FL",
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0021xxxxxxxx",
+            "FlowID": "FL_M002001",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0022xxxxxxxx",
+            "FlowID": "FL_M002002",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0023xxxxxxxx",
+            "FlowID": "FL_M002003",
+            "Autofill": []
+          }
+        ],
+        "Properties": {
+          "Count": 3
+        },
+        "EmbeddedData": []
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "fruits_timing_passage",
+        "QuestionID": "QID1101",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Loading...",
+        "DefaultChoices": false,
+        "DataExportTag": "fruits_trial",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Loading...",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1102",
+        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n    if (window._audioQuestionLoaded) return;\n    window._audioQuestionLoaded = true;\n    var qthis = this;\n\n    var STIMULI = {\n        \"control\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/fruits/audio/control.mp3\" },\n        \"repeat_short\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/fruits/audio/repeat_short.mp3\" },\n        \"repeat_long\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/fruits/audio/repeat_long.mp3\" },\n        \"distractor\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/fruits/audio/distractor.mp3\" },\n    };\n\n    var docId = \"${e://Field/fruits_cond}\";\n    var doc = STIMULI[docId];\n\n    if (!doc || !doc.url) {\n        qthis.getQuestionContainer().innerHTML =\n            \"<p>Configuration error: missing audio for condition=\" + docId +\n            \". Please return this study on Prolific.</p>\";\n        return;\n    }\n\n    qthis.hideNextButton();\n\n    var container = qthis.getQuestionContainer();\n    container.innerHTML =\n        '<div id=\"audio-status\" style=\"text-align:center;font-weight:bold;margin-bottom:12px;\">Loading audio…</div>' +\n        '<div id=\"audio-start-wrap\" style=\"text-align:center;margin-bottom:12px;\"></div>' +\n        '<div id=\"audio-progress\" style=\"text-align:center;color:#666;margin-bottom:12px;\"></div>';\n\n    var statusEl   = document.getElementById(\"audio-status\");\n    var startWrap  = document.getElementById(\"audio-start-wrap\");\n    var progressEl = document.getElementById(\"audio-progress\");\n\n    var audio = new Audio(doc.url);\n    audio.preload = \"auto\";\n    audio.loop    = false;\n\n    audio.addEventListener(\"contextmenu\", function (e) { e.preventDefault(); });\n\n    var startTime = null;\n    var progressIv = null;\n\n    function beginPlayback() {\n        startTime = Date.now();\n        startWrap.innerHTML = \"\";\n        statusEl.textContent = \"Audio is playing. Please listen carefully.\";\n\n        progressIv = setInterval(function () {\n            if (!isNaN(audio.duration) && audio.duration > 0) {\n                var remaining = Math.ceil(audio.duration - audio.currentTime);\n                progressEl.textContent = remaining > 0 ? remaining + \"s remaining\" : \"\";\n            }\n        }, 1000);\n\n        audio.play();\n    }\n\n    audio.addEventListener(\"canplaythrough\", function () {\n        statusEl.textContent = \"Audio loaded. When you are ready, click to start listening.\";\n        startWrap.innerHTML =\n            '<button id=\"audio-start-btn\" style=\"font-size:1em;padding:8px 24px;\">▶ Start Audio</button>';\n        document.getElementById(\"audio-start-btn\").addEventListener(\"click\", function () {\n            document.getElementById(\"audio-start-btn\").disabled = true;\n            beginPlayback();\n        });\n    }, { once: true });\n\n    audio.addEventListener(\"ended\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        var rt = startTime ? (Date.now() - startTime) : null;\n        Qualtrics.SurveyEngine.setEmbeddedData(\"fruits_listening_rt\", rt);\n        Qualtrics.SurveyEngine.setEmbeddedData(\"fruits_listening_completed\", \"true\");\n        statusEl.textContent  = \"Audio complete. Click Next to continue.\";\n        progressEl.textContent = \"\";\n        qthis.showNextButton();\n    });\n\n    audio.addEventListener(\"error\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        statusEl.textContent =\n            \"Audio failed to load. Please return this study on Prolific.\";\n    });\n});\n\nQualtrics.SurveyEngine.addOnUnload(function () {\n    // No-op; cleanup handled in ended/error handlers above.\n});"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "fruits_timing_qs",
+        "QuestionID": "QID1110",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following describe the Tawnberry's flesh? Select all that apply.",
+        "DataExportTag": "fruits_QF01",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following describe the Tawnberry's flesh? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Deep purple"
+          },
+          "2": {
+            "Display": "Orange-pink"
+          },
+          "3": {
+            "Display": "Translucent near the core"
+          },
+          "4": {
+            "Display": "Whitish, similar to a blueberry"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1111",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following describes the taste of the Blisterfig? Select all that apply.",
+        "DataExportTag": "fruits_QF02",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following describes the taste of the Blisterfig? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Peppery aftertaste"
+          },
+          "2": {
+            "Display": "Sweet"
+          },
+          "3": {
+            "Display": "A warm spicy flavor"
+          },
+          "4": {
+            "Display": "Crisp and slightly sour"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1112",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes a difference between the two fruits? Select all that apply.",
+        "DataExportTag": "fruits_QF03",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes a difference between the two fruits? Select all that appl",
+        "Choices": {
+          "1": {
+            "Display": "The Tawnberry has purple flesh, while the Blisterfig has orange-pink flesh"
+          },
+          "2": {
+            "Display": "The Blisterfig has a spicy-sweet taste, while the Tawnberry is rich and jammy"
+          },
+          "3": {
+            "Display": "The Blisterfig has purple flesh, while the Tawnberry is orange-pink"
+          },
+          "4": {
+            "Display": "The Tawnberry ripens in June to July, while the Blisterfig ripens in August to September"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1113",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "In which of the following months are both tawnberries and blisterfigs available? Select all that apply.",
+        "DataExportTag": "fruits_QF04",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "In which of the following months are both tawnberries and blisterfigs available? Select all that app",
+        "Choices": {
+          "1": {
+            "Display": "May"
+          },
+          "2": {
+            "Display": "June"
+          },
+          "3": {
+            "Display": "July"
+          },
+          "4": {
+            "Display": "August"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1114",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following accurately describe the Tawnberry's flavor? Select all that apply.",
+        "DataExportTag": "fruits_QF05",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following accurately describe the Tawnberry's flavor? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Rich and sweet"
+          },
+          "2": {
+            "Display": "A warm spicy note"
+          },
+          "3": {
+            "Display": "Jammy finish"
+          },
+          "4": {
+            "Display": "Mild and watery"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1115",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "What does a Blisterfig look like on the inside? Select all that apply.",
+        "DataExportTag": "fruits_QF06",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "What does a Blisterfig look like on the inside? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "The same color all the way through, with no pale areas"
+          },
+          "2": {
+            "Display": "Deep purple, much darker than the skin"
+          },
+          "3": {
+            "Display": "Pale and nearly colorless near the seeds"
+          },
+          "4": {
+            "Display": "Whitish near the core"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1116",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "When are Tawnberries available to forage? Select all that apply.",
+        "DataExportTag": "fruits_QF07",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "When are Tawnberries available to forage? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "From late summer through autumn"
+          },
+          "2": {
+            "Display": "From early summer through midsummer"
+          },
+          "3": {
+            "Display": "Only in spring"
+          },
+          "4": {
+            "Display": "Through the winter months"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1117",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "When can ripe Blisterfigs be harvested? Select all that apply.",
+        "DataExportTag": "fruits_QF08",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "When can ripe Blisterfigs be harvested? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "From early summer through the height of summer"
+          },
+          "2": {
+            "Display": "From late summer through autumn"
+          },
+          "3": {
+            "Display": "Only in spring"
+          },
+          "4": {
+            "Display": "Around the start of winter"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1118",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "This is an attention check. Select only the option that names a color mentioned in the passage.",
+        "DataExportTag": "fruits_AT_fruit",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "This is an attention check. Select only the option that names a color mentioned in the passage.",
+        "Choices": {
+          "1": {
+            "Display": "Grows in clusters"
+          },
+          "2": {
+            "Display": "Woodland edge habitat"
+          },
+          "3": {
+            "Display": "Purple"
+          },
+          "4": {
+            "Display": "Spicy and sweet"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1119",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "DefaultChoices": false,
+        "DataExportTag": "fruits_passage_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1150",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "DefaultChoices": false,
+        "DataExportTag": "fruits_qs_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1151",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Is there anything about the study you found notable or wanted to let us know about? For example: comments about the passage and/or narration, how challenging the questions were, any distractions or technical issues, or anything else.",
+        "DefaultChoices": false,
+        "DataExportTag": "fruits_comments",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Is there anything about the study you found notable or wanted to let us know about? For example: com",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1152"
+      }
+    }
+  ]
+}

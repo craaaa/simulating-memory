@@ -1,0 +1,1168 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_birds_generated",
+    "SurveyName": "Birds — Listening Study",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "",
+    "SurveyBrandID": "",
+    "DivisionID": null,
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "",
+    "SurveyStatus": "Pending",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-06-01 00:00:00",
+    "CreatorID": "",
+    "LastModified": "2026-06-01 00:00:00",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "Element": "BL",
+      "Payload": {
+        "1": {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_MULTI0010TRASH",
+          "BlockElements": []
+        },
+        "2": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "birds_passage",
+          "ID": "BL_MULTI0011xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1001"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1002"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "3": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "birds_qs",
+          "ID": "BL_MULTI0012xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1010"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1011"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1012"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1013"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1014"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1015"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1016"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1017"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1018"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1019"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "Advanced",
+            "Randomization": {
+              "Advanced": {
+                "FixedOrder": [
+                  "QID1010",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "QID1019",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}",
+                  "{~Randomized~}"
+                ],
+                "RandomizeAll": [
+                  "QID1011",
+                  "QID1012",
+                  "QID1013",
+                  "QID1014",
+                  "QID1015",
+                  "QID1016",
+                  "QID1017",
+                  "QID1018"
+                ],
+                "RandomSubSet": [],
+                "Undisplayed": [],
+                "TotalRandSubset": 0,
+                "QuestionsPerPage": 0
+              },
+              "EvenPresentation": false
+            },
+            "BlockVisibility": "Collapsed"
+          }
+        },
+        "4": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "birds_feedback",
+          "ID": "BL_MULTI0013xxxxxxxx",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1050"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1051"
+            },
+            {
+              "Type": "Question",
+              "QuestionID": "QID1052"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        }
+      }
+    },
+    {
+      "Element": "FL",
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0011xxxxxxxx",
+            "FlowID": "FL_M001001",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0012xxxxxxxx",
+            "FlowID": "FL_M001002",
+            "Autofill": []
+          },
+          {
+            "Type": "Block",
+            "ID": "BL_MULTI0013xxxxxxxx",
+            "FlowID": "FL_M001003",
+            "Autofill": []
+          }
+        ],
+        "Properties": {
+          "Count": 3
+        },
+        "EmbeddedData": []
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "birds_timing_passage",
+        "QuestionID": "QID1001",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Loading...",
+        "DefaultChoices": false,
+        "DataExportTag": "birds_trial",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Loading...",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1002",
+        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n    if (window._audioQuestionLoaded) return;\n    window._audioQuestionLoaded = true;\n    var qthis = this;\n\n    var STIMULI = {\n        \"control\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/birds/audio/control.mp3\" },\n        \"repeat_short\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/birds/audio/repeat_short.mp3\" },\n        \"repeat_long\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/birds/audio/repeat_long.mp3\" },\n        \"distractor\": { \"url\": \"https://craaaa.github.io/simulating-memory/multi/birds/audio/distractor.mp3\" },\n    };\n\n    var docId = \"${e://Field/birds_cond}\";\n    var doc = STIMULI[docId];\n\n    if (!doc || !doc.url) {\n        qthis.getQuestionContainer().innerHTML =\n            \"<p>Configuration error: missing audio for condition=\" + docId +\n            \". Please return this study on Prolific.</p>\";\n        return;\n    }\n\n    qthis.hideNextButton();\n\n    var container = qthis.getQuestionContainer();\n    container.innerHTML =\n        '<div id=\"audio-status\" style=\"text-align:center;font-weight:bold;margin-bottom:12px;\">Loading audio…</div>' +\n        '<div id=\"audio-start-wrap\" style=\"text-align:center;margin-bottom:12px;\"></div>' +\n        '<div id=\"audio-progress\" style=\"text-align:center;color:#666;margin-bottom:12px;\"></div>';\n\n    var statusEl   = document.getElementById(\"audio-status\");\n    var startWrap  = document.getElementById(\"audio-start-wrap\");\n    var progressEl = document.getElementById(\"audio-progress\");\n\n    var audio = new Audio(doc.url);\n    audio.preload = \"auto\";\n    audio.loop    = false;\n\n    audio.addEventListener(\"contextmenu\", function (e) { e.preventDefault(); });\n\n    var startTime = null;\n    var progressIv = null;\n\n    function beginPlayback() {\n        startTime = Date.now();\n        startWrap.innerHTML = \"\";\n        statusEl.textContent = \"Audio is playing. Please listen carefully.\";\n\n        progressIv = setInterval(function () {\n            if (!isNaN(audio.duration) && audio.duration > 0) {\n                var remaining = Math.ceil(audio.duration - audio.currentTime);\n                progressEl.textContent = remaining > 0 ? remaining + \"s remaining\" : \"\";\n            }\n        }, 1000);\n\n        audio.play();\n    }\n\n    audio.addEventListener(\"canplaythrough\", function () {\n        statusEl.textContent = \"Audio loaded. When you are ready, click to start listening.\";\n        startWrap.innerHTML =\n            '<button id=\"audio-start-btn\" style=\"font-size:1em;padding:8px 24px;\">▶ Start Audio</button>';\n        document.getElementById(\"audio-start-btn\").addEventListener(\"click\", function () {\n            document.getElementById(\"audio-start-btn\").disabled = true;\n            beginPlayback();\n        });\n    }, { once: true });\n\n    audio.addEventListener(\"ended\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        var rt = startTime ? (Date.now() - startTime) : null;\n        Qualtrics.SurveyEngine.setEmbeddedData(\"birds_listening_rt\", rt);\n        Qualtrics.SurveyEngine.setEmbeddedData(\"birds_listening_completed\", \"true\");\n        statusEl.textContent  = \"Audio complete. Click Next to continue.\";\n        progressEl.textContent = \"\";\n        qthis.showNextButton();\n    });\n\n    audio.addEventListener(\"error\", function () {\n        if (progressIv) { clearInterval(progressIv); }\n        statusEl.textContent =\n            \"Audio failed to load. Please return this study on Prolific.\";\n    });\n});\n\nQualtrics.SurveyEngine.addOnUnload(function () {\n    // No-op; cleanup handled in ended/error handlers above.\n});"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Timing",
+        "DefaultChoices": false,
+        "DataExportTag": "birds_timing_qs",
+        "QuestionID": "QID1010",
+        "QuestionType": "Timing",
+        "Selector": "PageTimer",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText",
+          "MinSeconds": "0",
+          "MaxSeconds": "0"
+        },
+        "QuestionDescription": "Timing",
+        "Choices": {
+          "1": {
+            "Display": "First Click"
+          },
+          "2": {
+            "Display": "Last Click"
+          },
+          "3": {
+            "Display": "Page Submit"
+          },
+          "4": {
+            "Display": "Click Count"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 20,
+        "NextAnswerId": 1
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following statements describe the ashen skreel's plumage? Select all that apply.",
+        "DataExportTag": "birds_QB01",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following statements describe the ashen skreel's plumage? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Mostly gray, with a lighter patch at the throat"
+          },
+          "2": {
+            "Display": "Faint streaking along the back"
+          },
+          "3": {
+            "Display": "A reddish wash across the breast"
+          },
+          "4": {
+            "Display": "Rust orange, with a lighter patch at the throat"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1011",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following does the Copperhook finch eat? Select all that apply.",
+        "DataExportTag": "birds_QB02",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following does the Copperhook finch eat? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Fruit"
+          },
+          "2": {
+            "Display": "Seeds"
+          },
+          "3": {
+            "Display": "Grubs"
+          },
+          "4": {
+            "Display": "Nectar"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1012",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly describes a difference between the two birds? Select all that apply.",
+        "DataExportTag": "birds_QB03",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly describes a difference between the two birds? Select all that apply",
+        "Choices": {
+          "1": {
+            "Display": "The ashen skreel eats carrion, while the Copperhook finch eats seeds"
+          },
+          "2": {
+            "Display": "The ashen skreel is mostly gray, whereas the Copperhook finch is mostly orange"
+          },
+          "3": {
+            "Display": "The Copperhook finch eats seeds, unlike the fruit-eating ashen skreel"
+          },
+          "4": {
+            "Display": "The ashen skreel has black wingtips, while the Copperhook finch has a pale throat"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1013",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following correctly matches the bird to its Latin name? Select all that apply.",
+        "DataExportTag": "birds_QB04",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following correctly matches the bird to its Latin name? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Ashen skreel -- Loxica torquata"
+          },
+          "2": {
+            "Display": "Copperhook finch -- Plumbea rufa"
+          },
+          "3": {
+            "Display": "Copperhook finch -- Fringilla murina"
+          },
+          "4": {
+            "Display": "Ashen skreel -- Plumbea rufa"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1014",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following accurately describes the Copperhook finch's plumage? Select all that apply.",
+        "DataExportTag": "birds_QB05",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following accurately describes the Copperhook finch's plumage? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "A rust-orange body"
+          },
+          "2": {
+            "Display": "White wingtips"
+          },
+          "3": {
+            "Display": "A bright yellow crest"
+          },
+          "4": {
+            "Display": "Bluish bars across the tail"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1015",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "What does the Ashen Skreel eat? Select all that apply.",
+        "DataExportTag": "birds_QB06",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "What does the Ashen Skreel eat? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Bugs it finds in the rocks"
+          },
+          "2": {
+            "Display": "Dead animals it comes across"
+          },
+          "3": {
+            "Display": "Seeds and berries"
+          },
+          "4": {
+            "Display": "Nectar from flowers"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1016",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "What is the Ashen Skreel's scientific name? Select all that apply.",
+        "DataExportTag": "birds_QB07",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "What is the Ashen Skreel's scientific name? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "Plumbea vorax"
+          },
+          "2": {
+            "Display": "Fringilla rufa"
+          },
+          "3": {
+            "Display": "Loxica torquata"
+          },
+          "4": {
+            "Display": "Fringilla murina"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1017",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "What does the Copperhook Finch look like? Select all that apply.",
+        "DataExportTag": "birds_QB08",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "What does the Copperhook Finch look like? Select all that apply.",
+        "Choices": {
+          "1": {
+            "Display": "A warm orange-red body"
+          },
+          "2": {
+            "Display": "Dark-tipped wings"
+          },
+          "3": {
+            "Display": "A pale patch at the throat"
+          },
+          "4": {
+            "Display": "Faint gray streaking along the back"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1018",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Which of the following mentions two colors? This is an attention check question.",
+        "DataExportTag": "birds_AT_birds",
+        "QuestionType": "MC",
+        "Selector": "MAVR",
+        "SubSelector": "TX",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Which of the following mentions two colors? This is an attention check question.",
+        "Choices": {
+          "1": {
+            "Display": "Residency versus migration"
+          },
+          "2": {
+            "Display": "Solitary defence versus gregarious flocking"
+          },
+          "3": {
+            "Display": "Predator versus prey"
+          },
+          "4": {
+            "Display": "Green versus black"
+          },
+          "5": {
+            "Display": "None of the above"
+          }
+        },
+        "ChoiceOrder": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 7,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1019",
+        "Randomization": {
+          "Advanced": {
+            "FixedOrder": [
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "{~Randomized~}",
+              "5"
+            ],
+            "RandomSubSet": [],
+            "RandomizeAll": [
+              "1",
+              "2",
+              "3",
+              "4"
+            ],
+            "ScaleReversal": [],
+            "TotalRandSubset": 0,
+            "Undisplayed": []
+          },
+          "ConsistentScaleReversal": false,
+          "EvenPresentation": false,
+          "TotalRandSubset": "",
+          "Type": "Advanced"
+        }
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "DefaultChoices": false,
+        "DataExportTag": "birds_passage_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the passage?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1050",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "DefaultChoices": false,
+        "DataExportTag": "birds_qs_difficulty",
+        "QuestionType": "SS",
+        "Selector": "TA",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "On a scale of 0 (easy) to 10 (difficult), how difficult did you find the questions?",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "ON",
+            "ForceResponseType": "ON"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 12,
+        "NextAnswerId": 1,
+        "Category": "Gauges",
+        "Scale": "TenGauge",
+        "Choices": [
+          {
+            "Display": "0"
+          },
+          {
+            "Display": "1"
+          },
+          {
+            "Display": "2"
+          },
+          {
+            "Display": "3"
+          },
+          {
+            "Display": "4"
+          },
+          {
+            "Display": "5"
+          },
+          {
+            "Display": "6"
+          },
+          {
+            "Display": "7"
+          },
+          {
+            "Display": "8"
+          },
+          {
+            "Display": "9"
+          },
+          {
+            "Display": "10"
+          }
+        ],
+        "QuestionID": "QID1051",
+        "Direction": "horizontal"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionText": "Is there anything about the study you found notable or wanted to let us know about? For example: comments about the passage and/or narration, how challenging the questions were, any distractions or technical issues, or anything else.",
+        "DefaultChoices": false,
+        "DataExportTag": "birds_comments",
+        "QuestionType": "TE",
+        "Selector": "ML",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Is there anything about the study you found notable or wanted to let us know about? For example: com",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1052"
+      }
+    }
+  ]
+}

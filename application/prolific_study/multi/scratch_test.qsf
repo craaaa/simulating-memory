@@ -1,0 +1,98 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_TuFO5BndEimWwvF",
+    "SurveyName": "Scratch Test",
+    "SurveyLanguage": "EN",
+    "SurveyStatus": "Pending",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-06-29 00:00:00",
+    "CreatorID": "",
+    "LastModified": "2026-06-29 00:00:00",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "Element": "BL",
+      "Payload": {
+        "1": {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_trash00000000001",
+          "BlockElements": []
+        },
+        "2": {
+          "Type": "Standard",
+          "SubType": "",
+          "Description": "Test Block",
+          "ID": "BL_test000000000001",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false"
+          }
+        }
+      }
+    },
+    {
+      "Element": "FL",
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_test000000000001",
+            "FlowID": "FL_2",
+            "Autofill": []
+          }
+        ],
+        "Properties": {
+          "Count": 2
+        }
+      }
+    },
+    {
+      "Element": "PROJ",
+      "Payload": {
+        "ProjectCategory": "CORE",
+        "SchemaVersion": "1.1.0"
+      }
+    },
+    {
+      "Element": "SQ",
+      "Payload": {
+        "QuestionID": "QID1",
+        "QuestionText": "Test question",
+        "DataExportTag": "Q1",
+        "QuestionType": "TE",
+        "Selector": "SL",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Test question",
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "GradingData": [],
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1
+      }
+    }
+  ]
+}
