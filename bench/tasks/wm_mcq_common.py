@@ -1,6 +1,6 @@
 """Shared helper for WM-agent tasks that follow the encode-material → answer-MCQs pattern."""
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from ..core.llm import LLM
 from ..core.wm_agent import SummarizerAgent, WorkingMemoryAgent
@@ -36,7 +36,7 @@ def run_wm_mcq_trial(
     condition_id: str,
     temperature: float,
     debug: bool,
-    encode_content: str,
+    encode_content: Union[str, List[str]],
     questions_text: str,
     recall_preamble: str,
     format_rules: str,
@@ -44,6 +44,10 @@ def run_wm_mcq_trial(
     recall_max_tokens: int = 512,
 ) -> Dict[str, Any]:
     """Run one WM-agent trial: encode material, then answer MCQs from memory.
+
+    ``encode_content`` as a str is presented in one shot (agent.encode());
+    a list of str is treated as ordered segments and dispatched to the
+    streaming, no-lookback encoder (agent.encode_streaming()).
 
     Returns
     -------
@@ -57,7 +61,10 @@ def run_wm_mcq_trial(
         system_prompt_override=system_prompt_override,
     )
 
-    encoding_log = agent.encode(encode_content)
+    if isinstance(encode_content, list):
+        encoding_log = agent.encode_streaming(encode_content)
+    else:
+        encoding_log = agent.encode(encode_content)
 
     # Build recall prompt — the template uses {{ }} for the wm_contents placeholder
     # so we first format everything else, then the result has {wm_contents} for agent.recall()

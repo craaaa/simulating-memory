@@ -124,7 +124,7 @@ def load_llm_topic_level_condition(
 
     for line in wm_jsonl.open():
         r = json.loads(line)
-        if r.get("condition_id") != "C2":
+        if r.get("condition_id") not in ("C2", "C2-stream"):
             continue
         topic = str(r.get("topic_id") or "").strip()
         level = r.get("level")

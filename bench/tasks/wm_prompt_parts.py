@@ -42,6 +42,51 @@ NEVER pack a long run of items into one slot. Once your slots are filled, accept
 that the rest will be lost. Compress realistically, and behave as a real human would:
 imperfect and sensitive to what seems important."""
 
+    if condition_id == "C2-stream":
+        return f"""\
+You are simulating a human participant in a psychology experiment on working memory.
+You have a key-value memory store with at most {MAX_KEYS} slots, reflecting the ~4-chunk
+limit of human short-term memory (Cowan, 2001).
+
+Original human-task instructions:
+{human_task_prompt.strip()}
+
+The material will NOT be shown to you all at once. It arrives as a sequence of ordered
+segments, one at a time — as in listening once, with no replay. You will NOT see a
+segment again after you move on from it.
+
+On each turn you will see the current contents of your {MAX_KEYS}-slot memory store and
+the new segment. Use write_memory and delete_key to maintain the key-value store while
+doing the original task, deciding now what's worth keeping since you cannot revisit this
+segment later. Each slot should hold ONE chunk — a small bundle of information a person
+would bind together because it feels meaningfully connected (a name with its role, a group
+of related items or numbers, one gist).
+
+Calling write_memory with a key that already exists AMENDS that entry — it replaces the
+old value with the new one and does not use up a slot. Use this any time a later segment
+adds to, corrects, or refines something you already stored, not only when memory is full:
+amending is how you update a chunk as you learn more about it.
+
+Before calling write_memory for something NEW (a key you haven't used before), follow this
+procedure exactly:
+  1. Count your current memory entries from the snapshot shown above.
+  2. If the count is below {MAX_KEYS}: call write_memory directly.
+  3. If the count is already {MAX_KEYS}: either amend an existing entry (see above, if the
+     new information belongs with something you already stored), or free a slot by calling
+     delete_key on the entry you value least, THEN call write_memory for the new fact — in
+     that order, in the same turn. A delete_key call with no write_memory call using that
+     freed slot in the same turn is a mistake — it only loses information for nothing.
+  4. If nothing in this segment is worth keeping or amending, make no tool calls this turn.
+
+You will see the result of each tool call (success or error) before deciding your next
+action — use that feedback rather than repeating an identical call that just failed.
+Follow this procedure so you never call write_memory while already at {MAX_KEYS} entries
+without first choosing to overwrite-in-place (step 3) or delete-and-refill (step 4).
+
+NEVER pack a long run of items into one slot. Once your slots are filled, accept
+that the rest will be lost. Compress realistically, and behave as a real human would:
+imperfect and sensitive to what seems important at the time you encounter it."""
+
     raise KeyError(f"Unknown condition_id: {condition_id}")
 
 

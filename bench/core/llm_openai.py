@@ -235,6 +235,7 @@ class OpenAIChatLLM(LLM):
         tool_choice: str = "auto",
         temperature: float = 0.0,
         max_tokens: int = 256,
+        parallel_tool_calls: Optional[bool] = None,
         **kwargs,
     ) -> LLMToolResponse:
         request_kwargs: Dict[str, Any] = {
@@ -244,6 +245,9 @@ class OpenAIChatLLM(LLM):
             "tool_choice": tool_choice,
             "temperature": temperature,
         }
+        # Only set when explicitly requested: some backends/models reject the field outright.
+        if parallel_tool_calls is not None:
+            request_kwargs["parallel_tool_calls"] = parallel_tool_calls
         request_kwargs.update(_token_limit_kwargs(self.model, max_tokens))
         self._attach_extra_body(request_kwargs)
 

@@ -57,7 +57,7 @@ def _mean_se(values: List[float]) -> Tuple[float, float, int]:
 
 def plot(wm_jsonl: Path, model_label: str, out_png: Path) -> Path:
     rows = [json.loads(line) for line in wm_jsonl.open()]
-    rows = [r for r in rows if r.get("condition_id") == "C2"]
+    rows = [r for r in rows if r.get("condition_id") in ("C2", "C2-stream")]
 
     by_topic_level: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
     by_level: Dict[str, List[float]] = defaultdict(list)

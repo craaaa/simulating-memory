@@ -122,7 +122,7 @@ def plot(
 ) -> List[Path]:
     standalone_rows = _load_rows(standalone_jsonl)
     wm_rows = _load_rows(wm_jsonl)
-    wm_rows = [r for r in wm_rows if r.get("condition_id") == "C2"]
+    wm_rows = [r for r in wm_rows if r.get("condition_id") in ("C2", "C2-stream")]
     human = load_human_topic_level_accuracies(human_csv)
 
     topics = sorted(
