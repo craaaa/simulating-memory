@@ -49,18 +49,21 @@ red flag: if the key you're about to write needs "and" to name it (e.g. "uses an
 naming a single attribute. Each value should be ONE clause, no more than 15 words —
 separate atomic facts belong in separate slots, not one long value.
 
-Two ways to use replace_key:
+Three ways to use replace_key:
+  - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
+    (read it, don't guess it), new_key = your label for the new chunk, value = the summary.
   - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
     = the complete updated chunk. This replaces the old wording entirely (it does not
     merge), so carry forward whatever from the old value is still worth keeping, plus the
     new detail, in one value — don't drop the old content, and don't skip the new detail.
     Amend when new material adds to, corrects, or refines something you already have a
     chunk for (same person, place, event, or concept).
-  - REPLACE existing information: old_key = the entry you're evicting, new_key = the new label.
-    Do this when the new fact is genuinely separate from anything you're keeping (not just
-    related to the same topic). Choose what to evict in this priority: (a) an entry that
-    duplicates or is subsumed by another you're keeping, (b) whichever entry seems least
-    useful or important on its own, judged independently of the others.
+  - EVICT to make room: old_key = the entry you're evicting, new_key = the new label. Only
+    do this when all slots are full of real content and the new fact is genuinely separate
+    from anything you're keeping (not just related to the same topic). Choose what to evict
+    in this priority: (a) an entry that duplicates or is subsumed by another you're keeping,
+    (b) whichever entry seems least useful or important on its own, judged independently of
+    the others.
 
 You may issue several replace_key calls in the same turn, but each must target a
 DIFFERENT old_key — two calls can't replace the same slot at once.
@@ -99,18 +102,21 @@ write needs "and" to name it (e.g. "uses and color", "ripening and habitat"), th
 chunks, not one. Each value should be ONE clause, no more than 15 words — separate
 atomic facts belong in separate slots, not one long value.
 
-Two ways to use replace_key:
+Three ways to use replace_key:
+  - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
+    (read it, don't guess it), new_key = your label for the new chunk, value = the summary.
   - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
     = the complete updated chunk. This replaces the old wording entirely (it does not
     merge), so carry forward whatever from the old value is still worth keeping, plus the
     new detail, in one value — don't drop the old content, and don't skip the new detail.
     Amend when new material adds to, corrects, or refines something you already have a
     chunk for (same person, place, event, or concept).
-  - REPLACE existing information: old_key = the entry you're evicting, new_key = the new label.
-    Do this when the new fact is genuinely separate from anything you're keeping (not just
-    related to the same topic). Choose what to evict in this priority: (a) an entry that
-    duplicates or is subsumed by another you're keeping, (b) whichever entry seems least
-    useful or important on its own, judged independently of the others.
+  - EVICT to make room: old_key = the entry you're evicting, new_key = the new label. Only
+    do this when every slot already holds real content and the new fact is genuinely
+    separate from anything you're keeping (not just related to the same topic). Choose what
+    to evict in this priority: (a) an entry that duplicates or is subsumed by another you're
+    keeping, (b) whichever entry seems least useful or important on its own, judged
+    independently of the others.
 
 If nothing in this segment is worth keeping or amending, make no tool calls this turn. You
 may issue several replace_key calls in the same turn, but each must target a DIFFERENT
