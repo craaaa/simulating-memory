@@ -38,6 +38,13 @@ because it feels meaningfully connected (a name with its role, a group of relate
 numbers, one gist). When the task asks for verbatim retrieval of a sequence, a human will
 form meaningful chunks of 1–3 items, starting from the beginning.
 
+A chunk is ONE atomic fact, not several facts stitched together even if they're about the
+same subject. If a segment gives you multiple attributes of one thing (what it is, where it
+is, how it was found), that's multiple chunks, not one — e.g. "Fornax Loop is a faint, cold
+gas shell 9000 light-years away, detected by infrared instruments" is at least two chunks:
+one for what it is / how it was found, one for its distance. Don't merge them into a single
+slot just because they share a subject.
+
 NEVER pack a long run of items into one slot. Once your slots are filled, accept
 that the rest will be lost. Compress realistically, and behave as a real human would:
 imperfect and sensitive to what seems important."""
@@ -51,41 +58,53 @@ limit of human short-term memory (Cowan, 2001).
 Original human-task instructions:
 {human_task_prompt.strip()}
 
-The material will NOT be shown to you all at once. It arrives as a sequence of ordered
-segments, one at a time — as in listening once, with no replay. You will NOT see a
-segment again after you move on from it.
+The material arrives as a sequence of ordered segments, one at a time — like listening
+once, with no replay. You will NOT see a segment again once you move past it, so decide
+now what's worth keeping.
 
-On each turn you will see the current contents of your {MAX_KEYS}-slot memory store and
-the new segment. Use write_memory and delete_key to maintain the key-value store while
-doing the original task, deciding now what's worth keeping since you cannot revisit this
-segment later. Each slot should hold ONE chunk — a small bundle of information a person
-would bind together because it feels meaningfully connected (a name with its role, a group
-of related items or numbers, one gist).
+Each turn you'll see your current memory contents and the new segment. Use write_memory
+and delete_key to maintain the store while doing the original task. Each slot should hold
+ONE chunk — a small bundle of information a person would bind together because it feels
+meaningfully connected (a name with its role, a group of related items or numbers, one
+gist).
 
-Calling write_memory with a key that already exists AMENDS that entry — it replaces the
-old value with the new one and does not use up a slot. Use this any time a later segment
-adds to, corrects, or refines something you already stored, not only when memory is full:
-amending is how you update a chunk as you learn more about it.
+A chunk is ONE atomic fact, not several facts stitched together even if they're about the
+same subject. If a segment gives you multiple attributes of one thing (what it is, where it
+is, how it was found), that's multiple chunks, not one — e.g. "Fornax Loop is a faint, cold
+gas shell 9000 light-years away, detected by infrared instruments" is at least two chunks:
+one for what it is / how it was found, one for its distance. Split them into separate
+write_memory calls rather than merging them into a single slot just because they share a
+subject.
 
-Before calling write_memory for something NEW (a key you haven't used before), follow this
-procedure exactly:
-  1. Count your current memory entries from the snapshot shown above.
-  2. If the count is below {MAX_KEYS}: call write_memory directly.
-  3. If the count is already {MAX_KEYS}: either amend an existing entry (see above, if the
-     new information belongs with something you already stored), or free a slot by calling
-     delete_key on the entry you value least, THEN call write_memory for the new fact — in
-     that order, in the same turn. A delete_key call with no write_memory call using that
-     freed slot in the same turn is a mistake — it only loses information for nothing.
-  4. If nothing in this segment is worth keeping or amending, make no tool calls this turn.
+AMENDING: calling write_memory with an existing key REPLACES that entry's value entirely
+(old wording is gone, not merged) and does not use a slot. Amend when a new segment adds
+to, corrects, or refines something you already have a chunk for (same person, place,
+event, or concept). Write a NEW key instead when the segment introduces a genuinely
+separate fact that doesn't belong inside an existing chunk, even if it's related to the
+same topic. When you amend, compose the full updated chunk — carry forward what's still
+worth keeping from the old value AND add the new detail; don't drop the old content, and
+don't skip the new detail either. Amend often, whenever you learn more about something
+you've already stored, not only when memory is full.
 
-You will see the result of each tool call (success or error) before deciding your next
-action — use that feedback rather than repeating an identical call that just failed.
-Follow this procedure so you never call write_memory while already at {MAX_KEYS} entries
-without first choosing to overwrite-in-place (step 3) or delete-and-refill (step 4).
+Before writing a NEW key, follow this procedure exactly:
+  1. Count your current entries from the snapshot shown above.
+  2. Below {MAX_KEYS}: call write_memory directly.
+  3. At {MAX_KEYS}: either amend an existing entry (if the new info belongs with something
+     you already stored), or delete_key then write_memory for the new fact, in that order,
+     in the same turn. Choose what to delete in this priority: (a) an entry that duplicates
+     or is subsumed by another you're keeping, (b) whichever entry seems least useful or
+     important on its own, judged independently of the others. Deleting without writing
+     the freed slot in the same turn just loses information for nothing.
+  4. Nothing worth keeping or amending this segment: make no tool calls.
 
-NEVER pack a long run of items into one slot. Once your slots are filled, accept
-that the rest will be lost. Compress realistically, and behave as a real human would:
-imperfect and sensitive to what seems important at the time you encounter it."""
+You'll see the result (success or error) of each tool call before your next action — use
+that feedback instead of repeating an identical call that just failed. Never call
+write_memory while already at {MAX_KEYS} entries without first choosing to overwrite-in-place
+(step 3) or delete-and-refill (step 4).
+
+NEVER pack a long run of items into one slot. Once your slots are filled, accept that the
+rest will be lost. Compress realistically, and behave as a real human would: imperfect and
+sensitive to what seems important at the time you encounter it."""
 
     raise KeyError(f"Unknown condition_id: {condition_id}")
 

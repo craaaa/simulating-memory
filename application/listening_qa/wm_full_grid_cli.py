@@ -33,6 +33,7 @@ from bench.tasks.wm_application_listening_qa import (
 )
 from bench.tasks.wm_mcq_common import run_wm_mcq_trial
 from bench.tasks.wm_prompt_parts import CONDITIONS, wm_system_prompt
+from bench.tasks.wm_semantic_story_recall import split_sentences
 
 from .data import LEVELS, load_topics
 from .prompting import (
@@ -91,7 +92,14 @@ def run(
     topic_id: Optional[str] = typer.Option(
         None, "--topic", help="Restrict the run to a single topic_id. Default: all topics."
     ),
+    segment_unit: str = typer.Option(
+        "paragraph",
+        "--segment-unit",
+        help="Streaming segment granularity: paragraph or sentence. Ignored unless --streaming.",
+    ),
 ):
+    if segment_unit not in ("paragraph", "sentence"):
+        raise typer.BadParameter(f"--segment-unit must be 'paragraph' or 'sentence', got {segment_unit!r}")
     cond_id = COND_ID_STREAM if streaming else COND_ID
     model_slug = model.replace("/", "_").replace("\\", "_")
     tasks_dir = Path(out_dir) if out_dir else Path("runs/compactor") / model_slug / run_timestamp() / "tasks"
@@ -127,8 +135,11 @@ def run(
         questions_text = _format_questions(questions)
 
         if streaming:
-            paragraphs = [p.strip() for p in passage.split("\n\n") if p.strip()]
-            encode_content = [f"Topic: {generic_topic}"] + paragraphs
+            if segment_unit == "sentence":
+                units = split_sentences(passage)
+            else:
+                units = [p.strip() for p in passage.split("\n\n") if p.strip()]
+            encode_content = [f"Topic: {generic_topic}"] + units
             system_prompt_override = SYSTEM_PROMPT_STREAM
         else:
             encode_content = f"Topic: {generic_topic}\n\n{passage}"
@@ -151,11 +162,14 @@ def run(
         scored = score_topic(questions, answer_map)
         scored["slot_utilization"] = result["slot_utilization"]
 
-        condition_name = CONDITIONS[COND_ID]["name"] if not streaming else CONDITION_NAME_STREAM
+        condition_name = (
+            f"{CONDITION_NAME_STREAM} ({segment_unit}-segmented)" if streaming else CONDITIONS[COND_ID]["name"]
+        )
         return {
             "id": f"{TASK_NAME}:{cond_id}:r{repeat_index}:{topic.topic_id}:{level}",
             "condition_id": cond_id,
             "condition_name": condition_name,
+            "segment_unit": segment_unit if streaming else None,
             "repeat_index": repeat_index,
             "topic_id": topic.topic_id,
             "title": topic.title,
@@ -196,6 +210,7 @@ def run(
         "task": TASK_NAME,
         "model": model,
         "condition_id": cond_id,
+        "segment_unit": segment_unit if streaming else None,
         "n_repeats_per_cell": n_repeats_per_cell,
         "n_cells": len(cells),
         "n_total_trials": len(jobs),
