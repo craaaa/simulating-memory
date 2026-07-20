@@ -27,8 +27,9 @@ TOOLS: List[Dict[str, Any]] = [
                 "something you already stored, set old_key and new_key to the SAME existing key "
                 "and give the full updated value. To evict something to make room for a new fact, "
                 "set old_key to the entry you're evicting and new_key to the new label. "
-                "The value should be an abstractive summary consisting of one clause, no more "
-                "than 15 words. Separate atomic facts belong in separate slots. "
+                "new_key should be under 4 words. The value should be an abstractive summary "
+                "consisting of one clause, under 10 words. Separate atomic facts belong in "
+                "separate slots. "
                 "You may issue several replace_key calls in the same turn as long as each "
                 "targets a DIFFERENT old_key — two calls can't replace the same slot at once."
             ),
@@ -41,11 +42,11 @@ TOOLS: List[Dict[str, Any]] = [
                     },
                     "new_key": {
                         "type": "string",
-                        "description": "The key label for this slot going forward. Same as old_key to amend in place.",
+                        "description": "The key label for this slot going forward, under 4 words. Same as old_key to amend in place.",
                     },
                     "value": {
                         "type": "string",
-                        "description": "Abstractive summary of the information to retain for this slot.",
+                        "description": "Abstractive summary of the information to retain for this slot, under 10 words.",
                     },
                 },
                 "required": ["old_key", "new_key", "value"],
