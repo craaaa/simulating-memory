@@ -66,3 +66,14 @@ class WorkingMemory:
         if not filled:
             return "(memory is empty)"
         return "\n".join(f"{k}: {v}" for k, v in filled.items())
+
+    def to_turn_text(self) -> str:
+        """Full current state (including empty placeholder slots), for showing
+        the model what's live *right now* mid-encoding — unlike
+        ``to_recall_text()``, which drops empty slots for the final answer
+        prompt where they're irrelevant, this must show every slot's exact
+        current key so the model can target a valid ``old_key``."""
+        return "\n".join(
+            f"{k}: (empty slot)" if v == "" else f"{k}: {v}"
+            for k, v in self._store.items()
+        )

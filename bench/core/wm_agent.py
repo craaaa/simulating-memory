@@ -506,7 +506,8 @@ class WorkingMemoryAgent:
         for idx, segment_text in enumerate(segments, start=1):
             turn_prompt = (
                 f"Segment {idx} of {n_segments}.\n\n"
-                f"Current memory contents:\n{self.wm.to_recall_text()}\n\n"
+                f"Current memory contents (all {MAX_KEYS} slots — use these EXACT keys as "
+                f"old_key, empty ones included):\n{self.wm.to_turn_text()}\n\n"
                 f"New segment:\n{segment_text}"
             )
             messages = [
