@@ -93,7 +93,7 @@ def run(
         None, "--topic", help="Restrict the run to a single topic_id. Default: all topics."
     ),
     segment_unit: str = typer.Option(
-        "paragraph",
+        "sentence",
         "--segment-unit",
         help="Streaming segment granularity: paragraph or sentence. Ignored unless --streaming.",
     ),
