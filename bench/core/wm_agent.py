@@ -14,41 +14,46 @@ TOOLS: List[Dict[str, Any]] = [
     {
         "type": "function",
         "function": {
-            "name": "replace_key",
+            "name": "write_memory",
             "description": (
-                f"Working memory always has exactly {MAX_KEYS} slots, no more and no fewer. "
-                "There is no separate 'add' or 'delete' — every change is replacing one existing "
-                "slot's key with a new key and value. old_key must be a key currently in memory "
-                "(either an empty slot or a key you've already used) — read its exact current "
-                "name from the memory contents shown this turn, never assume or reuse a name "
-                "from an earlier turn, since slot names change as they fill up. To store "
-                "something new in an empty slot, set old_key to that empty slot's CURRENT key. "
-                "To amend "
-                "something you already stored, set old_key and new_key to the SAME existing key "
-                "and give the full updated value. To evict something to make room for a new fact, "
-                "set old_key to the entry you're evicting and new_key to the new label. "
-                "The value should be an abstractive summary consisting of one clause, no more "
-                "than 15 words. Separate atomic facts belong in separate slots. "
-                "You may issue several replace_key calls in the same turn as long as each "
-                "targets a DIFFERENT old_key — two calls can't replace the same slot at once."
+                "Store a key-value memory entry. "
+                "The key should be a short word or phrase that labels the concept or chunk. "
+                "The value should be an abstractive summary consisting of one clause, no more than 15 words. "
+                "Separate atomic facts should be placed in separate memory entries. "
+                f"Maximum {MAX_KEYS} keys total — overwriting an existing key is allowed."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "old_key": {
+                    "key": {
                         "type": "string",
-                        "description": "The key currently occupying the slot you're replacing, exactly as it appears in this turn's memory contents (an empty-slot key or an existing content key) — never a name from an earlier turn.",
-                    },
-                    "new_key": {
-                        "type": "string",
-                        "description": "The key label for this slot going forward. Same as old_key to amend in place.",
+                        "description": "Short word or phrase identifying the concept (e.g. 'beginning', 'characters', 'theme').",
                     },
                     "value": {
                         "type": "string",
-                        "description": "Abstractive summary of the information to retain for this slot.",
+                        "description": "Abstractive summary of the information to retain for this key.",
                     },
                 },
-                "required": ["old_key", "new_key", "value"],
+                "required": ["key", "value"],
+                "additionalProperties": False,
+            },
+            "strict": True,
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_key",
+            "description": "Remove a key and its value from working memory.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "The key to delete.",
+                    },
+                },
+                "required": ["key"],
                 "additionalProperties": False,
             },
             "strict": True,
@@ -63,13 +68,17 @@ def _dispatch_tool(wm: WorkingMemory, name: str, arguments_json: str) -> str:
     except json.JSONDecodeError as e:
         return f"Error: could not parse arguments JSON: {e}"
 
-    if name == "replace_key":
-        old_key = args.get("old_key", "").strip()
-        new_key = args.get("new_key", "").strip()
+    if name == "write_memory":
+        key = args.get("key", "").strip()
         value = args.get("value", "")
-        if not old_key or not new_key:
-            return "Error: old_key and new_key must both be non-empty strings."
-        return wm.replace_key(old_key, new_key, str(value))
+        if not key:
+            return "Error: key must be a non-empty string."
+        return wm.write_key(key, str(value))
+    elif name == "delete_key":
+        key = args.get("key", "").strip()
+        if not key:
+            return "Error: key must be a non-empty string."
+        return wm.clear_key(key)
     else:
         return f"Error: unknown tool '{name}'."
 
@@ -89,9 +98,8 @@ Your task:
   1. Read through the entire material.
   2. Identify up to {max_keys} meaningful chunks — the chunks a person would naturally
      organize the material into (e.g. gist, key characters, main event, outcome).
-  3. For each chunk, call replace_key (old_key = an empty slot's key) with a short key
-     label and an abstractive summary. Compress realistically — humans retain gist, not
-     verbatim detail.
+  3. For each chunk, call write_memory with a short key label and an abstractive summary.
+     Compress realistically — humans retain gist, not verbatim detail.
   4. Fewer than {max_keys} keys is fine if the material is simple.
 
 Behave as a real human would: strategic, imperfect, and sensitive to what seems most important.
@@ -113,9 +121,9 @@ On each turn you will see:
 Your task on each turn:
   1. Read the new segment.
   2. Decide, given what is already in memory and the {max_keys}-slot limit, whether to
-     use replace_key to fill an empty slot, amend an existing one in place (old_key ==
-     new_key), or evict a less useful one to make room. Decide now — you cannot revisit
-     this segment later.
+     write a new chunk (write_memory), overwrite/update an existing one, or delete a
+     less useful one to make room (delete_key). Decide now — you cannot revisit this
+     segment later.
   3. Compress realistically: keep gist, not verbatim detail. Fewer than {max_keys}
      keys is fine if the material so far is simple.
 
@@ -200,7 +208,7 @@ class WorkingMemoryAgent:
         user_message : str
             The next user-side message to present to the agent.
         allow_tools : bool
-            If *True* the agent may call replace_key.
+            If *True* the agent may call write_memory / delete_key.
         max_tokens : int
             Max completion tokens per LLM call within this step.
 
@@ -317,8 +325,10 @@ class WorkingMemoryAgent:
                 except json.JSONDecodeError:
                     print(f"    {tc['name']}(<malformed args>)")
                     continue
-                if tc["name"] == "replace_key":
-                    print(f"    replace_key({args['old_key']!r} -> {args['new_key']!r}, {args['value']!r})")
+                if tc["name"] == "write_memory":
+                    print(f"    write_memory({args['key']!r}, {args['value']!r})")
+                elif tc["name"] == "delete_key":
+                    print(f"    delete_key({args['key']!r})")
             if cap_hit:
                 print(
                     f"    tool_call_cap_hit "
@@ -375,8 +385,10 @@ class WorkingMemoryAgent:
                 except json.JSONDecodeError:
                     print(f"    {tc['name']}(<malformed args>)")
                     continue
-                if tc["name"] == "replace_key":
-                    print(f"    replace_key({args['old_key']!r} -> {args['new_key']!r}, {args['value']!r})")
+                if tc["name"] == "write_memory":
+                    print(f"    write_memory({args['key']!r}, {args['value']!r})")
+                elif tc["name"] == "delete_key":
+                    print(f"    delete_key({args['key']!r})")
             print(f"  Memory:\n{self.wm.snapshot()}")
             print()
 
@@ -410,6 +422,7 @@ class WorkingMemoryAgent:
                 tool_choice="auto" if tools_available else "none",
                 temperature=self.temperature,
                 max_tokens=max_tokens,
+                parallel_tool_calls=False,
             )
             if not tools_available and resp.tool_calls:
                 cap_hit = True
@@ -471,10 +484,10 @@ class WorkingMemoryAgent:
 
         Each segment's turn builds a FRESH messages list from ``self.wm.snapshot()``
         plus the new segment only — raw text of earlier segments is never resent,
-        so the agent must commit to what's worth keeping (via replace_key) before
-        moving on, rather than planning all writes with hindsight of the whole
-        passage (that's what encode() does, and it's the gap this method is meant
-        to close).
+        so the agent must commit to what's worth keeping (via write_memory /
+        delete_key) before moving on, rather than planning all writes with
+        hindsight of the whole passage (that's what encode() does, and it's the
+        gap this method is meant to close).
 
         Parameters
         ----------
@@ -509,8 +522,7 @@ class WorkingMemoryAgent:
         for idx, segment_text in enumerate(segments, start=1):
             turn_prompt = (
                 f"Segment {idx} of {n_segments}.\n\n"
-                f"Current memory contents (all {MAX_KEYS} slots — use these EXACT keys as "
-                f"old_key, empty ones included):\n{self.wm.to_turn_text()}\n\n"
+                f"Current memory contents:\n{self.wm.to_recall_text()}\n\n"
                 f"New segment:\n{segment_text}"
             )
             messages = [
@@ -547,8 +559,10 @@ class WorkingMemoryAgent:
                     except json.JSONDecodeError:
                         print(f"    {tc['name']}(<malformed args>)")
                         continue
-                    if tc["name"] == "replace_key":
-                        print(f"    replace_key({args['old_key']!r} -> {args['new_key']!r}, {args['value']!r})")
+                    if tc["name"] == "write_memory":
+                        print(f"    write_memory({args['key']!r}, {args['value']!r})")
+                    elif tc["name"] == "delete_key":
+                        print(f"    delete_key({args['key']!r})")
                 if result["cap_hit"]:
                     print(
                         f"    tool_call_cap_hit (segment {result['used']}/{segment_budget}, "

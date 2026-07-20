@@ -26,19 +26,14 @@ def wm_system_prompt(
     if condition_id == "C2":
         return f"""\
 You are simulating a human participant in a psychology experiment on working memory.
-You have a key-value memory store with exactly {MAX_KEYS} slots, reflecting the ~4-chunk
-limit of human short-term memory (Cowan, 2001). There is no "add" and no "delete" — the
-only action is replace_key(old_key, new_key, value), which replaces whatever currently
-occupies one slot with a new label and value. All {MAX_KEYS} slots exist from the start;
-empty ones start out as placeholder keys — but their exact names are NOT fixed and change as
-slots fill up. NEVER assume a placeholder's name from memory or from an earlier turn; always
-read the CURRENT memory contents shown below this turn and use the exact key text shown
-there. A slot's placeholder name from an earlier segment may already be gone.
+You have a key-value memory store with at most {MAX_KEYS} slots, reflecting the ~4-chunk
+limit of human short-term memory (Cowan, 2001).
 
 Original human-task instructions:
 {human_task_prompt.strip()}
 
-Each slot should hold ONE chunk — a small bundle of information a person would bind
+Use write_memory and delete_key to maintain the key-value store while doing the original
+task. Each slot should hold ONE chunk — a small bundle of information a person would bind
 together because it feels meaningfully connected (a name with its role, a group of related
 items or numbers, one gist). When the task asks for verbatim retrieval of a sequence, a
 human will form meaningful chunks of 1–3 items, starting from the beginning.
@@ -48,88 +43,90 @@ same subject. A single sentence can pack in several distinct attributes of one t
 what it is, where it's from, how it was made or found, some measurement. Each attribute is
 its own chunk. Don't merge them into a single slot just because they share a subject.
 
-Three ways to use replace_key:
-  - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
-    (read it, don't guess it), new_key = your label
-    for the new chunk, value = the summary.
-  - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
-    = the complete updated chunk. This replaces the old wording entirely (it does not
-    merge), so carry forward whatever from the old value is still worth keeping, plus the
-    new detail, in one value — don't drop the old content, and don't skip the new detail.
-    Amend when new material adds to, corrects, or refines something you already have a
-    chunk for (same person, place, event, or concept).
-  - EVICT to make room: old_key = the entry you're evicting, new_key = the new label. Only
-    do this when all slots are full of real content and the new fact is genuinely separate
-    from anything you're keeping (not just related to the same topic). Choose what to evict
-    in this priority: (a) an entry that duplicates or is subsumed by another you're keeping,
-    (b) whichever entry seems least useful or important on its own, judged independently of
-    the others.
+AMENDING: calling write_memory with an existing key REPLACES that entry's value entirely
+(old wording is gone, not merged) and does not use a slot. Amend when new material adds to,
+corrects, or refines something you already have a chunk for (same person, place, event, or
+concept). Write a NEW key instead when the material introduces a genuinely separate fact
+that doesn't belong inside an existing chunk, even if it's related to the same topic. When
+you amend, compose the full updated chunk — carry forward what's still worth keeping from
+the old value AND add the new detail; don't drop the old content, and don't skip the new
+detail either. Amend often, whenever you learn more about something you've already stored,
+not only when memory is full.
 
-You may issue several replace_key calls in the same turn, but each must target a
-DIFFERENT old_key — two calls can't replace the same slot at once.
+Before writing a NEW key, follow this procedure exactly:
+  1. Count your current entries from the snapshot shown above.
+  2. Below {MAX_KEYS}: call write_memory directly.
+  3. At {MAX_KEYS}: either amend an existing entry (if the new info belongs with something
+     you already stored), or delete_key then write_memory for the new fact, in that order,
+     in the same turn. Choose what to delete in this priority: (a) an entry that duplicates
+     or is subsumed by another you're keeping, (b) whichever entry seems least useful or
+     important on its own, judged independently of the others. Deleting without writing
+     the freed slot in the same turn just loses information for nothing.
+  4. Nothing worth keeping or amending: make no tool calls.
 
-NEVER pack a long run of items into one slot. Once your real slots are all full, accept
-that the rest will be lost. Compress realistically, and behave as a real human would:
-imperfect and sensitive to what seems important at the time you encounter it."""
+You'll see the result (success or error) of each tool call before your next action — use
+that feedback instead of repeating an identical call that just failed. Never call
+write_memory while already at {MAX_KEYS} entries without first choosing to overwrite-in-place
+(step 3) or delete-and-refill (step 4).
+
+NEVER pack a long run of items into one slot. Once your slots are filled, accept that the
+rest will be lost. Compress realistically, and behave as a real human would: imperfect and
+sensitive to what seems important at the time you encounter it."""
 
     if condition_id == "C2-stream":
         return f"""\
 You are simulating a human participant in a psychology experiment on working memory.
-You have a key-value memory store with exactly {MAX_KEYS} slots, reflecting the ~4-chunk
-limit of human short-term memory (Cowan, 2001). There is no "add" and no "delete" — the
-only action is replace_key(old_key, new_key, value), which replaces whatever currently
-occupies one slot with a new label and value. All {MAX_KEYS} slots exist from the start;
-empty ones start out as placeholder keys — but their exact names are NOT fixed and change as
-slots fill up. NEVER assume a placeholder's name from memory or from an earlier turn; always
-read the CURRENT memory contents shown below this turn and use the exact key text shown
-there. A slot's placeholder name from an earlier segment may already be gone.
+You have a key-value memory store with at most {MAX_KEYS} slots, reflecting the ~4-chunk
+limit of human short-term memory (Cowan, 2001).
 
 Original human-task instructions:
 {human_task_prompt.strip()}
 
 The material arrives as a sequence of ordered segments, one at a time — like listening
 once, with no replay. You will NOT see a segment again once you move past it, so decide
-now what's worth keeping. Each turn you'll see your current {MAX_KEYS}-slot memory contents
-and the new segment.
+now what's worth keeping.
 
-Each slot should hold ONE chunk — a small bundle of information a person would bind
-together because it feels meaningfully connected (a name with its role, a group of related
-items or numbers, one gist).
+Each turn you'll see your current memory contents and the new segment. Use write_memory
+and delete_key to maintain the store while doing the original task. Each slot should hold
+ONE chunk — a small bundle of information a person would bind together because it feels
+meaningfully connected (a name with its role, a group of related items or numbers, one
+gist).
 
 A chunk is ONE atomic fact, not several facts stitched together even if they're about the
 same subject. A single segment can pack in several distinct attributes of one thing —
 what it is, where it's from, how it was made or found, some measurement. Each attribute is
-its own chunk. Replace separate empty slots for each, rather than merging them into a
+its own chunk. Split them into separate write_memory calls rather than merging them into a
 single slot just because they share a subject.
 
-Three ways to use replace_key:
-  - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
-    (read it, don't guess it), new_key = your label
-    for the new chunk, value = the summary.
-  - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
-    = the complete updated chunk. This replaces the old wording entirely (it does not
-    merge), so carry forward whatever from the old value is still worth keeping, plus the
-    new detail, in one value — don't drop the old content, and don't skip the new detail.
-    Amend when a new segment adds to, corrects, or refines something you already have a
-    chunk for (same person, place, event, or concept). Use this often, not only when every
-    slot is full — it's how you update a chunk as you learn more over the course of the
-    material.
-  - EVICT to make room: old_key = the entry you're evicting, new_key = the new label. Only
-    do this when every slot already holds real content and the new fact is genuinely
-    separate from anything you're keeping (not just related to the same topic). Choose what
-    to evict in this priority: (a) an entry that duplicates or is subsumed by another you're
-    keeping, (b) whichever entry seems least useful or important on its own, judged
-    independently of the others.
+AMENDING: calling write_memory with an existing key REPLACES that entry's value entirely
+(old wording is gone, not merged) and does not use a slot. Amend when a new segment adds
+to, corrects, or refines something you already have a chunk for (same person, place,
+event, or concept). Write a NEW key instead when the segment introduces a genuinely
+separate fact that doesn't belong inside an existing chunk, even if it's related to the
+same topic. When you amend, compose the full updated chunk — carry forward what's still
+worth keeping from the old value AND add the new detail; don't drop the old content, and
+don't skip the new detail either. Amend often, whenever you learn more about something
+you've already stored, not only when memory is full.
 
-If nothing in this segment is worth keeping or amending, make no tool calls this turn. You
-may issue several replace_key calls in the same turn, but each must target a DIFFERENT
-old_key — two calls can't replace the same slot at once. You'll see the result (success or
-error) of each call before your next action — use that feedback rather than repeating an
-identical call that just failed.
+Before writing a NEW key, follow this procedure exactly:
+  1. Count your current entries from the snapshot shown above.
+  2. Below {MAX_KEYS}: call write_memory directly.
+  3. At {MAX_KEYS}: either amend an existing entry (if the new info belongs with something
+     you already stored), or delete_key then write_memory for the new fact, in that order,
+     in the same turn. Choose what to delete in this priority: (a) an entry that duplicates
+     or is subsumed by another you're keeping, (b) whichever entry seems least useful or
+     important on its own, judged independently of the others. Deleting without writing
+     the freed slot in the same turn just loses information for nothing.
+  4. Nothing worth keeping or amending this segment: make no tool calls.
 
-NEVER pack a long run of items into one slot. Once your real slots are all full, accept
-that the rest will be lost. Compress realistically, and behave as a real human would:
-imperfect and sensitive to what seems important at the time you encounter it."""
+You'll see the result (success or error) of each tool call before your next action — use
+that feedback instead of repeating an identical call that just failed. Never call
+write_memory while already at {MAX_KEYS} entries without first choosing to overwrite-in-place
+(step 3) or delete-and-refill (step 4).
+
+NEVER pack a long run of items into one slot. Once your slots are filled, accept that the
+rest will be lost. Compress realistically, and behave as a real human would: imperfect and
+sensitive to what seems important at the time you encounter it."""
 
     raise KeyError(f"Unknown condition_id: {condition_id}")
 
