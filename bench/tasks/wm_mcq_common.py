@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Union
 
 from ..core.llm import LLM
 from ..core.wm_agent import SummarizerAgent, WorkingMemoryAgent
+from ..core.working_memory import MAX_KEYS
 
 
 MCQ_RECALL_TEMPLATE = """\
@@ -88,7 +89,11 @@ def run_wm_mcq_trial(
         "encoding_log": encoding_log,
         "recall_raw": recall_raw,
         "final_kv": final_kv,
-        "slot_utilization": agent.wm.slot_utilization,
+        "slot_utilization": (
+            agent.wm.slot_utilization
+            if hasattr(agent.wm, "slot_utilization")
+            else len([v for v in final_kv.values() if v != ""]) / MAX_KEYS
+        ),
     }
 
 
