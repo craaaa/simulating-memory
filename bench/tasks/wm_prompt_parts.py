@@ -43,17 +43,11 @@ human will form meaningful chunks of 1–3 items, starting from the beginning.
 A chunk is ONE atomic fact, not several facts stitched together even if they're about the
 same subject. A single sentence can pack in several distinct attributes of one thing —
 what it is, where it's from, how it was made or found, some measurement. Each attribute is
-its own chunk. Don't merge them into a single slot just because they share a subject.
-
-WRONG (two facts crammed into one slot — the key needing "and" to name it is the tell):
-  replace_key(old_key="empty_2", new_key="material origin and use",
-              value="It is spun from a local plant fiber and used mainly for rope.")
-RIGHT (same information, two separate atomic slots):
-  replace_key(old_key="empty_2", new_key="material origin", value="It is spun from a local plant fiber.")
-  replace_key(old_key="empty_3", new_key="material use", value="It is used mainly for rope.")
-If you catch yourself about to name a key with "and" (e.g. "origin and use", "size and
-weight"), stop — that means the value has two facts. Split it into two replace_key calls,
-each with its own single-attribute key, before you make either call.
+its own chunk. Don't merge them into a single slot just because they share a subject. A
+red flag: if the key you're about to write needs "and" to name it (e.g. "uses and color",
+"ripening and habitat"), that's two chunks, not one — split them into two keys, each
+naming a single attribute. Each value should be ONE clause, no more than 15 words —
+separate atomic facts belong in separate slots, not one long value.
 
 Two ways to use replace_key:
   - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
@@ -100,17 +94,10 @@ A chunk is ONE atomic fact, not several facts stitched together even if they're 
 same subject. A single segment can pack in several distinct attributes of one thing —
 what it is, where it's from, how it was made or found, some measurement. Each attribute is
 its own chunk. Replace separate empty slots for each, rather than merging them into a
-single slot just because they share a subject.
-
-WRONG (two facts crammed into one slot — the key needing "and" to name it is the tell):
-  replace_key(old_key="empty_2", new_key="material origin and use",
-              value="It is spun from a local plant fiber and used mainly for rope.")
-RIGHT (same information, two separate atomic slots):
-  replace_key(old_key="empty_2", new_key="material origin", value="It is spun from a local plant fiber.")
-  replace_key(old_key="empty_3", new_key="material use", value="It is used mainly for rope.")
-If you catch yourself about to name a key with "and" (e.g. "origin and use", "size and
-weight"), stop — that means the segment has two facts. Split it into two replace_key
-calls, each with its own single-attribute key, before you make either call.
+single slot just because they share a subject. A red flag: if the key you're about to
+write needs "and" to name it (e.g. "uses and color", "ripening and habitat"), that's two
+chunks, not one. Each value should be ONE clause, no more than 15 words — separate
+atomic facts belong in separate slots, not one long value.
 
 Two ways to use replace_key:
   - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
