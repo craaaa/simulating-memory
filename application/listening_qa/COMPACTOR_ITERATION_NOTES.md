@@ -61,10 +61,42 @@ not explained by call failures or atomicity violations — it appears to be abou
 different, less effective memory-management choices than the old two-tool sequential design,
 even when every call succeeds. This is an open question, not yet root-caused.
 
+## Sentence-segmentation cross-check (v12c-cap25 vs v10, both sentence-segmented)
+
+To isolate whether the accuracy gap was about the `replace_key` tool design itself (not
+paragraph-vs-sentence segmentation, which was confounded in the v12-v18 table above — those
+were all paragraph-segmented except where noted), two pilots were run with sentence-level
+segments and a raised `trial_tool_call_cap=25` (added as a CLI flag: `--trial-tool-call-cap`,
+`--per-segment-tool-call-cap`; previously hardcoded at 12/4):
+
+| version | n/cell | not-found / write-full | accuracy | cost | notes |
+|---|---|---|---|---|---|
+| v12c wording (replace_key, parallel) | 3 | 0.0% (0/505) | 0.542 | $3.23 (48 trials) | No trial hit the 25-call cap (max 15 used) — the fixed 12-call budget was never the real bottleneck once the display-format bug was fixed. |
+| **v10 wording (write_memory/delete_key, sequential)** | 2 | 22.4% (135/603) | **0.581** | $2.46 (32 trials) | 6/32 trials hit the 25-call cap; mean 18.8 calls/trial. Best sentence-segmented accuracy of the whole session, despite the classic write-full error class reappearing (structurally impossible in replace_key). |
+
+**v10's design still wins on accuracy even under sentence segmentation, and even with the old
+"write when full" error class present.** This rules out "maybe replace_key just needs sentence
+segmentation to catch up" — it doesn't. The accuracy gap is intrinsic to the tool/prompt design
+difference (single unified replace vs. separate write/delete, parallel-batched vs. sequential
+with result-before-next-decision), not an artifact of segmentation granularity.
+
+Bug caught during this cross-check: `wm_mcq_common.py`'s `slot_utilization` computation called
+`agent.wm.slot_utilization`, a property that only exists on the post-v12 `WorkingMemory` — it
+now checks `hasattr` and falls back to counting non-empty `final_kv` values for the old design,
+so both tool families can share the same trial-running code path.
+
+Also caught: the OpenAI client had no request timeout configured. A `--trial-tool-call-cap=25`
+run hung indefinitely (0% CPU, same 4 ESTABLISHED connections, zero progress for 4+ minutes)
+with no error and no way to recover short of killing the process. Fixed with `timeout=120.0,
+max_retries=2` on the `OpenAI(...)` client construction in `llm_openai.py`.
+
 ## Standing recommendation
 
-v10 remains the best-performing version on every metric measured. The `replace_key` line was
-motivated primarily by cost (cutting streaming's ~4x request-count multiplier vs batch), and
-v18 achieves clean mechanics at that lower cost, but has not yet matched v10's accuracy. Treat
-v18 as the current best of the `replace_key` family, not a replacement for v10, until the
-accuracy gap is understood.
+v10 remains the best-performing version on every metric measured, under both paragraph AND
+sentence segmentation. The `replace_key` line was motivated primarily by cost (cutting
+streaming's ~4x request-count multiplier vs batch), and v18/v12c-cap25 achieve clean mechanics
+at that lower cost, but neither has matched v10's accuracy — and the sentence-segmentation
+cross-check above suggests this isn't a fixable artifact of tuning, but an intrinsic property
+of the tool/prompt design. Treat v10 as the standing default for accuracy-sensitive work;
+`replace_key` variants remain the better choice only when minimizing cost matters more than
+closing this ~0.2 accuracy gap.
