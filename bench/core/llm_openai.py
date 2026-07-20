@@ -126,7 +126,7 @@ class OpenAIChatLLM(LLM):
         else:
             resolved_api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
 
-        self.client = OpenAI(api_key=resolved_api_key, base_url=bu or None)
+        self.client = OpenAI(api_key=resolved_api_key, base_url=bu or None, timeout=120.0, max_retries=2)
         self.model = model
         # OpenRouter expects full route ids (e.g. ``qwen/qwen3-8b``); official OpenAI API strips ``openai/``.
         self._api_model = model if _is_openrouter_base_url(bu) else _api_model_id_for_openai_api(model)
