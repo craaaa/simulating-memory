@@ -47,8 +47,6 @@ A chunk is ONE atomic fact, not several facts stitched together even if they're 
 same subject. A single sentence can pack in several distinct attributes of one thing —
 what it is, where it's from, how it was made or found, some measurement. Each attribute is
 its own chunk. Don't merge them into a single slot just because they share a subject.
-Keep new_key under 4 words and value under 10 words — short enough that packing two facts
-into either one becomes obviously impossible.
 
 Three ways to use replace_key:
   - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
@@ -65,9 +63,7 @@ Three ways to use replace_key:
     from anything you're keeping (not just related to the same topic). Choose what to evict
     in this priority: (a) an entry that duplicates or is subsumed by another you're keeping,
     (b) whichever entry seems least useful or important on its own, judged independently of
-    the others — hints for "least useful": background or scene-setting detail rather than a
-    specific name/number/relationship, something not likely to matter for questions about
-    the material, or the entry you'd be least confident recalling correctly anyway.
+    the others.
 
 You may issue several replace_key calls in the same turn, but each must target a
 DIFFERENT old_key — two calls can't replace the same slot at once.
@@ -104,9 +100,7 @@ A chunk is ONE atomic fact, not several facts stitched together even if they're 
 same subject. A single segment can pack in several distinct attributes of one thing —
 what it is, where it's from, how it was made or found, some measurement. Each attribute is
 its own chunk. Replace separate empty slots for each, rather than merging them into a
-single slot just because they share a subject. Keep new_key under 4 words and value under
-10 words — short enough that packing two facts into either one becomes obviously
-impossible.
+single slot just because they share a subject.
 
 Three ways to use replace_key:
   - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
@@ -125,10 +119,7 @@ Three ways to use replace_key:
     separate from anything you're keeping (not just related to the same topic). Choose what
     to evict in this priority: (a) an entry that duplicates or is subsumed by another you're
     keeping, (b) whichever entry seems least useful or important on its own, judged
-    independently of the others — hints for "least useful": background or scene-setting
-    detail rather than a specific name/number/relationship, something not likely to matter
-    for questions about the material, or the entry you'd be least confident recalling
-    correctly anyway.
+    independently of the others.
 
 If nothing in this segment is worth keeping or amending, make no tool calls this turn. You
 may issue several replace_key calls in the same turn, but each must target a DIFFERENT

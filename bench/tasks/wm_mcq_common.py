@@ -41,12 +41,15 @@ def run_wm_mcq_trial(
     format_rules: str,
     system_prompt_override: str | None = None,
     recall_max_tokens: int = 512,
+    trial_tool_call_cap: int = 12,
+    per_segment_tool_call_cap: int = 4,
 ) -> Dict[str, Any]:
     """Run one WM-agent trial: encode material, then answer MCQs from memory.
 
     ``encode_content`` as a str is presented in one shot (agent.encode());
     a list of str is treated as ordered segments and dispatched to the
-    streaming, no-lookback encoder (agent.encode_streaming()).
+    streaming, no-lookback encoder (agent.encode_streaming()). The tool-call
+    cap params only apply to the streaming path.
 
     Returns
     -------
@@ -61,7 +64,11 @@ def run_wm_mcq_trial(
     )
 
     if isinstance(encode_content, list):
-        encoding_log = agent.encode_streaming(encode_content)
+        encoding_log = agent.encode_streaming(
+            encode_content,
+            trial_tool_call_cap=trial_tool_call_cap,
+            per_segment_tool_call_cap=per_segment_tool_call_cap,
+        )
     else:
         encoding_log = agent.encode(encode_content)
 

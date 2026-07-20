@@ -97,6 +97,12 @@ def run(
         "--segment-unit",
         help="Streaming segment granularity: paragraph or sentence. Ignored unless --streaming.",
     ),
+    trial_tool_call_cap: int = typer.Option(
+        12, "--trial-tool-call-cap", min=1, help="Max replace_key calls per trial (streaming only)."
+    ),
+    per_segment_tool_call_cap: int = typer.Option(
+        4, "--per-segment-tool-call-cap", min=1, help="Max replace_key calls per segment turn (streaming only)."
+    ),
 ):
     if segment_unit not in ("paragraph", "sentence"):
         raise typer.BadParameter(f"--segment-unit must be 'paragraph' or 'sentence', got {segment_unit!r}")
@@ -155,6 +161,8 @@ def run(
             recall_preamble=RECALL_PREAMBLE,
             format_rules=FORMAT_RULES,
             system_prompt_override=system_prompt_override,
+            trial_tool_call_cap=trial_tool_call_cap,
+            per_segment_tool_call_cap=per_segment_tool_call_cap,
         )
 
         parsed = parse_answers_and_difficulty(result["recall_raw"])
