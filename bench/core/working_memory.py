@@ -72,8 +72,17 @@ class WorkingMemory:
         the model what's live *right now* mid-encoding — unlike
         ``to_recall_text()``, which drops empty slots for the final answer
         prompt where they're irrelevant, this must show every slot's exact
-        current key so the model can target a valid ``old_key``."""
-        return "\n".join(
-            f"{k}: (empty slot)" if v == "" else f"{k}: {v}"
-            for k, v in self._store.items()
-        )
+        current key so the model can target a valid ``old_key``.
+
+        Explicitly labels and quotes the key (``old_key="..."``) rather than
+        a bare ``key: value`` line — the plain colon format was repeatedly
+        mistaken for a single string (the model would pass the whole
+        "key: value" line as old_key), since nothing marked where the key
+        ends and the value begins."""
+        lines = []
+        for k, v in self._store.items():
+            if v == "":
+                lines.append(f'- old_key="{k}"  (empty slot)')
+            else:
+                lines.append(f'- old_key="{k}"  value="{v}"')
+        return "\n".join(lines)
