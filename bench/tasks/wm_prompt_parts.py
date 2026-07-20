@@ -93,11 +93,10 @@ meaningfully connected (a name with its role, a group of related items or number
 gist).
 
 A chunk is ONE atomic fact, not several facts stitched together even if they're about the
-same subject. If a segment gives you multiple attributes of one thing (what it is, where it
-is, how it was found), that's multiple chunks, not one — e.g. a sentence that gives a
-species' habitat, diet, AND discovery date is at least three chunks, one per attribute, not
-one long sentence. Split them into separate write_memory calls rather than merging them
-into a single slot just because they share a subject.
+same subject. A single segment can pack in several distinct attributes of one thing —
+what it is, where it's from, how it was made or found, some measurement. Each attribute is
+its own chunk. Split them into separate write_memory calls rather than merging them into a
+single slot just because they share a subject.
 
 AMENDING: calling write_memory with an existing key REPLACES that entry's value entirely
 (old wording is gone, not merged) and does not use a slot. Amend when a new segment adds
