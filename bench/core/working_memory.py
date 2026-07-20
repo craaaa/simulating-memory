@@ -3,43 +3,66 @@ from typing import Dict
 
 MAX_KEYS = 4
 NUM_SLOTS = MAX_KEYS  # backward-compat alias
+EMPTY_SLOT_KEYS = [f"empty_{i}" for i in range(1, MAX_KEYS + 1)]
 
 
 class WorkingMemory:
-    """Key-value working memory with a maximum of MAX_KEYS entries,
-    mirroring the ~4-chunk limit of human short-term memory (Cowan, 2001)."""
+    """Key-value working memory with exactly MAX_KEYS fixed slots, mirroring
+    the ~4-chunk limit of human short-term memory (Cowan, 2001).
+
+    The store always has exactly MAX_KEYS entries. It starts with MAX_KEYS
+    empty placeholder slots (``empty_1`` .. ``empty_N``, value ``""``). The
+    only mutation is ``replace_key``: swap an existing key (empty or filled)
+    for a new key/value. Store size never changes, so "memory is full" is
+    structurally impossible — every write is a replace of something already
+    occupying one of the fixed slots.
+    """
 
     def __init__(self) -> None:
-        self._store: Dict[str, str] = {}
+        self._store: Dict[str, str] = {k: "" for k in EMPTY_SLOT_KEYS}
 
-    def write_key(self, key: str, value: str) -> str:
-        if key not in self._store and len(self._store) >= MAX_KEYS:
+    def replace_key(self, old_key: str, new_key: str, value: str) -> str:
+        if old_key not in self._store:
+            return f"Error: key '{old_key}' not found — nothing to replace."
+        if new_key != old_key and new_key in self._store:
             return (
-                f"Error: memory is full ({MAX_KEYS} keys). "
-                "Delete an existing key first or overwrite one."
+                f"Error: key '{new_key}' already in use by another slot. "
+                "Use that key's own name as old_key to replace it, or pick a different new_key."
             )
-        self._store[key] = str(value)
-        return f"Key '{key}' written."
-
-    def clear_key(self, key: str) -> str:
-        if key not in self._store:
-            return f"Error: key '{key}' not found."
-        del self._store[key]
-        return f"Key '{key}' deleted."
+        value = str(value)
+        if old_key == new_key:
+            self._store[old_key] = value
+            return f"Key '{old_key}' updated."
+        # Preserve insertion order except for the slot being replaced.
+        new_store: Dict[str, str] = {}
+        for k, v in self._store.items():
+            if k == old_key:
+                new_store[new_key] = value
+            else:
+                new_store[k] = v
+        self._store = new_store
+        return f"Key '{old_key}' replaced with '{new_key}'."
 
     @property
     def store(self) -> Dict[str, str]:
         return dict(self._store)
 
+    @property
+    def filled_count(self) -> int:
+        return sum(1 for v in self._store.values() if v != "")
+
+    @property
+    def slot_utilization(self) -> float:
+        return self.filled_count / MAX_KEYS
+
     def snapshot(self) -> str:
-        if not self._store:
-            return "  (empty)"
         lines = []
         for k, v in self._store.items():
-            lines.append(f'  "{k}": {repr(v)}')
+            lines.append(f'  "{k}": (empty slot)' if v == "" else f'  "{k}": {repr(v)}')
         return "\n".join(lines)
 
     def to_recall_text(self) -> str:
-        if not self._store:
+        filled = {k: v for k, v in self._store.items() if v != ""}
+        if not filled:
             return "(memory is empty)"
-        return "\n".join(f"{k}: {v}" for k, v in self._store.items())
+        return "\n".join(f"{k}: {v}" for k, v in filled.items())
