@@ -19,8 +19,11 @@ TOOLS: List[Dict[str, Any]] = [
                 f"Working memory always has exactly {MAX_KEYS} slots, no more and no fewer. "
                 "There is no separate 'add' or 'delete' — every change is replacing one existing "
                 "slot's key with a new key and value. old_key must be a key currently in memory "
-                "(either an empty slot like 'empty_1' or a key you've already used). To store "
-                "something new in an empty slot, set old_key to that empty slot's key. To amend "
+                "(either an empty slot or a key you've already used) — read its exact current "
+                "name from the memory contents shown this turn, never assume or reuse a name "
+                "from an earlier turn, since slot names change as they fill up. To store "
+                "something new in an empty slot, set old_key to that empty slot's CURRENT key. "
+                "To amend "
                 "something you already stored, set old_key and new_key to the SAME existing key "
                 "and give the full updated value. To evict something to make room for a new fact, "
                 "set old_key to the entry you're evicting and new_key to the new label. "
@@ -34,7 +37,7 @@ TOOLS: List[Dict[str, Any]] = [
                 "properties": {
                     "old_key": {
                         "type": "string",
-                        "description": "The key currently occupying the slot you're replacing (an empty-slot key like 'empty_1', or an existing content key).",
+                        "description": "The key currently occupying the slot you're replacing, exactly as it appears in this turn's memory contents (an empty-slot key or an existing content key) — never a name from an earlier turn.",
                     },
                     "new_key": {
                         "type": "string",

@@ -30,7 +30,10 @@ You have a key-value memory store with exactly {MAX_KEYS} slots, reflecting the 
 limit of human short-term memory (Cowan, 2001). There is no "add" and no "delete" — the
 only action is replace_key(old_key, new_key, value), which replaces whatever currently
 occupies one slot with a new label and value. All {MAX_KEYS} slots exist from the start;
-empty ones are just placeholder keys ("empty_1" etc.) waiting to be replaced.
+empty ones start out as placeholder keys — but their exact names are NOT fixed and change as
+slots fill up. NEVER assume a placeholder's name from memory or from an earlier turn; always
+read the CURRENT memory contents shown below this turn and use the exact key text shown
+there. A slot's placeholder name from an earlier segment may already be gone.
 
 Original human-task instructions:
 {human_task_prompt.strip()}
@@ -46,7 +49,8 @@ what it is, where it's from, how it was made or found, some measurement. Each at
 its own chunk. Don't merge them into a single slot just because they share a subject.
 
 Three ways to use replace_key:
-  - FILL AN EMPTY SLOT: old_key = an "empty_N" key from the snapshot, new_key = your label
+  - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
+    (read it, don't guess it), new_key = your label
     for the new chunk, value = the summary.
   - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
     = the complete updated chunk. This replaces the old wording entirely (it does not
@@ -75,7 +79,10 @@ You have a key-value memory store with exactly {MAX_KEYS} slots, reflecting the 
 limit of human short-term memory (Cowan, 2001). There is no "add" and no "delete" — the
 only action is replace_key(old_key, new_key, value), which replaces whatever currently
 occupies one slot with a new label and value. All {MAX_KEYS} slots exist from the start;
-empty ones are just placeholder keys ("empty_1" etc.) waiting to be replaced.
+empty ones start out as placeholder keys — but their exact names are NOT fixed and change as
+slots fill up. NEVER assume a placeholder's name from memory or from an earlier turn; always
+read the CURRENT memory contents shown below this turn and use the exact key text shown
+there. A slot's placeholder name from an earlier segment may already be gone.
 
 Original human-task instructions:
 {human_task_prompt.strip()}
@@ -96,7 +103,8 @@ its own chunk. Replace separate empty slots for each, rather than merging them i
 single slot just because they share a subject.
 
 Three ways to use replace_key:
-  - FILL AN EMPTY SLOT: old_key = an "empty_N" key from the snapshot, new_key = your label
+  - FILL AN EMPTY SLOT: old_key = the exact key of an empty slot AS CURRENTLY SHOWN below
+    (read it, don't guess it), new_key = your label
     for the new chunk, value = the summary.
   - AMEND something you already stored: old_key AND new_key = the SAME existing key, value
     = the complete updated chunk. This replaces the old wording entirely (it does not
