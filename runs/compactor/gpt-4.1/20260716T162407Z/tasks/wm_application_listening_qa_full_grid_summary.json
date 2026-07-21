@@ -1,0 +1,129 @@
+{
+  "task": "wm_application_listening_qa",
+  "model": "gpt-4.1",
+  "condition_id": "C2-stream",
+  "n_repeats_per_cell": 5,
+  "n_cells": 16,
+  "n_total_trials": 80,
+  "llm_usage": {
+    "request_count": 917,
+    "prompt_tokens": 1110973,
+    "completion_tokens": 37000,
+    "total_tokens": 1147973,
+    "estimated_cost_usd": 2.517946
+  },
+  "git_provenance": {
+    "commit": "dcf2fe1a1dfeab43ea48de0196f9cd2bb5e22049",
+    "branch": "application-compactor",
+    "tags": [
+      "exp/compactor-v6",
+      "exp/compactor-v7"
+    ],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": "diff --git a/bench/tasks/wm_prompt_parts.py b/bench/tasks/wm_prompt_parts.py\nindex 55c2c85..22b76ec 100644\n--- a/bench/tasks/wm_prompt_parts.py\n+++ b/bench/tasks/wm_prompt_parts.py\n@@ -62,10 +62,23 @@ segment later. Each slot should hold ONE chunk — a small bundle of information\n would bind together because it feels meaningfully connected (a name with its role, a group\n of related items or numbers, one gist).\n \n-Calling write_memory with a key that already exists AMENDS that entry — it replaces the\n-old value with the new one and does not use up a slot. Use this any time a later segment\n-adds to, corrects, or refines something you already stored, not only when memory is full:\n-amending is how you update a chunk as you learn more about it.\n+Calling write_memory with a key that already exists AMENDS that entry — it REPLACES the\n+old value with the new one entirely (the old wording is gone, not merged), and does not\n+use up a slot.\n+\n+WHEN to amend rather than write a new key: the new segment gives you more information\n+about something you already have a chunk for — the same person, place, event, or concept\n+— whether that's an added detail, a correction, or a refinement. WHEN to write a new key\n+instead: the new segment introduces a genuinely separate fact that doesn't belong inside\n+an existing chunk, even if it's related to the same topic.\n+\n+HOW to amend: because the old value is fully replaced, compose the new value as the\n+complete, updated chunk — carry forward whatever from the old value is still worth\n+keeping, plus the new detail, in one value. Don't write only the new detail and lose the\n+old one; don't leave the old value unchanged and skip the new detail either.\n+\n+Use this often, not only when memory is full: amending is how you update a chunk as you\n+learn more about it over the course of the material.\n \n Before calling write_memory for something NEW (a key you haven't used before), follow this\n procedure exactly:\n@@ -73,9 +86,12 @@ procedure exactly:\n   2. If the count is below {MAX_KEYS}: call write_memory directly.\n   3. If the count is already {MAX_KEYS}: either amend an existing entry (see above, if the\n      new information belongs with something you already stored), or free a slot by calling\n-     delete_key on the entry you value least, THEN call write_memory for the new fact — in\n-     that order, in the same turn. A delete_key call with no write_memory call using that\n-     freed slot in the same turn is a mistake — it only loses information for nothing.\n+     delete_key, THEN call write_memory for the new fact — in that order, in the same turn.\n+     When choosing WHICH entry to delete, prefer, in order: (a) an entry that duplicates or\n+     is subsumed by another entry you're keeping, (b) the entry that seems least useful or\n+     important on its own, judged independently of the others. A delete_key call with no\n+     write_memory call using that freed slot in the same turn is a mistake — it only loses\n+     information for nothing.\n   4. If nothing in this segment is worth keeping or amending, make no tool calls this turn.\n \n You will see the result of each tool call (success or error) before deciding your next",
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": null,
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null
+    }
+  },
+  "cells": {
+    "astronomy:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.96,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8799999999999999,
+      "per_statement_mean": 0.96,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.952,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.76,
+      "per_statement_mean": 0.952,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.32,
+      "per_statement_mean": 0.736,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8800000000000001,
+      "per_statement_mean": 0.976,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8800000000000001,
+      "per_statement_mean": 0.976,
+      "parse_error_count": 0
+    },
+    "fruits:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.96,
+      "per_statement_mean": 0.992,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.96,
+      "per_statement_mean": 0.984,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.9199999999999999,
+      "per_statement_mean": 0.952,
+      "parse_error_count": 0
+    }
+  }
+}
