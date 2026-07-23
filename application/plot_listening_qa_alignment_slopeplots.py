@@ -89,9 +89,28 @@ GRID = "#d9d9d9"
 INK = "#2b2b2b"
 
 
-def compute_pairwise_reranking(seed: int = 42, n_samples_per_pair: int = 500) -> dict[str, dict[str, float]]:
+N_BOOT = 2000
+
+
+def bootstrap_ci_proportion(hits: list[bool], *, seed: int, n_boot: int = N_BOOT) -> tuple[float, float]:
+    """Percentile bootstrap CI on a proportion, resampling the individual hit/miss draws."""
+    arr = np.asarray(hits, dtype=np.float64)
+    rng = np.random.default_rng(seed)
+    n = len(arr)
+    boot_means = np.empty(n_boot)
+    for i in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        boot_means[i] = arr[idx].mean()
+    lo, hi = np.percentile(boot_means, [2.5, 97.5])
+    return float(lo), float(hi)
+
+
+def compute_pairwise_reranking(
+    seed: int = 42, n_samples_per_pair: int = 500
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, tuple[float, float]]]]:
     human = load_human_topic_level_accuracies(HUMAN_CSV)
     out: dict[str, dict[str, float]] = {}
+    ci: dict[str, dict[str, tuple[float, float]]] = {}
     for name, prompt_jsonl, wm_jsonl in MODELS:
         llm = load_llm_topic_level_condition(prompt_jsonl, wm_jsonl)
         topics = sorted(set(human.keys()) | {t for c in CONDITIONS for t in llm.get(c, {}).keys()})
@@ -104,8 +123,13 @@ def compute_pairwise_reranking(seed: int = 42, n_samples_per_pair: int = 500) ->
             seed=seed,
             n_samples_per_pair=n_samples_per_pair,
         )
+        rep_hits = result["rep_hits"]
         out[name] = {c: result["accuracy_by_condition"][c]["agreement"] for c in CONDITIONS}
-    return out
+        ci[name] = {}
+        for c in CONDITIONS:
+            hits = [h for h in rep_hits[c] if h is not None]
+            ci[name][c] = bootstrap_ci_proportion(hits, seed=seed) if hits else (float("nan"), float("nan"))
+    return out, ci
 
 
 def load_human_pooled_accuracy() -> np.ndarray:
@@ -130,23 +154,54 @@ def load_model_pooled_accuracy(jsonl_path: Path, condition_ids: tuple[str, ...])
     return np.asarray(vals, dtype=np.float64)
 
 
-def compute_humanlikeness() -> dict[str, dict[str, float]]:
+def bootstrap_ci_humanlikeness(
+    human: np.ndarray, model: np.ndarray, *, seed: int, n_boot: int = N_BOOT
+) -> tuple[float, float]:
+    """Percentile bootstrap CI on humanlikeness, resampling human and model arrays independently."""
+    rng = np.random.default_rng(seed)
+    n_h, n_m = len(human), len(model)
+    boot_vals = np.empty(n_boot)
+    for i in range(n_boot):
+        h_idx = rng.integers(0, n_h, size=n_h)
+        m_idx = rng.integers(0, n_m, size=n_m)
+        boot_vals[i] = humanlikeness(human[h_idx], model[m_idx])
+    lo, hi = np.percentile(boot_vals, [2.5, 97.5])
+    return float(lo), float(hi)
+
+
+def compute_humanlikeness(
+    seed: int = 42,
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, tuple[float, float]]]]:
     human_scores = load_human_pooled_accuracy()
     out: dict[str, dict[str, float]] = {}
+    ci: dict[str, dict[str, tuple[float, float]]] = {}
     for name, prompt_jsonl, wm_jsonl in MODELS:
         row: dict[str, float] = {}
+        row_ci: dict[str, tuple[float, float]] = {}
         for c in ("C1", "C2", "C3", "C4"):
             scores = load_model_pooled_accuracy(prompt_jsonl, (c,))
             row[c] = humanlikeness(human_scores, scores)
-        row["WM"] = humanlikeness(human_scores, load_model_pooled_accuracy(wm_jsonl, ("C2", "C2-stream")))
+            row_ci[c] = bootstrap_ci_humanlikeness(human_scores, scores, seed=seed)
+        wm_scores = load_model_pooled_accuracy(wm_jsonl, ("C2", "C2-stream"))
+        row["WM"] = humanlikeness(human_scores, wm_scores)
+        row_ci["WM"] = bootstrap_ci_humanlikeness(human_scores, wm_scores, seed=seed)
         out[name] = row
-    return out
+        ci[name] = row_ci
+    return out, ci
 
 
-def slope_plot(data: dict[str, dict[str, float]], *, ylabel: str, title: str, out_path: Path, chance_line: float | None = None) -> None:
+def slope_plot(
+    data: dict[str, dict[str, float]],
+    *,
+    ylabel: str,
+    title: str,
+    out_path: Path,
+    chance_line: float | None = None,
+    ci: dict[str, dict[str, tuple[float, float]]] | None = None,
+) -> None:
     columns = list(CONDITIONS)
     fig, ax = plt.subplots(figsize=(8, 5.5))
-    x = range(len(columns))
+    x = list(range(len(columns)))
     end_ys = sorted(
         ((name, data[name][columns[-1]]) for name, _p, _w in MODELS), key=lambda t: t[1]
     )
@@ -157,10 +212,21 @@ def slope_plot(data: dict[str, dict[str, float]], *, ylabel: str, title: str, ou
         if y - prev_y < min_gap:
             end_ys[i] = (name, prev_y + min_gap)
     label_y = dict(end_ys)
-    for name, _pjsonl, _wjsonl in MODELS:
+    n_models = len(MODELS)
+    jitter_width = 0.09
+    for i, (name, _pjsonl, _wjsonl) in enumerate(MODELS):
         ys = [data[name][c] for c in columns]
         color = MODEL_COLORS[name]
-        ax.plot(x, ys, marker="o", markersize=7, linewidth=2, color=color, label=name, zorder=3)
+        offset = (i - (n_models - 1) / 2) * (jitter_width / max(n_models - 1, 1))
+        xs = [xi + offset for xi in x]
+        if ci is not None:
+            lo = [max(0.0, data[name][c] - ci[name][c][0]) for c in columns]
+            hi = [max(0.0, ci[name][c][1] - data[name][c]) for c in columns]
+            ax.errorbar(
+                xs, ys, yerr=[lo, hi], fmt="none", ecolor=color, elinewidth=1.2,
+                capsize=3, alpha=0.6, zorder=2,
+            )
+        ax.plot(xs, ys, marker="o", markersize=7, linewidth=2, color=color, label=name, zorder=3)
         ax.text(len(columns) - 1 + 0.08, label_y[name], name, va="center", ha="left", fontsize=10, color=color)
     if chance_line is not None:
         ax.axhline(chance_line, color=INK, linestyle=":", linewidth=1, zorder=1)
@@ -185,7 +251,7 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print("Computing pairwise reranking accuracy (vs. human)...")
-    reranking = compute_pairwise_reranking()
+    reranking, reranking_ci = compute_pairwise_reranking()
     for name, row in reranking.items():
         print(f"  {name}: " + " ".join(f"{c}={row[c]:.3f}" for c in CONDITIONS))
     slope_plot(
@@ -194,10 +260,11 @@ def main() -> None:
         title="Listening QA: model-vs-human pairwise level-preference agreement",
         out_path=out_dir / "listening_qa_pairwise_reranking_slopeplot.png",
         chance_line=CHANCE,
+        ci=reranking_ci,
     )
 
     print("\nComputing humanlikeness (1 - W1)...")
-    human_w1 = compute_humanlikeness()
+    human_w1, human_w1_ci = compute_humanlikeness()
     for name, row in human_w1.items():
         print(f"  {name}: " + " ".join(f"{c}={row[c]:.3f}" for c in CONDITIONS))
     slope_plot(
@@ -206,6 +273,7 @@ def main() -> None:
         title="Listening QA: human–model distributional alignment (Wasserstein)",
         out_path=out_dir / "listening_qa_humanlikeness_slopeplot.png",
         chance_line=None,
+        ci=human_w1_ci,
     )
 
     print(f"\nSaved plots to {out_dir}")
