@@ -43,20 +43,24 @@ def plot(summary_path: Path, model_label: str, out_png: Path) -> Path:
     n_base_pairs = d["result"]["n_base_pairs"]
     n_samples_per_pair = meta["n_samples_per_pair"]
 
-    means = [acc[c]["agreement"] for c in CONDITION_IDS]
-    lo = [acc[c]["ci_lo"] for c in CONDITION_IDS]
-    hi = [acc[c]["ci_hi"] for c in CONDITION_IDS]
+    # Conditions with no data (e.g. WM when there's no compactor run for this
+    # model) report agreement=None; drop them rather than crash on the plot.
+    condition_ids = [c for c in CONDITION_IDS if acc[c]["agreement"] is not None]
+
+    means = [acc[c]["agreement"] for c in condition_ids]
+    lo = [acc[c]["ci_lo"] for c in condition_ids]
+    hi = [acc[c]["ci_hi"] for c in condition_ids]
     err_lo = [m - l for m, l in zip(means, lo)]
     err_hi = [h - m for m, h in zip(means, hi)]
 
     fig, ax = plt.subplots(figsize=(11, 6))
     ax.bar(
-        [CONDITION_LABELS[c] for c in CONDITION_IDS],
+        [CONDITION_LABELS[c] for c in condition_ids],
         means,
         yerr=[err_lo, err_hi],
         capsize=4,
         edgecolor="black",
-        color=[COLORS[c] for c in CONDITION_IDS],
+        color=[COLORS[c] for c in condition_ids],
     )
     for i, m in enumerate(means):
         ax.text(i, hi[i] + 0.001, f"{m:.3f}", ha="center", fontsize=11)
