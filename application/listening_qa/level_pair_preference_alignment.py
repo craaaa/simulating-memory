@@ -42,7 +42,7 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 LEVELS: tuple[str, ...] = ("control", "repeat_short", "repeat_long", "distractor")
-CONDITIONS: tuple[str, ...] = ("C1", "C2", "C3", "C4", "WM")
+CONDITIONS: tuple[str, ...] = ("C1", "C2", "C3", "WM")
 
 DEFAULT_MODEL_SLUG = "meta-llama_llama-3.1-8b-instruct"
 DEFAULT_STANDALONE_JSONL = (
@@ -401,7 +401,7 @@ def main() -> None:
 
     paired_tests = [
         paired_difference_test(rep_hits, "WM", c, seed=args.seed, n_boot=args.n_boot)
-        for c in ["C1", "C2", "C3", "C4"]
+        for c in ["C1", "C2", "C3"]
     ]
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

@@ -30,28 +30,78 @@ GRID = "#d9d9d9"
 INK = "#2b2b2b"
 MUTED = "#6b6b6b"
 
-# (display name, prompting run dir under runs/prompting/)
-PROMPTING_RUNS: list[tuple[str, str]] = [
-    ("GPT-4.1", "gpt-4.1/20260716T155755Z"),
-    ("Gemma-4-31B-it", "google_gemma-4-31b-it"),
-    ("Qwen2.5-72B-Instruct", "qwen_qwen-2.5-72b-instruct"),
-    ("Mistral-Small-24B-2501", "mistralai_mistral-small-24b-instruct-2501"),
-    ("WizardLM-2-8x22B", "microsoft_wizardlm-2-8x22b"),
-    ("R1-Distill-Llama-70B", "deepseek_deepseek-r1-distill-llama-70b"),
-    ("Gemma-3-27B-it", "google_gemma-3-27b-it"),
-    ("DeepSeek-V3.2", "deepseek_deepseek-v3.2"),
-    ("Llama-3.3-70B-Instruct", "meta-llama_llama-3.3-70b-instruct"),
-    ("Hermes-4-70B", "nousresearch_hermes-4-70b"),
-    ("Llama-3.1-70B-Instruct", "meta-llama_llama-3.1-70b-instruct"),
-    ("Qwen3-32B", "qwen_qwen3-32b"),
-    ("Nemotron-3-Super-120B", "nvidia_nemotron-3-super-120b-a12b"),
-]
+# Friendly display names for known slugs; anything not listed here falls back
+# to an auto-formatted version of its runs/prompting/<slug> directory name.
+DISPLAY_NAMES: dict[str, str] = {
+    "gpt-4.1": "GPT-4.1",
+    "openai_gpt-4.1-mini": "GPT-4.1-mini",
+    "google_gemma-4-31b-it": "Gemma-4-31B-it",
+    "google_gemma-4-26b-a4b-it": "Gemma-4-26B-A4B-it",
+    "google_gemma-3-27b-it": "Gemma-3-27B-it",
+    "qwen_qwen-2.5-72b-instruct": "Qwen2.5-72B-Instruct",
+    "Qwen_Qwen2.5-32B-Instruct": "Qwen2.5-32B-Instruct",
+    "mistralai_mistral-small-24b-instruct-2501": "Mistral-Small-24B-2501",
+    "microsoft_wizardlm-2-8x22b": "WizardLM-2-8x22B",
+    "microsoft_phi-4": "Phi-4",
+    "deepseek_deepseek-r1-distill-llama-70b": "R1-Distill-Llama-70B",
+    "deepseek_deepseek-v3.2": "DeepSeek-V3.2",
+    "meta-llama_llama-3.3-70b-instruct": "Llama-3.3-70B-Instruct",
+    "meta-llama_llama-3.1-70b-instruct": "Llama-3.1-70B-Instruct",
+    "meta-llama_llama-3.1-8b-instruct": "Llama-3.1-8B-Instruct",
+    "meta-llama_Meta-Llama-3-8B-Instruct": "Llama-3-8B-Instruct",
+    "meta-llama_llama-4-maverick": "Llama-4-Maverick",
+    "meta-llama_llama-4-scout": "Llama-4-Scout",
+    "nousresearch_hermes-4-70b": "Hermes-4-70B",
+    "nvidia_nemotron-3-super-120b-a12b": "Nemotron-3-Super-120B",
+    "nvidia_nemotron-3-nano-30b-a3b": "Nemotron-3-Nano-30B",
+    "nvidia_nemotron-3-ultra-550b-a55b": "Nemotron-3-Ultra-550B",
+    "cohere_command-a": "Command-A",
+    "moonshotai_kimi-k2-0905": "Kimi-K2-0905",
+    "z-ai_glm-4.6": "GLM-4.6",
+    "qwen_qwen3-32b": "Qwen3-32B",
+    "qwen_qwen3-235b-a22b-2507": "Qwen3-235B-A22B-2507",
+    "qwen_qwen3-30b-a3b-instruct": "Qwen3-30B-A3B-Instruct",
+    "qwen_qwen3-30b-a3b-thinking": "Qwen3-30B-A3B-Thinking",
+    "qwen_qwen3-next-80b-a3b-instruct": "Qwen3-Next-80B-A3B-Instruct",
+    "qwen_qwen3.5-122b-a10b": "Qwen3.5-122B-A10B",
+    "qwen_qwen3.5-397b-a17b": "Qwen3.5-397B-A17B",
+    "qwen_qwen3.6-27b": "Qwen3.6-27B",
+}
 
-# (display name, compactor run dir under runs/compactor/)
+
+def _display_name(slug: str) -> str:
+    if slug in DISPLAY_NAMES:
+        return DISPLAY_NAMES[slug]
+    return slug.split("_", 1)[-1].replace("-", " ").title().replace(" ", "-")
+
+
+def discover_prompting_runs() -> list[tuple[str, str]]:
+    """Every runs/prompting/<slug>[/<timestamp>]/tasks/application_listening_qa_full_grid.jsonl,
+    as (display name, path relative to runs/prompting/ up to but excluding /tasks/...jsonl)."""
+    root = REPO_ROOT / "runs" / "prompting"
+    rows: list[tuple[str, str]] = []
+    for jsonl_path in sorted(root.glob("**/tasks/application_listening_qa_full_grid.jsonl")):
+        rel = jsonl_path.relative_to(root)
+        run_dir = str(rel.parent.parent)  # strip "/tasks/<file>.jsonl"
+        slug = run_dir.split("/")[0]
+        rows.append((_display_name(slug), run_dir))
+    return rows
+
+
+# (display name, prompting run dir under runs/prompting/) — auto-discovered.
+PROMPTING_RUNS: list[tuple[str, str]] = discover_prompting_runs()
+
+# (display name, compactor run dir under runs/compactor/) — models that cleared
+# the model-screening bar (near-ceiling prompting accuracy, no severe persistent
+# errors) and have a completed compactor run. Kept in sync with MODELS in
+# plot_listening_qa_alignment_slopeplots.py.
 COMPACTOR_RUNS: list[tuple[str, str]] = [
     ("GPT-4.1", "gpt-4.1/20260720T211617Z"),
     ("Qwen2.5-72B-Instruct", "Qwen_Qwen2.5-72B-Instruct"),
     ("Gemma-4-31B-it", "google_gemma-4-31B-it"),
+    ("Kimi-K2-0905", "moonshotai_kimi-k2-0905"),
+    ("Qwen2.5-32B-Instruct", "Qwen_Qwen2.5-32B-Instruct"),
+    ("Command-A", "CohereLabs_c4ai-command-a-03-2025"),
 ]
 
 LEVEL_ORDER = ("control", "repeat_short", "repeat_long", "distractor")
@@ -82,7 +132,7 @@ def plot_ceiling_bar(out_path: Path) -> None:
     names = [r[0] for r in rows]
     accs = [r[1] for r in rows]
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(8, max(6, 0.32 * len(names))))
     y = range(len(names))
     colors = [BLUE if name != "GPT-4.1" else MUTED for name in names]
     bars = ax.barh(list(y), accs, color=colors, height=0.62, zorder=3)
@@ -117,13 +167,13 @@ def plot_ceiling_vs_compactor(out_path: Path) -> None:
         sum(compactor_by_level[m].values()) / len(compactor_by_level[m]) for m in models
     ]
 
-    fig, ax = plt.subplots(figsize=(7.5, 5))
+    fig, ax = plt.subplots(figsize=(max(7.5, 1.6 * len(models)), 5.5))
     x = range(len(models))
     width = 0.34
     b1 = ax.bar([i - width / 2 for i in x], ceiling, width, color=BLUE, label="Prompting (ceiling)", zorder=3)
     b2 = ax.bar([i + width / 2 for i in x], compactor_overall, width, color=ORANGE, label="Compactor (working memory)", zorder=3)
     ax.set_xticks(list(x))
-    ax.set_xticklabels(models)
+    ax.set_xticklabels(models, rotation=20, ha="right")
     ax.set_ylim(0, 1.18)
     ax.set_ylabel("Exact-match accuracy")
     ax.set_title("Prompting ceiling vs. compactor accuracy")
@@ -131,7 +181,7 @@ def plot_ceiling_vs_compactor(out_path: Path) -> None:
     ax.set_axisbelow(True)
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
-    ax.legend(frameon=False, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.12))
+    ax.legend(frameon=False, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.14))
     for bars in (b1, b2):
         for bar in bars:
             h = bar.get_height()
@@ -145,16 +195,17 @@ def plot_compactor_by_level(out_path: Path) -> None:
     models = [name for name, _ in COMPACTOR_RUNS]
     by_level = {name: compactor_accuracy_by_level(run_dir) for name, run_dir in COMPACTOR_RUNS}
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(max(7.5, 1.4 * len(models)), 5))
+    n_models = len(models)
     n_levels = len(LEVEL_ORDER)
-    width = 0.8 / len(models)
-    colors = [BLUE, ORANGE, "#1baf7a"]
-    for i, model in enumerate(models):
-        vals = [by_level[model].get(level, float("nan")) for level in LEVEL_ORDER]
-        offsets = [j + (i - (len(models) - 1) / 2) * width for j in range(n_levels)]
-        ax.bar(offsets, vals, width, color=colors[i % len(colors)], label=model, zorder=3)
-    ax.set_xticks(range(n_levels))
-    ax.set_xticklabels([lvl.replace("_", " ") for lvl in LEVEL_ORDER])
+    width = 0.8 / n_levels
+    colors = [BLUE, ORANGE, "#1baf7a", "#d62728"]
+    for j, level in enumerate(LEVEL_ORDER):
+        vals = [by_level[model].get(level, float("nan")) for model in models]
+        offsets = [i + (j - (n_levels - 1) / 2) * width for i in range(n_models)]
+        ax.bar(offsets, vals, width, color=colors[j % len(colors)], label=level.replace("_", " "), zorder=3)
+    ax.set_xticks(range(n_models))
+    ax.set_xticklabels(models, rotation=20, ha="right")
     ax.set_ylim(0, 1.08)
     ax.set_ylabel("Compactor exact-match accuracy")
     ax.set_title("Compactor accuracy by reading level")

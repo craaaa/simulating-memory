@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at_utc": "2026-07-23T17:35:47.822551+00:00",
+    "generated_at_utc": "2026-07-23T19:49:49.162105+00:00",
     "seed": 42,
     "method": "individual_sample_draws_within_topic",
     "n_samples_per_pair": 500,
@@ -14,7 +14,6 @@
       "C1",
       "C2",
       "C3",
-      "C4",
       "WM"
     ],
     "topics": [
@@ -35,14 +34,12 @@
       "C1": 6003,
       "C2": 6093,
       "C3": 5980,
-      "C4": 5991,
-      "WM": 6403
+      "WM": 6337
     },
     "denom": {
       "C1": 12000,
       "C2": 12000,
       "C3": 12000,
-      "C4": 12000,
       "WM": 12000
     },
     "accuracy_by_condition": {
@@ -178,90 +175,46 @@
           }
         }
       },
-      "C4": {
-        "agreement": 0.49925,
-        "ci_lo": 0.4904145833333333,
-        "ci_hi": 0.5080020833333333,
-        "n": 12000,
-        "by_level_pair": {
-          "control_vs_distractor": {
-            "agreement": 0.4675,
-            "ci_lo": 0.446,
-            "ci_hi": 0.4895,
-            "n": 2000
-          },
-          "control_vs_repeat_long": {
-            "agreement": 0.5125,
-            "ci_lo": 0.491,
-            "ci_hi": 0.5345,
-            "n": 2000
-          },
-          "control_vs_repeat_short": {
-            "agreement": 0.4945,
-            "ci_lo": 0.4715,
-            "ci_hi": 0.5165,
-            "n": 2000
-          },
-          "repeat_long_vs_distractor": {
-            "agreement": 0.4955,
-            "ci_lo": 0.4745,
-            "ci_hi": 0.5175,
-            "n": 2000
-          },
-          "repeat_short_vs_distractor": {
-            "agreement": 0.516,
-            "ci_lo": 0.4945,
-            "ci_hi": 0.538,
-            "n": 2000
-          },
-          "repeat_short_vs_repeat_long": {
-            "agreement": 0.5095,
-            "ci_lo": 0.488,
-            "ci_hi": 0.532,
-            "n": 2000
-          }
-        }
-      },
       "WM": {
-        "agreement": 0.5335833333333333,
-        "ci_lo": 0.5249145833333334,
-        "ci_hi": 0.5425854166666666,
+        "agreement": 0.5280833333333333,
+        "ci_lo": 0.5194166666666666,
+        "ci_hi": 0.5371666666666667,
         "n": 12000,
         "by_level_pair": {
           "control_vs_distractor": {
-            "agreement": 0.537,
-            "ci_lo": 0.5145,
-            "ci_hi": 0.559,
+            "agreement": 0.4995,
+            "ci_lo": 0.47798749999999995,
+            "ci_hi": 0.5215,
             "n": 2000
           },
           "control_vs_repeat_long": {
-            "agreement": 0.555,
-            "ci_lo": 0.5335,
-            "ci_hi": 0.5765,
+            "agreement": 0.5525,
+            "ci_lo": 0.5319875000000001,
+            "ci_hi": 0.5745125,
             "n": 2000
           },
           "control_vs_repeat_short": {
-            "agreement": 0.53,
-            "ci_lo": 0.5085,
-            "ci_hi": 0.552,
+            "agreement": 0.5215,
+            "ci_lo": 0.5005,
+            "ci_hi": 0.5445,
             "n": 2000
           },
           "repeat_long_vs_distractor": {
-            "agreement": 0.5395,
-            "ci_lo": 0.518,
-            "ci_hi": 0.5615,
+            "agreement": 0.546,
+            "ci_lo": 0.5225,
+            "ci_hi": 0.5680124999999999,
             "n": 2000
           },
           "repeat_short_vs_distractor": {
-            "agreement": 0.548,
-            "ci_lo": 0.5265,
-            "ci_hi": 0.5695,
+            "agreement": 0.554,
+            "ci_lo": 0.533,
+            "ci_hi": 0.5755,
             "n": 2000
           },
           "repeat_short_vs_repeat_long": {
-            "agreement": 0.492,
-            "ci_lo": 0.4705,
-            "ci_hi": 0.514,
+            "agreement": 0.495,
+            "ci_lo": 0.474,
+            "ci_hi": 0.517,
             "n": 2000
           }
         }
@@ -273,53 +226,40 @@
       "cond_a": "WM",
       "cond_b": "C1",
       "n_paired": 12000,
-      "agreement_a": 0.5335833333333333,
+      "agreement_a": 0.5280833333333333,
       "agreement_b": 0.50025,
-      "observed_diff_a_minus_b": 0.033333333333333326,
-      "bootstrap_ci_lo": 0.021333333333333315,
-      "bootstrap_ci_hi": 0.04633333333333328,
-      "mcnemar_b_discordant": 3227,
-      "mcnemar_c_discordant": 2827,
-      "mcnemar_p_value": 2.927690458953691e-07
+      "observed_diff_a_minus_b": 0.027833333333333377,
+      "bootstrap_ci_lo": 0.015333333333333421,
+      "bootstrap_ci_hi": 0.04108333333333336,
+      "mcnemar_b_discordant": 3231,
+      "mcnemar_c_discordant": 2897,
+      "mcnemar_p_value": 2.1010140999422333e-05
     },
     {
       "cond_a": "WM",
       "cond_b": "C2",
       "n_paired": 12000,
-      "agreement_a": 0.5335833333333333,
+      "agreement_a": 0.5280833333333333,
       "agreement_b": 0.50775,
-      "observed_diff_a_minus_b": 0.025833333333333264,
-      "bootstrap_ci_lo": 0.012831249999999923,
-      "bootstrap_ci_hi": 0.038250000000000006,
-      "mcnemar_b_discordant": 3181,
-      "mcnemar_c_discordant": 2871,
-      "mcnemar_p_value": 7.127232225023761e-05
+      "observed_diff_a_minus_b": 0.020333333333333314,
+      "bootstrap_ci_lo": 0.0076666666666667105,
+      "bootstrap_ci_hi": 0.03300000000000003,
+      "mcnemar_b_discordant": 3174,
+      "mcnemar_c_discordant": 2930,
+      "mcnemar_p_value": 0.001869122323881589
     },
     {
       "cond_a": "WM",
       "cond_b": "C3",
       "n_paired": 12000,
-      "agreement_a": 0.5335833333333333,
+      "agreement_a": 0.5280833333333333,
       "agreement_b": 0.49833333333333335,
-      "observed_diff_a_minus_b": 0.03524999999999995,
-      "bootstrap_ci_lo": 0.02308333333333334,
-      "bootstrap_ci_hi": 0.04816874999999999,
-      "mcnemar_b_discordant": 3228,
-      "mcnemar_c_discordant": 2805,
-      "mcnemar_p_value": 5.5390769970742326e-08
-    },
-    {
-      "cond_a": "WM",
-      "cond_b": "C4",
-      "n_paired": 12000,
-      "agreement_a": 0.5335833333333333,
-      "agreement_b": 0.49925,
-      "observed_diff_a_minus_b": 0.03433333333333327,
-      "bootstrap_ci_lo": 0.02141666666666664,
-      "bootstrap_ci_hi": 0.047166666666666635,
-      "mcnemar_b_discordant": 3281,
-      "mcnemar_c_discordant": 2869,
-      "mcnemar_p_value": 1.5981211776150417e-07
+      "observed_diff_a_minus_b": 0.02975,
+      "bootstrap_ci_lo": 0.017331249999999982,
+      "bootstrap_ci_hi": 0.04233333333333339,
+      "mcnemar_b_discordant": 3185,
+      "mcnemar_c_discordant": 2828,
+      "mcnemar_p_value": 4.411920697222627e-06
     }
   ]
 }

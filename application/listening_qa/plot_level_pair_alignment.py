@@ -19,19 +19,17 @@ import matplotlib.pyplot as plt
 
 from bench.core.plotting import save_fig
 
-CONDITION_IDS = ["C1", "C2", "C3", "C4", "WM"]
+CONDITION_IDS = ["C1", "C2", "C3", "WM"]
 CONDITION_LABELS = {
     "C1": "C1 (TaskPr)",
     "C2": "C2 (HumPr)",
     "C3": "C3 (MemPr)",
-    "C4": "C4 (MemPr)",
     "WM": "WM compactor\n(4-slot, C2)",
 }
 COLORS = {
     "C1": "#c6dbef",
     "C2": "#6baed6",
     "C3": "#2171b5",
-    "C4": "#08306b",
     "WM": "#238b45",
 }
 
