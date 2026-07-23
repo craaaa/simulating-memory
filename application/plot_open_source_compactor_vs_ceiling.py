@@ -30,6 +30,15 @@ GRID = "#d9d9d9"
 INK = "#2b2b2b"
 MUTED = "#6b6b6b"
 
+# Same per-level palette used elsewhere for human/model comparisons
+# (plot_accuracy_by_topic_faceted_with_wm_and_human.py, plot_wm_slot_utilization.py).
+LEVEL_COLORS: dict[str, str] = {
+    "control": "#8c8c8c",
+    "repeat_short": "#f2a13a",
+    "repeat_long": "#d1451b",
+    "distractor": "#b39ddb",
+}
+
 # Friendly display names for known slugs; anything not listed here falls back
 # to an auto-formatted version of its runs/prompting/<slug> directory name.
 DISPLAY_NAMES: dict[str, str] = {
@@ -199,11 +208,10 @@ def plot_compactor_by_level(out_path: Path) -> None:
     n_models = len(models)
     n_levels = len(LEVEL_ORDER)
     width = 0.8 / n_levels
-    colors = [BLUE, ORANGE, "#1baf7a", "#d62728"]
     for j, level in enumerate(LEVEL_ORDER):
         vals = [by_level[model].get(level, float("nan")) for model in models]
         offsets = [i + (j - (n_levels - 1) / 2) * width for i in range(n_models)]
-        ax.bar(offsets, vals, width, color=colors[j % len(colors)], label=level.replace("_", " "), zorder=3)
+        ax.bar(offsets, vals, width, color=LEVEL_COLORS[level], label=level.replace("_", " "), zorder=3)
     ax.set_xticks(range(n_models))
     ax.set_xticklabels(models, rotation=20, ha="right")
     ax.set_ylim(0, 1.08)
