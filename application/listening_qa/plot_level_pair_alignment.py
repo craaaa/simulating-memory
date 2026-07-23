@@ -70,7 +70,7 @@ def plot(summary_path: Path, model_label: str, out_png: Path) -> Path:
     ax.set_title(
         f"Within-topic level-pair preference alignment vs. human\n"
         f"{model_label}  |  {n_base_pairs} base pairs × {n_samples_per_pair} individual-sample draws each"
-        f"  |  error bars = Wilson 95% CI"
+        f"  |  error bars = bootstrap 95% CI"
     )
     ax.legend()
 

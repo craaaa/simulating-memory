@@ -173,15 +173,21 @@ def _rng_for_seed(seed: int, salt_str: str) -> np.random.Generator:
     return np.random.default_rng(np.random.SeedSequence([int(seed) & 0xFFFFFFFF, salt]))
 
 
-def wilson_ci(hits: int, n: int, z: float = 1.96) -> tuple[float | None, float | None]:
-    """Analytic 95% Wilson score interval for a binomial proportion."""
-    if n == 0:
+def bootstrap_ci_proportion(
+    hit_list: list[bool], *, seed: int, salt: str, n_boot: int = 2000
+) -> tuple[float | None, float | None]:
+    """Percentile bootstrap 95% CI on a proportion, resampling the individual hit/miss draws."""
+    if not hit_list:
         return None, None
-    p = hits / n
-    denom = 1 + z * z / n
-    center = (p + z * z / (2 * n)) / denom
-    half = (z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / denom
-    return float(center - half), float(center + half)
+    arr = np.asarray(hit_list, dtype=np.float64)
+    rng = _rng_for_seed(seed, salt)
+    n = len(arr)
+    boot_means = np.empty(n_boot)
+    for i in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        boot_means[i] = arr[idx].mean()
+    lo, hi = np.percentile(boot_means, [2.5, 97.5])
+    return float(lo), float(hi)
 
 
 def run_individual_samples(
@@ -203,6 +209,9 @@ def run_individual_samples(
     level_pairs = sorted({(l1, l2) for (_t, l1, l2) in base_pairs})
     hits_by_level_pair = {c: {lp: 0 for lp in level_pairs} for c in eval_conditions}
     denom_by_level_pair = {c: {lp: 0 for lp in level_pairs} for c in eval_conditions}
+    hit_list_by_level_pair: dict[str, dict[tuple[str, str], list[bool]]] = {
+        c: {lp: [] for lp in level_pairs} for c in eval_conditions
+    }
 
     for pair_idx, (topic, l1, l2) in enumerate(base_pairs):
         h_stats = human.get(topic) or {}
@@ -223,18 +232,22 @@ def run_individual_samples(
                 denom_by_level_pair[c][lp] += 1
                 is_hit = m_side == h_side
                 rep_hits[c].append(is_hit)
+                hit_list_by_level_pair[c][lp].append(is_hit)
                 if is_hit:
                     hits[c] += 1
                     hits_by_level_pair[c][lp] += 1
 
     acc: dict[str, dict[str, Any]] = {}
     for c in eval_conditions:
-        lo, hi = wilson_ci(hits[c], denom[c]) if denom[c] else (None, None)
+        cond_hits = [h for h in rep_hits[c] if h is not None]
+        lo, hi = bootstrap_ci_proportion(cond_hits, seed=seed, salt=f"listening_ci_{c}")
         by_lp: dict[str, dict[str, Any]] = {}
         for lp in level_pairs:
             h_ = hits_by_level_pair[c][lp]
             d_ = denom_by_level_pair[c][lp]
-            lp_lo, lp_hi = wilson_ci(h_, d_) if d_ else (None, None)
+            lp_lo, lp_hi = bootstrap_ci_proportion(
+                hit_list_by_level_pair[c][lp], seed=seed, salt=f"listening_ci_{c}_{lp[0]}_{lp[1]}"
+            )
             by_lp[f"{lp[0]}_vs_{lp[1]}"] = {
                 "agreement": (float(h_) / float(d_)) if d_ else None,
                 "ci_lo": lp_lo,
