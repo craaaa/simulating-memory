@@ -18,6 +18,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -126,6 +127,21 @@ COMPACTOR_RUNS: list[tuple[str, str]] = [
 LEVEL_ORDER = ("control", "repeat_short", "repeat_long", "distractor")
 
 
+N_BOOT = 2000
+
+
+def bootstrap_ci(vals: list[float], *, seed: int = 42, n_boot: int = N_BOOT) -> tuple[float, float]:
+    arr = np.asarray(vals, dtype=np.float64)
+    rng = np.random.default_rng(seed)
+    n = len(arr)
+    boot_means = np.empty(n_boot)
+    for i in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        boot_means[i] = arr[idx].mean()
+    lo, hi = np.percentile(boot_means, [2.5, 97.5])
+    return float(lo), float(hi)
+
+
 def human_accuracy_by_level() -> dict[str, float]:
     by_topic_level = load_human_topic_level_accuracies(DEFAULT_HUMAN_CSV)
     pooled: dict[str, list[float]] = defaultdict(list)
@@ -133,6 +149,15 @@ def human_accuracy_by_level() -> dict[str, float]:
         for level, accs in levels.items():
             pooled[level].extend(accs)
     return {level: sum(v) / len(v) for level, v in pooled.items()}
+
+
+def human_raw_by_level() -> dict[str, list[float]]:
+    by_topic_level = load_human_topic_level_accuracies(DEFAULT_HUMAN_CSV)
+    pooled: dict[str, list[float]] = defaultdict(list)
+    for levels in by_topic_level.values():
+        for level, accs in levels.items():
+            pooled[level].extend(accs)
+    return dict(pooled)
 
 
 def prompting_accuracy(run_dir: str) -> float:
@@ -152,6 +177,21 @@ def compactor_accuracy_by_level(run_dir: str) -> dict[str, float]:
         level = key.split(":")[1]
         by_level[level].append(cell["exact_match_mean"])
     return {level: sum(v) / len(v) for level, v in by_level.items()}
+
+
+def compactor_raw_by_level(run_dir: str) -> dict[str, list[float]]:
+    """Every individual trial's exact_match_accuracy, grouped by level (not
+    collapsed to per-cell means) — needed for a real bootstrap CI."""
+    path = REPO_ROOT / "runs" / "compactor" / run_dir / "tasks" / "wm_application_listening_qa_full_grid.jsonl"
+    by_level: dict[str, list[float]] = defaultdict(list)
+    for line in path.open():
+        r = json.loads(line)
+        level = r.get("level")
+        acc = (r.get("metrics") or {}).get("exact_match_accuracy")
+        if level is None or acc is None:
+            continue
+        by_level[level].append(float(acc))
+    return dict(by_level)
 
 
 def plot_ceiling_bar(out_path: Path) -> None:
@@ -223,6 +263,8 @@ def plot_compactor_by_level(out_path: Path) -> None:
     models = ["Human"] + [name for name, _ in COMPACTOR_RUNS]
     by_level = {name: compactor_accuracy_by_level(run_dir) for name, run_dir in COMPACTOR_RUNS}
     by_level["Human"] = human_accuracy_by_level()
+    raw_by_level = {name: compactor_raw_by_level(run_dir) for name, run_dir in COMPACTOR_RUNS}
+    raw_by_level["Human"] = human_raw_by_level()
 
     fig, ax = plt.subplots(figsize=(max(7.5, 1.4 * len(models)), 5))
     n_models = len(models)
@@ -230,8 +272,18 @@ def plot_compactor_by_level(out_path: Path) -> None:
     width = 0.8 / n_levels
     for j, level in enumerate(LEVEL_ORDER):
         vals = [by_level[model].get(level, float("nan")) for model in models]
+        cis = [
+            bootstrap_ci(raw_by_level[model][level]) if raw_by_level[model].get(level) else (float("nan"), float("nan"))
+            for model in models
+        ]
+        los = [max(0.0, v - c[0]) for v, c in zip(vals, cis)]
+        his = [max(0.0, c[1] - v) for v, c in zip(vals, cis)]
         offsets = [i + (j - (n_levels - 1) / 2) * width for i in range(n_models)]
-        ax.bar(offsets, vals, width, color=LEVEL_COLORS[level], label=level.replace("_", " "), zorder=3)
+        ax.bar(
+            offsets, vals, width, color=LEVEL_COLORS[level], label=level.replace("_", " "),
+            yerr=[los, his], capsize=2, error_kw={"elinewidth": 0.8, "alpha": 0.6},
+            zorder=3,
+        )
     ax.axvline(0.5, color=MUTED, linestyle=":", linewidth=1, zorder=2)
     ax.set_xticks(range(n_models))
     ax.set_xticklabels(models, rotation=20, ha="right")
