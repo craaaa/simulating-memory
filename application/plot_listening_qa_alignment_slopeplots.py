@@ -76,6 +76,16 @@ MODELS: list[tuple[str, Path, Path]] = [
         REPO_ROOT / "runs/prompting/moonshotai_kimi-k2-0905/tasks/application_listening_qa_full_grid.jsonl",
         REPO_ROOT / "runs/compactor/moonshotai_kimi-k2-0905/tasks/wm_application_listening_qa_full_grid.jsonl",
     ),
+    (
+        "Qwen2.5-32B-Instruct",
+        REPO_ROOT / "runs/prompting/Qwen_Qwen2.5-32B-Instruct/tasks/application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/Qwen_Qwen2.5-32B-Instruct/tasks/wm_application_listening_qa_full_grid.jsonl",
+    ),
+    (
+        "Command-A",
+        REPO_ROOT / "runs/prompting/cohere_command-a/tasks/application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/CohereLabs_c4ai-command-a-03-2025/tasks/wm_application_listening_qa_full_grid.jsonl",
+    ),
 ]
 
 MODEL_COLORS = {
@@ -83,6 +93,8 @@ MODEL_COLORS = {
     "Qwen2.5-72B-Instruct": "#eb6834",
     "Gemma-4-31B-it": "#1baf7a",
     "Kimi-K2-0905": "#4a3aa7",
+    "Qwen2.5-32B-Instruct": "#d62728",
+    "Command-A": "#bcbd22",
 }
 CHANCE = 0.5
 GRID = "#d9d9d9"
