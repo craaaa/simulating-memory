@@ -22,7 +22,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+import sys
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from application.listening_qa.level_pair_preference_alignment import (  # noqa: E402
+    DEFAULT_HUMAN_CSV,
+    load_human_topic_level_accuracies,
+)
 
 BLUE = "#2a78d6"
 ORANGE = "#eb6834"
@@ -30,13 +39,14 @@ GRID = "#d9d9d9"
 INK = "#2b2b2b"
 MUTED = "#6b6b6b"
 
-# Same per-level palette used elsewhere for human/model comparisons
-# (plot_accuracy_by_topic_faceted_with_wm_and_human.py, plot_wm_slot_utilization.py).
+# Canonical per-level palette from the human study's own analysis script
+# (application/prolific_study/multi_v6/analyze_v6.py: colors = [...], CONDS order
+# from data_prep.py).
 LEVEL_COLORS: dict[str, str] = {
-    "control": "#8c8c8c",
-    "repeat_short": "#f2a13a",
-    "repeat_long": "#d1451b",
-    "distractor": "#b39ddb",
+    "control": "#94a3b8",
+    "repeat_short": "#fb923c",
+    "repeat_long": "#f97316",
+    "distractor": "#a78bfa",
 }
 
 # Friendly display names for known slugs; anything not listed here falls back
@@ -114,6 +124,15 @@ COMPACTOR_RUNS: list[tuple[str, str]] = [
 ]
 
 LEVEL_ORDER = ("control", "repeat_short", "repeat_long", "distractor")
+
+
+def human_accuracy_by_level() -> dict[str, float]:
+    by_topic_level = load_human_topic_level_accuracies(DEFAULT_HUMAN_CSV)
+    pooled: dict[str, list[float]] = defaultdict(list)
+    for levels in by_topic_level.values():
+        for level, accs in levels.items():
+            pooled[level].extend(accs)
+    return {level: sum(v) / len(v) for level, v in pooled.items()}
 
 
 def prompting_accuracy(run_dir: str) -> float:
@@ -201,8 +220,9 @@ def plot_ceiling_vs_compactor(out_path: Path) -> None:
 
 
 def plot_compactor_by_level(out_path: Path) -> None:
-    models = [name for name, _ in COMPACTOR_RUNS]
+    models = ["Human"] + [name for name, _ in COMPACTOR_RUNS]
     by_level = {name: compactor_accuracy_by_level(run_dir) for name, run_dir in COMPACTOR_RUNS}
+    by_level["Human"] = human_accuracy_by_level()
 
     fig, ax = plt.subplots(figsize=(max(7.5, 1.4 * len(models)), 5))
     n_models = len(models)
@@ -212,11 +232,12 @@ def plot_compactor_by_level(out_path: Path) -> None:
         vals = [by_level[model].get(level, float("nan")) for model in models]
         offsets = [i + (j - (n_levels - 1) / 2) * width for i in range(n_models)]
         ax.bar(offsets, vals, width, color=LEVEL_COLORS[level], label=level.replace("_", " "), zorder=3)
+    ax.axvline(0.5, color=MUTED, linestyle=":", linewidth=1, zorder=2)
     ax.set_xticks(range(n_models))
     ax.set_xticklabels(models, rotation=20, ha="right")
     ax.set_ylim(0, 1.08)
-    ax.set_ylabel("Compactor exact-match accuracy")
-    ax.set_title("Compactor accuracy by reading level")
+    ax.set_ylabel("Exact-match accuracy")
+    ax.set_title("Compactor accuracy by reading level (vs. human)")
     ax.grid(axis="y", color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
     for spine in ("top", "right"):
