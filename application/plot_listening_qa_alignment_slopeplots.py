@@ -86,6 +86,21 @@ MODELS: list[tuple[str, Path, Path]] = [
         REPO_ROOT / "runs/prompting/cohere_command-a/tasks/application_listening_qa_full_grid.jsonl",
         REPO_ROOT / "runs/compactor/CohereLabs_c4ai-command-a-03-2025/tasks/wm_application_listening_qa_full_grid.jsonl",
     ),
+    (
+        "DeepSeek-V3.2",
+        REPO_ROOT / "runs/prompting/deepseek_deepseek-v3.2/tasks/application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/deepseek_deepseek-v3.2/tasks/wm_application_listening_qa_full_grid.jsonl",
+    ),
+    (
+        "Llama-4-Maverick",
+        REPO_ROOT / "runs/prompting/meta-llama_llama-4-maverick/tasks/application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/meta-llama_llama-4-maverick/tasks/wm_application_listening_qa_full_grid.jsonl",
+    ),
+    (
+        "Qwen3.5-397B-A17B",
+        REPO_ROOT / "runs/prompting/qwen_qwen3.5-397b-a17b/tasks/application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/qwen_qwen3.5-397b-a17b/tasks/wm_application_listening_qa_full_grid.jsonl",
+    ),
 ]
 
 MODEL_COLORS = {
@@ -95,6 +110,9 @@ MODEL_COLORS = {
     "Kimi-K2-0905": "#4a3aa7",
     "Qwen2.5-32B-Instruct": "#d62728",
     "Command-A": "#bcbd22",
+    "DeepSeek-V3.2": "#17becf",
+    "Llama-4-Maverick": "#9467bd",
+    "Qwen3.5-397B-A17B": "#e377c2",
 }
 CHANCE = 0.5
 GRID = "#d9d9d9"
