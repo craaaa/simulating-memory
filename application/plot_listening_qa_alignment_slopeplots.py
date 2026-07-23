@@ -71,12 +71,18 @@ MODELS: list[tuple[str, Path, Path]] = [
         REPO_ROOT / "runs/prompting/google_gemma-4-31b-it/tasks/application_listening_qa_full_grid.jsonl",
         REPO_ROOT / "runs/compactor/google_gemma-4-31B-it/tasks/wm_application_listening_qa_full_grid.jsonl",
     ),
+    (
+        "Kimi-K2-0905",
+        REPO_ROOT / "runs/prompting/moonshotai_kimi-k2-0905/tasks/application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/moonshotai_kimi-k2-0905/tasks/wm_application_listening_qa_full_grid.jsonl",
+    ),
 ]
 
 MODEL_COLORS = {
     "GPT-4.1": "#6b6b6b",
     "Qwen2.5-72B-Instruct": "#eb6834",
     "Gemma-4-31B-it": "#1baf7a",
+    "Kimi-K2-0905": "#4a3aa7",
 }
 CHANCE = 0.5
 GRID = "#d9d9d9"
