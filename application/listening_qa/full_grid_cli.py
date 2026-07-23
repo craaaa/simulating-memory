@@ -17,6 +17,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -71,10 +72,17 @@ def run(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Build prompts and write jsonl without calling the model."
     ),
+    extra_body_json: Optional[str] = typer.Option(
+        None,
+        "--extra-body-json",
+        help="JSON object merged into each request's extra_body (e.g. reasoning/thinking toggles).",
+    ),
 ):
     model_slug = model.replace("/", "_").replace("\\", "_")
     tasks_dir = Path(out_dir) if out_dir else Path("runs/prompting") / model_slug / run_timestamp() / "tasks"
     ensure_dir(tasks_dir)
+
+    extra_body = json.loads(extra_body_json) if extra_body_json else None
 
     llm = None
     if not dry_run:
@@ -85,7 +93,7 @@ def run(
         else:
             from bench.core.llm_openai import OpenAIChatLLM
 
-            llm = OpenAIChatLLM(model=model, base_url=base_url)
+            llm = OpenAIChatLLM(model=model, base_url=base_url, extra_body=extra_body)
 
     topics = load_topics(Path(documents_dir))
     cells = [
