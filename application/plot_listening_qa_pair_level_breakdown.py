@@ -61,6 +61,17 @@ CHANCE = 0.5
 GRID = "#d9d9d9"
 INK = "#2b2b2b"
 
+# One distinct color per level pair (categorical, tableau10-ish — 6 pairs, not
+# reusing the 4-color per-level palette since a pair spans two levels).
+PAIR_COLORS = {
+    "control_vs_repeat_short": "#4e79a7",
+    "control_vs_repeat_long": "#f28e2b",
+    "control_vs_distractor": "#e15759",
+    "repeat_short_vs_repeat_long": "#76b7b2",
+    "repeat_short_vs_distractor": "#59a14f",
+    "repeat_long_vs_distractor": "#af7aa1",
+}
+
 
 def plot_pair_level_breakdown(out_path: Path, condition: str = "WM") -> None:
     data: dict[str, dict[str, tuple[float, float, float]]] = {}
@@ -73,25 +84,26 @@ def plot_pair_level_breakdown(out_path: Path, condition: str = "WM") -> None:
             if row["agreement"] is not None
         }
 
-    n_models = len(MODELS)
+    model_names = [name for name, _path in MODELS]
+    n_models = len(model_names)
     n_pairs = len(PAIR_ORDER)
-    width = 0.8 / n_models
+    width = 0.8 / n_pairs
 
-    fig, ax = plt.subplots(figsize=(max(10, 1.8 * n_pairs), 6))
-    for i, (name, _path) in enumerate(MODELS):
-        vals = [data[name][lp][0] for lp in PAIR_ORDER]
-        los = [max(0.0, data[name][lp][0] - data[name][lp][1]) for lp in PAIR_ORDER]
-        his = [max(0.0, data[name][lp][2] - data[name][lp][0]) for lp in PAIR_ORDER]
-        offsets = [j + (i - (n_models - 1) / 2) * width for j in range(n_pairs)]
+    fig, ax = plt.subplots(figsize=(max(10, 1.8 * n_models), 6))
+    for j, lp in enumerate(PAIR_ORDER):
+        vals = [data[name][lp][0] for name in model_names]
+        los = [max(0.0, data[name][lp][0] - data[name][lp][1]) for name in model_names]
+        his = [max(0.0, data[name][lp][2] - data[name][lp][0]) for name in model_names]
+        offsets = [i + (j - (n_pairs - 1) / 2) * width for i in range(n_models)]
         ax.bar(
-            offsets, vals, width, color=MODEL_COLORS[name], label=name,
+            offsets, vals, width, color=PAIR_COLORS[lp], label=PAIR_LABELS[lp].replace("\n", " "),
             yerr=[los, his], capsize=2, error_kw={"elinewidth": 0.8, "alpha": 0.6},
             zorder=3,
         )
 
     ax.axhline(CHANCE, color=INK, linestyle=":", linewidth=1, zorder=2, label="Chance (0.5)")
-    ax.set_xticks(range(n_pairs))
-    ax.set_xticklabels([PAIR_LABELS[lp] for lp in PAIR_ORDER])
+    ax.set_xticks(range(n_models))
+    ax.set_xticklabels(model_names, rotation=15, ha="right")
     ax.set_ylim(0.3, 0.75)
     ax.set_ylabel("Agreement with human (individual-sample pairwise preference)")
     ax.set_title(f"Listening QA: {condition} agreement with human, by level pair")
@@ -99,7 +111,7 @@ def plot_pair_level_breakdown(out_path: Path, condition: str = "WM") -> None:
     ax.set_axisbelow(True)
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
-    ax.legend(frameon=False, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.14), fontsize=9)
+    ax.legend(frameon=False, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.16), fontsize=9)
     fig.tight_layout()
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
