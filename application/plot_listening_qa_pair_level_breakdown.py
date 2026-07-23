@@ -151,6 +151,46 @@ def split_half_by_level_pair(
     }
 
 
+def split_half_overall_agreement(
+    human_csv: Path, *, n_splits: int = 20, n_samples_per_pair: int = 500, base_seed: int = 42
+) -> float:
+    """Mean overall (not per-level-pair) split-half agreement across n_splits
+    independent random participant splits — a stabler noise-ceiling estimate
+    than any single 50/50 split."""
+    by_pid = _load_human_by_pid(human_csv)
+    pids = sorted(by_pid.keys())
+
+    def pool(pid_set: set[str]) -> dict[str, dict[str, list[float]]]:
+        out: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
+        for pid in pid_set:
+            for topic, levels in by_pid[pid].items():
+                for level, accs in levels.items():
+                    out[topic][level].extend(accs)
+        return {t: dict(ls) for t, ls in out.items()}
+
+    agreements = []
+    for split_idx in range(n_splits):
+        seed = base_seed + split_idx
+        rng = random.Random(seed)
+        shuffled = list(pids)
+        rng.shuffle(shuffled)
+        half = len(shuffled) // 2
+        human_a = pool(set(shuffled[:half]))
+        human_b = pool(set(shuffled[half:]))
+        topics = sorted(set(human_a.keys()) | set(human_b.keys()))
+        base_pairs = enumerate_base_pairs(topics)
+        result = run_individual_samples(
+            llm={"HalfB": human_b},
+            human=human_a,
+            base_pairs=base_pairs,
+            eval_conditions=["HalfB"],
+            seed=seed,
+            n_samples_per_pair=n_samples_per_pair,
+        )
+        agreements.append(result["accuracy_by_condition"]["HalfB"]["agreement"])
+    return sum(agreements) / len(agreements)
+
+
 def plot_pair_level_breakdown(out_path: Path, condition: str = "WM") -> None:
     data: dict[str, dict[str, tuple[float, float, float]]] = {}
     for name, path in MODELS:

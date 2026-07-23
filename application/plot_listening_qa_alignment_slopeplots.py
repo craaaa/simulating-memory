@@ -41,6 +41,9 @@ from application.listening_qa.level_pair_preference_alignment import (  # noqa: 
     load_llm_topic_level_condition,
     run_individual_samples,
 )
+from application.plot_listening_qa_pair_level_breakdown import (  # noqa: E402
+    split_half_overall_agreement,
+)
 from score import humanlikeness  # noqa: E402
 
 HUMAN_CSV = (
@@ -211,6 +214,7 @@ def slope_plot(
     chance_line: float | None = None,
     ci: dict[str, dict[str, tuple[float, float]]] | None = None,
     ylim: tuple[float, float] = (0.0, 1.0),
+    baseline_line: tuple[str, float] | None = None,
 ) -> None:
     columns = list(CONDITIONS)
     fig, ax = plt.subplots(figsize=(8, 5.5))
@@ -244,6 +248,10 @@ def slope_plot(
     if chance_line is not None:
         ax.axhline(chance_line, color=INK, linestyle=":", linewidth=1, zorder=1)
         ax.text(len(columns) - 1, chance_line, "chance ", va="bottom", ha="right", fontsize=8, color="#6b6b6b")
+    if baseline_line is not None:
+        label, value = baseline_line
+        ax.axhline(value, color="#8b0000", linestyle="--", linewidth=1, zorder=1)
+        ax.text(0, value, f" {label}", va="bottom", ha="left", fontsize=8, color="#8b0000")
     ax.set_xticks(list(x))
     ax.set_xticklabels(columns)
     ax.set_xlim(-0.15, len(columns) - 1 + 0.75)
@@ -267,6 +275,9 @@ def main() -> None:
     reranking, reranking_ci = compute_pairwise_reranking()
     for name, row in reranking.items():
         print(f"  {name}: " + " ".join(f"{c}={row[c]:.3f}" for c in CONDITIONS))
+    print("Computing human split-half reliability baseline (20 splits)...")
+    split_half = split_half_overall_agreement(HUMAN_CSV)
+    print(f"  Human split-half reliability: {split_half:.3f}")
     slope_plot(
         reranking,
         ylabel="Pairwise reranking accuracy (agreement with human)",
@@ -275,6 +286,7 @@ def main() -> None:
         chance_line=CHANCE,
         ci=reranking_ci,
         ylim=(0.40, 0.60),
+        baseline_line=("Human split-half reliability", split_half),
     )
 
     print("\nComputing humanlikeness (1 - W1)...")
