@@ -198,6 +198,7 @@ def slope_plot(
     out_path: Path,
     chance_line: float | None = None,
     ci: dict[str, dict[str, tuple[float, float]]] | None = None,
+    ylim: tuple[float, float] = (0.0, 1.0),
 ) -> None:
     columns = list(CONDITIONS)
     fig, ax = plt.subplots(figsize=(8, 5.5))
@@ -205,7 +206,7 @@ def slope_plot(
     end_ys = sorted(
         ((name, data[name][columns[-1]]) for name, _p, _w in MODELS), key=lambda t: t[1]
     )
-    min_gap = 0.035
+    min_gap = 0.035 * (ylim[1] - ylim[0])
     for i in range(1, len(end_ys)):
         prev_name, prev_y = end_ys[i - 1]
         name, y = end_ys[i]
@@ -234,7 +235,7 @@ def slope_plot(
     ax.set_xticks(list(x))
     ax.set_xticklabels(columns)
     ax.set_xlim(-0.15, len(columns) - 1 + 0.75)
-    ax.set_ylim(0.0, 1.0)
+    ax.set_ylim(*ylim)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     ax.grid(axis="y", color=GRID, linewidth=0.8, zorder=0)
@@ -261,6 +262,7 @@ def main() -> None:
         out_path=out_dir / "listening_qa_pairwise_reranking_slopeplot.png",
         chance_line=CHANCE,
         ci=reranking_ci,
+        ylim=(0.40, 0.60),
     )
 
     print("\nComputing humanlikeness (1 - W1)...")
