@@ -17,6 +17,7 @@ from .data import Question
 ANSWER_RE = re.compile(
     r"^question\s+(\d+):\s*([0-9]+(?:\s*,\s*[0-9]+)*)\s*$", re.IGNORECASE
 )
+ANSWER_TEXT_RE = re.compile(r"^question\s+(\d+):\s*(.+?)\s*$", re.IGNORECASE)
 PASSAGE_DIFF_RE = re.compile(r"^passage\s+difficulty:\s*([0-9]{1,2})\s*$", re.IGNORECASE)
 QUESTION_DIFF_RE = re.compile(r"^question\s+difficulty:\s*([0-9]{1,2})\s*$", re.IGNORECASE)
 
@@ -81,6 +82,7 @@ def build_prompt(
 
 def parse_answers_and_difficulty(text: str) -> Dict[str, Any]:
     answers: Dict[int, List[int]] = {}
+    text_answers: Dict[int, str] = {}
     passage_difficulty: Optional[int] = None
     question_difficulty: Optional[int] = None
     parse_errors: List[str] = []
@@ -94,6 +96,13 @@ def parse_answers_and_difficulty(text: str) -> Dict[str, Any]:
             q_idx = int(answer_match.group(1))
             opts = [int(o.strip()) for o in answer_match.group(2).split(",")]
             answers[q_idx] = sorted(set(opts))
+            continue
+        text_match = ANSWER_TEXT_RE.match(line)
+        if text_match and not PASSAGE_DIFF_RE.match(line) and not QUESTION_DIFF_RE.match(line):
+            # Model answered with option text instead of a number (e.g. "None of
+            # the above") — resolved against question.options by the caller,
+            # which has the per-question option text this parser doesn't.
+            text_answers[int(text_match.group(1))] = text_match.group(2).strip()
             continue
         passage_diff_match = PASSAGE_DIFF_RE.match(line)
         if passage_diff_match:
@@ -117,6 +126,7 @@ def parse_answers_and_difficulty(text: str) -> Dict[str, Any]:
 
     return {
         "answers": answers,
+        "text_answers": text_answers,
         "difficulty": {"passage": passage_difficulty, "question": question_difficulty},
         "parse_errors": parse_errors,
     }
@@ -126,6 +136,27 @@ def content_questions(questions: List[Question]) -> List[Question]:
     """Attention-check questions are excluded from the task entirely — not asked,
     not scored. (Kept in the source data/yaml for provenance, just filtered here.)"""
     return [q for q in questions if q.qtype != "attention_check"]
+
+
+def resolve_text_answers(
+    questions: List[Question], answers: Dict[int, List[int]], text_answers: Dict[int, str]
+) -> Dict[int, List[int]]:
+    """Fold free-text answers (e.g. "Question 5: None of the above") into ``answers``
+    by matching the text against that question's option text. Only applied to
+    questions the numeric parse missed, so a real numeric answer always wins."""
+    resolved = dict(answers)
+    for q_idx, text in text_answers.items():
+        if q_idx in resolved:
+            continue
+        if q_idx < 1 or q_idx > len(questions):
+            continue
+        q = questions[q_idx - 1]
+        norm = text.strip().lower().rstrip(".")
+        for opt_num, opt_text in q.options.items():
+            if opt_text.strip().lower().rstrip(".") == norm:
+                resolved[q_idx] = [opt_num]
+                break
+    return resolved
 
 
 def score_topic(

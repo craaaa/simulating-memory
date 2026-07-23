@@ -1,0 +1,414 @@
+{
+  "task": "application_listening_qa",
+  "model": "nousresearch/hermes-4-70b",
+  "conditions": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "n_repeats_per_cell": 5,
+  "n_cells": 64,
+  "n_total_trials": 320,
+  "documents_dir": "application/listening_qa/data",
+  "dry_run": false,
+  "git_provenance": {
+    "commit": "f9446c8eebec586d93053f99d7b39e036222380d",
+    "branch": "application-compactor",
+    "tags": [],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": "diff --git a/bench/tasks/wm_prompt_parts.py b/bench/tasks/wm_prompt_parts.py\nindex 86a5876..1f06b1f 100644\n--- a/bench/tasks/wm_prompt_parts.py\n+++ b/bench/tasks/wm_prompt_parts.py\n@@ -60,8 +60,10 @@ Before writing a NEW key, follow this procedure exactly:\n      you already stored), or delete_key then write_memory for the new fact, in that order,\n      in the same turn. Choose what to delete in this priority: (a) an entry that duplicates\n      or is subsumed by another you're keeping, (b) whichever entry seems least useful or\n-     important on its own, judged independently of the others. Deleting without writing\n-     the freed slot in the same turn just loses information for nothing.\n+     important on its own, judged independently of the others and independently of how\n+     recently it was written — something you stored a while ago can still matter more than\n+     what just arrived. Deleting without writing the freed slot in the same turn just loses\n+     information for nothing.\n   4. Nothing worth keeping or amending: make no tool calls.\n \n You'll see the result (success or error) of each tool call before your next action — use\n@@ -115,8 +117,10 @@ Before writing a NEW key, follow this procedure exactly:\n      you already stored), or delete_key then write_memory for the new fact, in that order,\n      in the same turn. Choose what to delete in this priority: (a) an entry that duplicates\n      or is subsumed by another you're keeping, (b) whichever entry seems least useful or\n-     important on its own, judged independently of the others. Deleting without writing\n-     the freed slot in the same turn just loses information for nothing.\n+     important on its own, judged independently of the others and independently of how\n+     recently it was written — something you stored a while ago can still matter more than\n+     what just arrived. Deleting without writing the freed slot in the same turn just loses\n+     information for nothing.\n   4. Nothing worth keeping or amending this segment: make no tool calls.\n \n You'll see the result (success or error) of each tool call before your next action — use",
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": null,
+      "application/listening_qa/prompting.py": "diff --git a/application/listening_qa/prompting.py b/application/listening_qa/prompting.py\nindex 788df42..7aa483d 100644\n--- a/application/listening_qa/prompting.py\n+++ b/application/listening_qa/prompting.py\n@@ -17,6 +17,7 @@ from .data import Question\n ANSWER_RE = re.compile(\n     r\"^question\\s+(\\d+):\\s*([0-9]+(?:\\s*,\\s*[0-9]+)*)\\s*$\", re.IGNORECASE\n )\n+ANSWER_TEXT_RE = re.compile(r\"^question\\s+(\\d+):\\s*(.+?)\\s*$\", re.IGNORECASE)\n PASSAGE_DIFF_RE = re.compile(r\"^passage\\s+difficulty:\\s*([0-9]{1,2})\\s*$\", re.IGNORECASE)\n QUESTION_DIFF_RE = re.compile(r\"^question\\s+difficulty:\\s*([0-9]{1,2})\\s*$\", re.IGNORECASE)\n \n@@ -81,6 +82,7 @@ def build_prompt(\n \n def parse_answers_and_difficulty(text: str) -> Dict[str, Any]:\n     answers: Dict[int, List[int]] = {}\n+    text_answers: Dict[int, str] = {}\n     passage_difficulty: Optional[int] = None\n     question_difficulty: Optional[int] = None\n     parse_errors: List[str] = []\n@@ -95,6 +97,13 @@ def parse_answers_and_difficulty(text: str) -> Dict[str, Any]:\n             opts = [int(o.strip()) for o in answer_match.group(2).split(\",\")]\n             answers[q_idx] = sorted(set(opts))\n             continue\n+        text_match = ANSWER_TEXT_RE.match(line)\n+        if text_match and not PASSAGE_DIFF_RE.match(line) and not QUESTION_DIFF_RE.match(line):\n+            # Model answered with option text instead of a number (e.g. \"None of\n+            # the above\") — resolved against question.options by the caller,\n+            # which has the per-question option text this parser doesn't.\n+            text_answers[int(text_match.group(1))] = text_match.group(2).strip()\n+            continue\n         passage_diff_match = PASSAGE_DIFF_RE.match(line)\n         if passage_diff_match:\n             passage_difficulty = int(passage_diff_match.group(1))\n@@ -117,6 +126,7 @@ def parse_answers_and_difficulty(text: str) -> Dict[str, Any]:\n \n     return {\n         \"answers\": answers,\n+        \"text_answers\": text_answers,\n         \"difficulty\": {\"passage\": passage_difficulty, \"question\": question_difficulty},\n         \"parse_errors\": parse_errors,\n     }\n@@ -128,6 +138,27 @@ def content_questions(questions: List[Question]) -> List[Question]:\n     return [q for q in questions if q.qtype != \"attention_check\"]\n \n \n+def resolve_text_answers(\n+    questions: List[Question], answers: Dict[int, List[int]], text_answers: Dict[int, str]\n+) -> Dict[int, List[int]]:\n+    \"\"\"Fold free-text answers (e.g. \"Question 5: None of the above\") into ``answers``\n+    by matching the text against that question's option text. Only applied to\n+    questions the numeric parse missed, so a real numeric answer always wins.\"\"\"\n+    resolved = dict(answers)\n+    for q_idx, text in text_answers.items():\n+        if q_idx in resolved:\n+            continue\n+        if q_idx < 1 or q_idx > len(questions):\n+            continue\n+        q = questions[q_idx - 1]\n+        norm = text.strip().lower().rstrip(\".\")\n+        for opt_num, opt_text in q.options.items():\n+            if opt_text.strip().lower().rstrip(\".\") == norm:\n+                resolved[q_idx] = [opt_num]\n+                break\n+    return resolved\n+\n+\n def score_topic(\n     questions: List[Question], predicted: Dict[int, List[int]]\n ) -> Dict[str, Any]:",
+      "application/reading_qa/prompting.py": null
+    }
+  },
+  "cells": {
+    "astronomy:control:C1": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C3": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C4": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C1": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C3": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C4": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 0.9199999999999999,
+      "per_statement_mean": 0.968,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9200000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 0.76,
+      "per_statement_mean": 0.9120000000000001,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 0.72,
+      "per_statement_mean": 0.9040000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:control:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:control:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:control:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:control:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    }
+  }
+}

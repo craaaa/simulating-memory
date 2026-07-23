@@ -26,7 +26,14 @@ from bench.core.io import ensure_dir, git_provenance, run_timestamp, write_json,
 from bench.core.parallel import map_participants, resolve_worker_count
 
 from .data import LEVELS, load_topics
-from .prompting import CONDITIONS, build_prompt, content_questions, parse_answers_and_difficulty, score_topic
+from .prompting import (
+    CONDITIONS,
+    build_prompt,
+    content_questions,
+    parse_answers_and_difficulty,
+    resolve_text_answers,
+    score_topic,
+)
 
 TASK_NAME = "application_listening_qa"
 CONDITION_IDS = ["C1", "C2", "C3", "C4"]
@@ -126,7 +133,7 @@ def run(
             top_p=top_p,
         )
         parsed = parse_answers_and_difficulty(resp.text)
-        answers = parsed["answers"]
+        answers = resolve_text_answers(questions, parsed["answers"], parsed["text_answers"])
         metrics = score_topic(questions, answers)
 
         row.update(
