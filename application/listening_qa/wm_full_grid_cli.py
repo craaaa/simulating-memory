@@ -17,6 +17,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -103,6 +104,9 @@ def run(
     per_segment_tool_call_cap: int = typer.Option(
         4, "--per-segment-tool-call-cap", min=1, help="Max replace_key calls per segment turn (streaming only)."
     ),
+    extra_body_json: Optional[str] = typer.Option(
+        None, "--extra-body-json", help="JSON dict merged into each request's extra_body (openai backend only)."
+    ),
 ):
     if segment_unit not in ("paragraph", "sentence"):
         raise typer.BadParameter(f"--segment-unit must be 'paragraph' or 'sentence', got {segment_unit!r}")
@@ -111,6 +115,7 @@ def run(
     tasks_dir = Path(out_dir) if out_dir else Path("runs/compactor") / model_slug / run_timestamp() / "tasks"
     ensure_dir(tasks_dir)
 
+    extra_body = json.loads(extra_body_json) if extra_body_json else None
     if backend.lower() == "anthropic":
         from bench.core.llm_anthropic import AnthropicChatLLM
 
@@ -118,7 +123,7 @@ def run(
     else:
         from bench.core.llm_openai import OpenAIChatLLM
 
-        llm = OpenAIChatLLM(model=model, base_url=base_url)
+        llm = OpenAIChatLLM(model=model, base_url=base_url, extra_body=extra_body)
 
     topics = load_topics(Path(documents_dir))
     if topic_id:
