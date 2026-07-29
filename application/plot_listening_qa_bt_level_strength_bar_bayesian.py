@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Grouped bar chart of Bradley-Terry pooled level strengths (listening QA):
-x = level, groups/color = condition (human, C1, C2, C3, WM), y = beta
-(log-strength relative to the "control" reference level, beta=0).
-
-Uses ``application.listening_qa.bradley_terry_level_strength`` -- pools each
-level's Mann-Whitney evidence across all 4 topics into one strength per level,
-instead of estimating each (topic, level_pair) comparison in isolation (which
-is what gave the earlier mean/MWU alignment plots their wide CIs). Default
-model: gemini-3.1-pro-preview. Colors/style match the other listening_qa comparison plots.
+"""Grouped bar chart of Bradley-Terry pooled level strengths (listening QA),
+using the hierarchical (partial-pooling) Bayesian fit instead of the
+full-pooling WLS+bootstrap version -- see
+``application.listening_qa.bayesian_bt_level_strength`` for why: it correctly
+propagates topic-to-topic heterogeneity (tau) into the credible interval,
+rather than only capturing per-comparison sampling noise. x = level,
+groups/color = condition (human, C1, C2, C3, WM), y = posterior mean beta
+(log-strength relative to the "control" reference level, beta=0), error bars
+= 95% credible interval. Default model: gemini-3.1-pro-preview.
 
 Usage:
-    python -m application.plot_listening_qa_bt_level_strength_bar
+    python -m application.plot_listening_qa_bt_level_strength_bar_bayesian
 """
 from __future__ import annotations
 
@@ -27,11 +27,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from application.listening_qa.bayesian_bt_level_strength import (  # noqa: E402
+    fit_bt_strengths_bayesian,
+)
 from application.listening_qa.bradley_terry_level_strength import (  # noqa: E402
     LEVELS,
     REFERENCE_LEVEL,
-    bootstrap_bt_strengths,
-    fit_bt_strengths,
 )
 from application.listening_qa.level_pair_preference_alignment import (  # noqa: E402
     CONDITIONS,
@@ -59,20 +60,21 @@ def main() -> None:
     betas: dict[str, dict[str, float]] = {}
     cis: dict[str, dict[str, tuple[float, float]]] = {}
 
-    print("Fitting Bradley-Terry pooled level strengths (human)...")
-    betas["human"] = fit_bt_strengths(human, topics)
-    cis["human"] = bootstrap_bt_strengths(human, topics)
+    print("Fitting hierarchical Bayesian Bradley-Terry (human)...")
+    fit = fit_bt_strengths_bayesian(human, topics)
+    betas["human"], cis["human"] = fit if fit is not None else (
+        {lv: 0.0 for lv in LEVELS}, {lv: (float("nan"), float("nan")) for lv in LEVELS}
+    )
 
     for c in CONDITIONS:
-        print(f"Fitting Bradley-Terry pooled level strengths ({c})...")
+        print(f"Fitting hierarchical Bayesian Bradley-Terry ({c})...")
         cell = llm.get(c, {})
-        beta = fit_bt_strengths(cell, topics)
-        if beta is None:
+        fit = fit_bt_strengths_bayesian(cell, topics)
+        if fit is None:
             betas[c] = {lv: 0.0 for lv in LEVELS}
             cis[c] = {lv: (float("nan"), float("nan")) for lv in LEVELS}
             continue
-        betas[c] = beta
-        cis[c] = bootstrap_bt_strengths(cell, topics)
+        betas[c], cis[c] = fit
 
     fig, ax = plt.subplots(figsize=(9.5, 5.5))
     n_series = len(SERIES)
@@ -100,7 +102,7 @@ def main() -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(LEVELS)
     ax.set_ylabel(f"Bradley-Terry beta (log-strength, ref={REFERENCE_LEVEL}=0)")
-    ax.set_title("Listening QA: Bradley-Terry pooled level strength, human vs. gemini-3.1-pro-preview")
+    ax.set_title("Listening QA: hierarchical Bayesian BT pooled level strength, human vs. gemini-3.1-pro-preview")
     ax.grid(axis="y", color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
     for spine in ("top", "right"):
@@ -108,7 +110,7 @@ def main() -> None:
     ax.legend(ncol=len(SERIES), loc="upper center", bbox_to_anchor=(0.5, -0.12), frameon=False)
 
     fig.tight_layout()
-    out_path = out_dir / "listening_qa_bt_level_strength_bar.png"
+    out_path = out_dir / "listening_qa_bt_level_strength_bar_bayesian.png"
     fig.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
     print(f"\nSaved plot to {out_path}")

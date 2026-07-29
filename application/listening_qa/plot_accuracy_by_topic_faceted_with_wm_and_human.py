@@ -23,6 +23,8 @@ import numpy as np
 
 from bench.core.plotting import save_fig
 
+from application.plot_style import LEVEL_COLORS
+
 from .level_pair_preference_alignment import (
     DEFAULT_HUMAN_CSV,
     DEFAULT_STANDALONE_JSONL,
@@ -45,12 +47,6 @@ LEVEL_LABELS = {
     "repeat_short": "Repeat Short",
     "repeat_long": "Repeat Long",
     "distractor": "Distractor",
-}
-LEVEL_COLORS = {
-    "control": "#8c8c8c",
-    "repeat_short": "#f2a13a",
-    "repeat_long": "#d1451b",
-    "distractor": "#b39ddb",
 }
 COLUMNS = ["C1", "C2", "C3", "C4", "WM", "Human"]
 COLUMN_TITLES = {

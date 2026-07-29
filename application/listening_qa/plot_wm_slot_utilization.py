@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from bench.core.plotting import save_fig
+from application.plot_style import LEVEL_COLORS
 
 LEVELS = ["control", "repeat_short", "repeat_long", "distractor"]
 LEVEL_LABELS = {
@@ -29,12 +30,6 @@ LEVEL_LABELS = {
     "repeat_short": "Repeat Short",
     "repeat_long": "Repeat Long",
     "distractor": "Distractor",
-}
-LEVEL_COLORS = {
-    "control": "#8c8c8c",
-    "repeat_short": "#f2a13a",
-    "repeat_long": "#d1451b",
-    "distractor": "#b39ddb",
 }
 TOPIC_ORDER = ["martial_arts", "fruits", "astronomy", "fabrics"]
 TOPIC_LABELS = {

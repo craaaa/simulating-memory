@@ -44,6 +44,7 @@ from application.listening_qa.level_pair_preference_alignment import (  # noqa: 
 from application.plot_listening_qa_pair_level_breakdown import (  # noqa: E402
     split_half_overall_agreement,
 )
+from application.plot_style import CHANCE, GRID, INK, MODEL_COLORS  # noqa: E402
 from score import humanlikeness  # noqa: E402
 
 HUMAN_CSV = (
@@ -89,19 +90,13 @@ MODELS: list[tuple[str, Path, Path]] = [
         REPO_ROOT / "runs/prompting/cohere_command-a/tasks/application_listening_qa_full_grid.jsonl",
         REPO_ROOT / "runs/compactor/CohereLabs_c4ai-command-a-03-2025/tasks/wm_application_listening_qa_full_grid.jsonl",
     ),
+    (
+        "Gemini-3.1-Pro-Preview",
+        REPO_ROOT / "runs/prompting/gemini-3.1-pro-preview/tasks/application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/gemini-3.1-pro-preview/n20_stream_sentence_thinklow/tasks/wm_application_listening_qa_full_grid.jsonl",
+    ),
 ]
 
-MODEL_COLORS = {
-    "GPT-4.1": "#6b6b6b",
-    "Qwen2.5-72B-Instruct": "#eb6834",
-    "Gemma-4-31B-it": "#1baf7a",
-    "Kimi-K2-0905": "#4a3aa7",
-    "Qwen2.5-32B-Instruct": "#d62728",
-    "Command-A": "#bcbd22",
-}
-CHANCE = 0.5
-GRID = "#d9d9d9"
-INK = "#2b2b2b"
 
 
 N_BOOT = 2000

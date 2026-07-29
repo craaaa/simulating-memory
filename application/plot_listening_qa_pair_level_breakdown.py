@@ -33,6 +33,7 @@ from application.listening_qa.level_pair_preference_alignment import (  # noqa: 
     enumerate_base_pairs,
     run_individual_samples,
 )
+from application.plot_style import CHANCE, GRID, INK, MODEL_COLORS, PAIR_COLORS  # noqa: E402
 
 # (display name, pair-alignment JSON path) — the 6 models that cleared the
 # model-screening bar, matching MODELS in plot_listening_qa_alignment_slopeplots.py.
@@ -44,15 +45,6 @@ MODELS: list[tuple[str, Path]] = [
     ("Qwen2.5-32B-Instruct", REPO_ROOT / "application/comparisons/listening_level_pair_alignment_Qwen2.5-32B-Instruct.json"),
     ("Command-A", REPO_ROOT / "application/comparisons/listening_level_pair_alignment_Command-A.json"),
 ]
-
-MODEL_COLORS = {
-    "GPT-4.1": "#6b6b6b",
-    "Qwen2.5-72B-Instruct": "#eb6834",
-    "Gemma-4-31B-it": "#1baf7a",
-    "Kimi-K2-0905": "#4a3aa7",
-    "Qwen2.5-32B-Instruct": "#d62728",
-    "Command-A": "#bcbd22",
-}
 
 PAIR_ORDER = [
     "control_vs_repeat_short",
@@ -69,21 +61,6 @@ PAIR_LABELS = {
     "repeat_short_vs_repeat_long": "repeat-short vs\nrepeat-long",
     "repeat_short_vs_distractor": "repeat-short vs\ndistractor",
     "repeat_long_vs_distractor": "repeat-long vs\ndistractor",
-}
-
-CHANCE = 0.5
-GRID = "#d9d9d9"
-INK = "#2b2b2b"
-
-# One distinct color per level pair (categorical, tableau10-ish — 6 pairs, not
-# reusing the 4-color per-level palette since a pair spans two levels).
-PAIR_COLORS = {
-    "control_vs_repeat_short": "#4e79a7",
-    "control_vs_repeat_long": "#f28e2b",
-    "control_vs_distractor": "#e15759",
-    "repeat_short_vs_repeat_long": "#76b7b2",
-    "repeat_short_vs_distractor": "#59a14f",
-    "repeat_long_vs_distractor": "#af7aa1",
 }
 
 
