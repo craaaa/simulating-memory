@@ -116,7 +116,7 @@ PROMPTING_RUNS: list[tuple[str, str]] = discover_prompting_runs()
 # errors) and have a completed compactor run. Kept in sync with MODELS in
 # plot_listening_qa_alignment_slopeplots.py.
 COMPACTOR_RUNS: list[tuple[str, str]] = [
-    ("GPT-4.1", "gpt-4.1/20260720T211617Z"),
+    ("GPT-4.1", "gpt-4.1/n20_stream_sentence_cap30"),
     ("Qwen2.5-72B-Instruct", "Qwen_Qwen2.5-72B-Instruct"),
     ("Gemma-4-31B-it", "google_gemma-4-31B-it"),
     ("Kimi-K2-0905", "moonshotai_kimi-k2-0905"),
@@ -200,12 +200,17 @@ def plot_ceiling_bar(out_path: Path) -> None:
     names = [r[0] for r in rows]
     accs = [r[1] for r in rows]
 
+    compactor_names = {name for name, _ in COMPACTOR_RUNS}
+
     fig, ax = plt.subplots(figsize=(8, max(6, 0.32 * len(names))))
     y = range(len(names))
     colors = [BLUE if name != "GPT-4.1" else MUTED for name in names]
     bars = ax.barh(list(y), accs, color=colors, height=0.62, zorder=3)
     ax.set_yticks(list(y))
     ax.set_yticklabels(names)
+    for tick_label, name in zip(ax.get_yticklabels(), names):
+        if name in compactor_names:
+            tick_label.set_fontweight("bold")
     ax.invert_yaxis()
     ax.set_xlim(0, 1.05)
     ax.set_xlabel("Prompting-baseline (C1-C4) exact-match accuracy")
