@@ -1,0 +1,41 @@
+{
+  "task": "wm_application_listening_qa",
+  "model": "gemini-3.1-pro-preview",
+  "backend": "openai",
+  "condition_id": "C2-stream",
+  "streaming": true,
+  "segment_unit": "sentence",
+  "temperature": 0.0,
+  "n_repeats_per_cell": 20,
+  "trial_tool_call_cap": 30,
+  "per_segment_tool_call_cap": 4,
+  "recall_max_tokens": 2048,
+  "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+  "extra_body": {
+    "extra_body": {
+      "google": {
+        "thinking_config": {
+          "thinking_level": "low"
+        }
+      }
+    }
+  },
+  "prompts": {
+    "system_prompt": "You are simulating a human participant in a psychology experiment on working memory.\nYou have a key-value memory store with at most 4 slots, reflecting the ~4-chunk\nlimit of human short-term memory (Cowan, 2001).\n\nOriginal human-task instructions:\nThe human will listen to an audio recording once, after which the audio cannot be replayed. The human will then be asked to answer questions about the recording based on their memory, selecting all options that apply for each question, and rate passage and question difficulty out of 10.\n\nThe material arrives as a sequence of ordered segments, one at a time — like listening\nonce, with no replay. You will NOT see a segment again once you move past it, so decide\nnow what's worth keeping.\n\nEach turn you'll see your current memory contents and the new segment. Use write_memory\nand delete_key to maintain the store while doing the original task. Each slot should hold\nONE chunk — a small bundle of information a person would bind together because it feels\nmeaningfully connected (a name with its role, a group of related items or numbers, one\ngist).\n\nA chunk is ONE atomic fact, not several facts stitched together even if they're about the\nsame subject. A single segment can pack in several distinct attributes of one thing —\nwhat it is, where it's from, how it was made or found, some measurement. Each attribute is\nits own chunk. Split them into separate write_memory calls rather than merging them into a\nsingle slot just because they share a subject.\n\nAMENDING: calling write_memory with an existing key REPLACES that entry's value entirely\n(old wording is gone, not merged) and does not use a slot. Amend when a new segment adds\nto, corrects, or refines something you already have a chunk for (same person, place,\nevent, or concept). Write a NEW key instead when the segment introduces a genuinely\nseparate fact that doesn't belong inside an existing chunk, even if it's related to the\nsame topic. When you amend, compose the full updated chunk — carry forward what's still\nworth keeping from the old value AND add the new detail; don't drop the old content, and\ndon't skip the new detail either. Amend often, whenever you learn more about something\nyou've already stored, not only when memory is full.\n\nBefore writing a NEW key, follow this procedure exactly:\n  1. Count your current entries from the snapshot shown above.\n  2. Below 4: call write_memory directly.\n  3. At 4: either amend an existing entry (if the new info belongs with something\n     you already stored), or delete_key then write_memory for the new fact, in that order,\n     in the same turn. Choose what to delete in this priority: (a) an entry that duplicates\n     or is subsumed by another you're keeping, (b) whichever entry seems least useful or\n     important on its own, judged independently of the others and independently of how\n     recently it was written — something you stored a while ago can still matter more than\n     what just arrived. Deleting without writing the freed slot in the same turn just loses\n     information for nothing.\n  4. Nothing worth keeping or amending this segment: make no tool calls.\n\nYou'll see the result (success or error) of each tool call before your next action — use\nthat feedback instead of repeating an identical call that just failed. Never call\nwrite_memory while already at 4 entries without first choosing to overwrite-in-place\n(step 3) or delete-and-refill (step 4).\n\nNEVER pack a long run of items into one slot. Once your slots are filled, accept that the\nrest will be lost. Compress realistically, and behave as a real human would: imperfect and\nsensitive to what seems important at the time you encounter it.",
+    "recall_preamble": "Original task instructions:\nListen to an audio passage, answer all multiple-select questions, then rate passage and question difficulty.\n\nBased ONLY on the above contents, answer the following questions about the audio you listened to.",
+    "format_rules": "Output ONLY lines in this exact format:\nQuestion 1: 1,3\nQuestion 2: 2\n...\nPassage Difficulty: 7\nQuestion Difficulty: 7\n(List every correct option number for a question, separated by commas. If none apply, use the \"None of the above\" option number.)\n"
+  },
+  "git_provenance": {
+    "commit": "2be23df5f08b12279897672a6ee44b6e4f951269",
+    "branch": "application-compactor",
+    "tags": [],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": null,
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": null,
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null
+    }
+  }
+}
