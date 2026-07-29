@@ -23,7 +23,7 @@ from typing import Optional
 
 import typer
 
-from bench.core.io import ensure_dir, git_provenance, run_timestamp, write_json, write_jsonl
+from bench.core.io import ensure_dir, estimate_cost_usd, git_provenance, run_timestamp, write_json, write_jsonl
 from bench.core.parallel import map_participants, resolve_worker_count
 
 from .data import LEVELS, load_topics
@@ -177,6 +177,17 @@ def run(
             "parse_error_count": parse_errors,
         }
 
+    usage = None
+    if llm is not None:
+        usage = llm.usage_summary()
+        if usage.get("actual_cost_usd") is not None:
+            usage["cost_source"] = "actual (openrouter billed)"
+        else:
+            usage["estimated_cost_usd"] = estimate_cost_usd(
+                model, usage["prompt_tokens"], usage.get("billable_completion_tokens", usage["completion_tokens"])
+            )
+            usage["cost_source"] = "estimated (list price x tokens, incl. hidden reasoning tokens)"
+
     summary = {
         "task": TASK_NAME,
         "model": model,
@@ -186,6 +197,7 @@ def run(
         "n_total_trials": len(jobs),
         "documents_dir": str(documents_dir),
         "dry_run": dry_run,
+        "llm_usage": usage,
         "git_provenance": git_provenance(),
         "cells": cell_summaries,
     }
@@ -212,6 +224,14 @@ def run(
     write_json(tasks_dir / f"{TASK_NAME}_full_grid_summary.json", summary)
     write_json(tasks_dir / "config_snapshot.json", config_snapshot)
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid.jsonl'}")
+    if usage is not None:
+        cost = usage.get("actual_cost_usd") if usage.get("actual_cost_usd") is not None else usage.get("estimated_cost_usd")
+        cost_str = f"${cost:.4f} ({usage['cost_source']})" if cost is not None else "unknown (model not in pricing table)"
+        typer.echo(
+            f"LLM usage: {usage['request_count']} requests, "
+            f"{usage['prompt_tokens']} prompt + {usage['completion_tokens']} completion tokens. "
+            f"Cost: {cost_str}"
+        )
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid_summary.json'}")
 
 

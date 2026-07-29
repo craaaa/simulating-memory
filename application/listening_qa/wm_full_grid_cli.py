@@ -104,6 +104,16 @@ def run(
     per_segment_tool_call_cap: int = typer.Option(
         4, "--per-segment-tool-call-cap", min=1, help="Max replace_key calls per segment turn (streaming only)."
     ),
+    recall_max_tokens: int = typer.Option(
+        2048,
+        "--recall-max-tokens",
+        min=1,
+        help=(
+            "Max completion tokens for the recall step. Reasoning models (e.g. Gemini 3.x) spend "
+            "part of this budget on hidden thinking tokens before any visible answer text, so 512 "
+            "(the old default) silently truncates their answers mid-question; 2048 leaves headroom."
+        ),
+    ),
     extra_body_json: Optional[str] = typer.Option(
         None, "--extra-body-json", help="JSON dict merged into each request's extra_body (openai backend only)."
     ),
@@ -168,6 +178,7 @@ def run(
             system_prompt_override=system_prompt_override,
             trial_tool_call_cap=trial_tool_call_cap,
             per_segment_tool_call_cap=per_segment_tool_call_cap,
+            recall_max_tokens=recall_max_tokens,
         )
 
         parsed = parse_answers_and_difficulty(result["recall_raw"])
@@ -215,9 +226,13 @@ def run(
         }
 
     usage = llm.usage_summary()
-    usage["estimated_cost_usd"] = estimate_cost_usd(
-        model, usage["prompt_tokens"], usage["completion_tokens"]
-    )
+    if usage.get("actual_cost_usd") is not None:
+        usage["cost_source"] = "actual (openrouter billed)"
+    else:
+        usage["estimated_cost_usd"] = estimate_cost_usd(
+            model, usage["prompt_tokens"], usage.get("billable_completion_tokens", usage["completion_tokens"])
+        )
+        usage["cost_source"] = "estimated (list price x tokens)"
 
     summary = {
         "task": TASK_NAME,
@@ -247,6 +262,7 @@ def run(
         "n_repeats_per_cell": n_repeats_per_cell,
         "trial_tool_call_cap": trial_tool_call_cap,
         "per_segment_tool_call_cap": per_segment_tool_call_cap,
+        "recall_max_tokens": recall_max_tokens,
         "base_url": base_url,
         "extra_body": extra_body,
         "prompts": {
@@ -261,12 +277,12 @@ def run(
     write_json(tasks_dir / f"{TASK_NAME}_full_grid_summary.json", summary)
     write_json(tasks_dir / "config_snapshot.json", config_snapshot)
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid.jsonl'}")
-    cost = usage["estimated_cost_usd"]
-    cost_str = f"${cost:.4f}" if cost is not None else "unknown (model not in pricing table)"
+    cost = usage.get("actual_cost_usd") if usage.get("actual_cost_usd") is not None else usage.get("estimated_cost_usd")
+    cost_str = f"${cost:.4f} ({usage['cost_source']})" if cost is not None else "unknown (model not in pricing table)"
     typer.echo(
         f"LLM usage: {usage['request_count']} requests, "
         f"{usage['prompt_tokens']} prompt + {usage['completion_tokens']} completion tokens. "
-        f"Estimated cost: {cost_str}"
+        f"Cost: {cost_str}"
     )
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid_summary.json'}")
 

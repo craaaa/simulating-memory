@@ -233,12 +233,14 @@ class AnthropicChatLLM(LLM):
             self.total_prompt_tokens += getattr(usage, "input_tokens", 0) or 0
             self.total_completion_tokens += getattr(usage, "output_tokens", 0) or 0
 
-    def usage_summary(self) -> Dict[str, int]:
+    def usage_summary(self) -> Dict[str, Any]:
         return {
             "request_count": self.request_count,
             "prompt_tokens": self.total_prompt_tokens,
             "completion_tokens": self.total_completion_tokens,
             "total_tokens": self.total_prompt_tokens + self.total_completion_tokens,
+            # Anthropic's Messages API has no per-response billed-cost field.
+            "actual_cost_usd": None,
         }
 
     def _create_with_retry(self, request_kwargs: Dict[str, Any]) -> Any:
@@ -247,7 +249,8 @@ class AnthropicChatLLM(LLM):
         for attempt_idx in range(n_attempts):
             try:
                 resp = self.client.messages.create(**request_kwargs)
-                self.request_count += 1
+                with self._usage_lock:
+                    self.request_count += 1
                 self._record_usage(resp)
                 self._emit_request_progress()
                 return resp

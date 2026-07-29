@@ -130,12 +130,25 @@ class OpenAIChatLLM(LLM):
         self.model = model
         # OpenRouter expects full route ids (e.g. ``qwen/qwen3-8b``); official OpenAI API strips ``openai/``.
         self._api_model = model if _is_openrouter_base_url(bu) else _api_model_id_for_openai_api(model)
+        self._is_openrouter = _is_openrouter_base_url(bu)
         self._extra_body = dict(extra_body) if extra_body else {}
+        if self._is_openrouter:
+            # Asks OpenRouter to report the real billed dollar amount on
+            # resp.usage.cost — actual spend, not a token-count x list-price guess.
+            self._extra_body.setdefault("usage", {"include": True})
         self.show_request_progress = show_request_progress
         self.request_count = 0
         self._usage_lock = threading.Lock()
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
+        # Provider-reported total_tokens, summed independently of prompt+completion.
+        # Some OpenAI-compat backends (Gemini's, notably) omit hidden reasoning/
+        # "thought" tokens from completion_tokens but still bill for them and fold
+        # them into total_tokens — the gap (total - prompt - completion) is real
+        # spend our completion_tokens count would otherwise miss entirely.
+        self.total_tokens_reported = 0
+        self.total_actual_cost_usd = 0.0
+        self._has_actual_cost = False
 
     def _record_usage(self, resp: Any) -> None:
         usage = getattr(resp, "usage", None)
@@ -144,13 +157,33 @@ class OpenAIChatLLM(LLM):
         with self._usage_lock:
             self.total_prompt_tokens += getattr(usage, "prompt_tokens", 0) or 0
             self.total_completion_tokens += getattr(usage, "completion_tokens", 0) or 0
+            self.total_tokens_reported += getattr(usage, "total_tokens", 0) or 0
+            cost = getattr(usage, "cost", None)
+            if cost is not None:
+                self.total_actual_cost_usd += float(cost)
+                self._has_actual_cost = True
 
-    def usage_summary(self) -> Dict[str, int]:
+    def usage_summary(self) -> Dict[str, Any]:
+        # Hidden reasoning/thinking tokens billed as output but absent from
+        # completion_tokens (see _record_usage). 0 for backends that don't do this
+        # (total_tokens == prompt_tokens + completion_tokens there, by construction).
+        hidden_reasoning_tokens = max(
+            0, self.total_tokens_reported - self.total_prompt_tokens - self.total_completion_tokens
+        )
         return {
             "request_count": self.request_count,
             "prompt_tokens": self.total_prompt_tokens,
             "completion_tokens": self.total_completion_tokens,
             "total_tokens": self.total_prompt_tokens + self.total_completion_tokens,
+            "hidden_reasoning_tokens": hidden_reasoning_tokens,
+            # What to actually bill at the output rate: visible completion tokens
+            # plus any hidden reasoning tokens recovered above. Use this (not
+            # completion_tokens) for cost estimation.
+            "billable_completion_tokens": self.total_completion_tokens + hidden_reasoning_tokens,
+            # Real billed $ from OpenRouter's per-response usage.cost, when available —
+            # not a token x list-price computation. None means no such field was returned
+            # (e.g. direct OpenAI/Gemini calls, which don't expose per-response cost).
+            "actual_cost_usd": self.total_actual_cost_usd if self._has_actual_cost else None,
         }
 
     def _attach_extra_body(self, request_kwargs: Dict[str, Any]) -> None:
@@ -204,7 +237,8 @@ class OpenAIChatLLM(LLM):
         for attempt_idx in range(n_attempts):
             try:
                 resp = self.client.chat.completions.create(**request_kwargs)
-                self.request_count += 1
+                with self._usage_lock:
+                    self.request_count += 1
                 self._record_usage(resp)
                 self._emit_request_progress()
                 text = resp.choices[0].message.content or ""
@@ -256,7 +290,8 @@ class OpenAIChatLLM(LLM):
         for attempt_idx in range(n_attempts):
             try:
                 resp = self.client.chat.completions.create(**request_kwargs)
-                self.request_count += 1
+                with self._usage_lock:
+                    self.request_count += 1
                 self._record_usage(resp)
                 self._emit_request_progress()
                 choice = resp.choices[0]
@@ -265,14 +300,23 @@ class OpenAIChatLLM(LLM):
                 tool_calls = []
                 if msg.tool_calls:
                     for tc in msg.tool_calls:
-                        tool_calls.append({
+                        tc_dict: Dict[str, Any] = {
                             "id": tc.id,
                             "type": "function",
                             "function": {
                                 "name": tc.function.name,
                                 "arguments": tc.function.arguments,
                             },
-                        })
+                        }
+                        # Gemini (via its OpenAI-compat endpoint) attaches a
+                        # thought_signature per tool call that MUST be echoed back
+                        # verbatim on the next turn's assistant message, or every
+                        # call past the first 400s. Round-trip it unconditionally;
+                        # it's a no-op for backends that don't set it.
+                        extra_content = getattr(tc, "extra_content", None)
+                        if extra_content:
+                            tc_dict["extra_content"] = extra_content
+                        tool_calls.append(tc_dict)
 
                 return LLMToolResponse(
                     tool_calls=tool_calls,

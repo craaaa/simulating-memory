@@ -16,6 +16,10 @@ _TOKEN_PRICING_PER_MILLION: Dict[str, tuple] = {
     "gpt-4o-mini": (0.15, 0.60),
     "claude-sonnet-5": (3.00, 15.00),
     "claude-haiku-4-5": (1.00, 5.00),
+    "gemini-3.6-flash": (1.50, 7.50),
+    "gemini-3.5-flash": (1.50, 9.00),
+    "gemini-3.1-pro": (2.00, 12.00),
+    "gemini-3.1-flash-lite": (0.25, 1.50),
 }
 
 
