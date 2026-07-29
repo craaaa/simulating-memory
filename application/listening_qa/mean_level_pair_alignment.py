@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Mean-based level-pair preference alignment (listening QA).
+"""Rank-based (Mann-Whitney U) level-pair preference alignment (listening QA).
 
-Variant of ``level_pair_preference_alignment.py`` that compares CELL MEANS
-instead of drawing individual samples: for each topic, for each of the
-C(4,2)=6 level pairs, take mean(topic, level_a) and mean(topic, level_b) for
-both human and model, and check whether the model's mean-ranking matches the
-human's mean-ranking. Deterministic (no resampling, no RNG) -- one score per
-(topic, level_pair, condition) rather than a distribution over draws.
+Variant of ``level_pair_preference_alignment.py`` that compares two cells by
+their FULL raw per-trial distributions via the Mann-Whitney U probability of
+superiority, PS = U / (n_a * n_b) -- the probability a random draw from cell A
+beats a random draw from cell B (ties count as 0.5 pairwise) -- instead of
+either collapsing each cell to a single mean or drawing one random sample per
+repetition (the Monte Carlo approximation used by
+``level_pair_preference_alignment.py``). PS is the closed-form, exact version
+of that same estimand, so it fully uses each cell's variance without ever
+reducing to a mean and without resampling noise. Deterministic (no RNG) --
+one score per (topic, level_pair, condition).
 
-A tie (equal means, on either side) scores 0.5 rather than being coin-flipped
-or excluded -- the standard convention for ties in concordance/agreement
-metrics (same expected value as a coin flip, but the point estimate doesn't
-depend on a seed).
+A tie (PS == 0.5 on either side) scores 0.5 rather than being coin-flipped or
+excluded -- the standard convention for ties in concordance/agreement metrics.
 
 Two scopes:
 - ``within_topic`` (default): base pairs are C(4,2)=6 level pairs x 4 topics = 24,
@@ -53,18 +55,47 @@ DEFAULT_WM_JSONL = (
 )
 
 
-def _mean_or_none(vals: list[float] | None) -> float | None:
-    return float(np.mean(vals)) if vals else None
+def _rankdata(values: np.ndarray) -> np.ndarray:
+    """Average ranks (1-indexed), ties get the mean of the ranks they span."""
+    order = np.argsort(values, kind="mergesort")
+    sorted_vals = values[order]
+    ranks = np.empty(len(values), dtype=np.float64)
+    i = 0
+    while i < len(sorted_vals):
+        j = i
+        while j < len(sorted_vals) and sorted_vals[j] == sorted_vals[i]:
+            j += 1
+        avg_rank = (i + 1 + j) / 2.0  # mean of ranks i+1..j (1-indexed)
+        ranks[order[i:j]] = avg_rank
+        i = j
+    return ranks
 
 
-def mean_preference(mean_a: float | None, mean_b: float | None) -> str | None:
-    """Which side the higher mean prefers: ``"A"``, ``"B"``, or ``"TIE"``
-    (equal means). ``None`` only if either side is missing (no data)."""
-    if mean_a is None or mean_b is None:
+def mannwhitney_ps(vals_a: list[float] | None, vals_b: list[float] | None) -> float | None:
+    """Probability of superiority PS = U / (n_a * n_b): the probability a random
+    draw from ``vals_a`` exceeds a random draw from ``vals_b`` (ties = 0.5).
+    ``None`` if either side has no data."""
+    if not vals_a or not vals_b:
         return None
-    if mean_a > mean_b:
+    a = np.asarray(vals_a, dtype=np.float64)
+    b = np.asarray(vals_b, dtype=np.float64)
+    combined = np.concatenate([a, b])
+    ranks = _rankdata(combined)
+    n_a = a.size
+    r_a = ranks[:n_a].sum()
+    u_a = r_a - n_a * (n_a + 1) / 2.0
+    return float(u_a / (n_a * b.size))
+
+
+def mannwhitney_preference(vals_a: list[float] | None, vals_b: list[float] | None) -> str | None:
+    """Which side the Mann-Whitney U probability of superiority prefers:
+    ``"A"``, ``"B"``, or ``"TIE"`` (PS == 0.5). ``None`` if either side has no data."""
+    ps = mannwhitney_ps(vals_a, vals_b)
+    if ps is None:
+        return None
+    if ps > 0.5:
         return "A"
-    if mean_b > mean_a:
+    if ps < 0.5:
         return "B"
     return "TIE"
 
@@ -115,20 +146,20 @@ def run_mean_alignment(
     }
 
     for (ta, la), (tb, lb) in base_pairs:
-        h_mean_a = _mean_or_none((human.get(ta) or {}).get(la))
-        h_mean_b = _mean_or_none((human.get(tb) or {}).get(lb))
-        h_side = mean_preference(h_mean_a, h_mean_b)
+        h_vals_a = (human.get(ta) or {}).get(la)
+        h_vals_b = (human.get(tb) or {}).get(lb)
+        h_side = mannwhitney_preference(h_vals_a, h_vals_b)
+        h_ps = mannwhitney_ps(h_vals_a, h_vals_b)
         pair_key = f"{ta}:{la}_vs_{tb}:{lb}"
         for c in eval_conditions:
             m_stats = llm.get(c, {})
-            m_mean_a = _mean_or_none((m_stats.get(ta) or {}).get(la))
-            m_mean_b = _mean_or_none((m_stats.get(tb) or {}).get(lb))
-            m_side = mean_preference(m_mean_a, m_mean_b)
+            m_vals_a = (m_stats.get(ta) or {}).get(la)
+            m_vals_b = (m_stats.get(tb) or {}).get(lb)
+            m_side = mannwhitney_preference(m_vals_a, m_vals_b)
+            m_ps = mannwhitney_ps(m_vals_a, m_vals_b)
             row = {
-                "human_mean_a": h_mean_a,
-                "human_mean_b": h_mean_b,
-                "model_mean_a": m_mean_a,
-                "model_mean_b": m_mean_b,
+                "human_ps": h_ps,
+                "model_ps": m_ps,
                 "human_pref": h_side,
                 "model_pref": m_side,
             }
@@ -153,7 +184,7 @@ def run_mean_alignment(
         per_condition[c]["agreement"] = (per_condition[c]["score_sum"] / n) if n else None
 
     return {
-        "method": f"mean_cell_ranking_{scope}",
+        "method": f"mannwhitney_ps_{scope}",
         "scope": scope,
         "n_topics": len(topics),
         "n_base_comparisons": len(base_pairs),
@@ -182,9 +213,9 @@ def bootstrap_ci_agreement(
 def mean_split_half_baseline(
     human_csv: Path, *, scope: str = "within_topic", n_splits: int = 20, base_seed: int = 42
 ) -> float:
-    """Human split-half reliability ceiling for the mean-ranking method: split
+    """Human split-half reliability ceiling for the Mann-Whitney PS method: split
     participants into two random halves, treat half A as ground truth and half B
-    as a synthetic model, and run the same mean-cell-ranking comparison. Averaged
+    as a synthetic model, and run the same rank-based comparison. Averaged
     over ``n_splits`` independent random splits."""
     import random as _random
 
