@@ -62,7 +62,7 @@ MODELS: list[tuple[str, Path, Path]] = [
     (
         "GPT-4.1",
         REPO_ROOT / "runs/prompting/gpt-4.1/20260716T155755Z/tasks/application_listening_qa_full_grid.jsonl",
-        REPO_ROOT / "runs/compactor/gpt-4.1/20260720T211617Z/tasks/wm_application_listening_qa_full_grid.jsonl",
+        REPO_ROOT / "runs/compactor/gpt-4.1/n20_stream_sentence_cap30/tasks/wm_application_listening_qa_full_grid.jsonl",
     ),
     (
         "Qwen2.5-72B-Instruct",

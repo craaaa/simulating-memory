@@ -51,7 +51,7 @@ DEFAULT_STANDALONE_JSONL = (
     / "tasks" / "application_listening_qa_full_grid.jsonl"
 )
 DEFAULT_WM_JSONL = (
-    REPO_ROOT / "runs" / "compactor" / "gpt-4.1" / "20260720T211617Z"
+    REPO_ROOT / "runs" / "compactor" / "gpt-4.1" / "n20_stream_sentence_cap30"
     / "tasks" / "wm_application_listening_qa_full_grid.jsonl"
 )
 
