@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from scipy.stats import mannwhitneyu
 
 from .level_pair_preference_alignment import (
     CONDITIONS,
@@ -55,36 +56,16 @@ DEFAULT_WM_JSONL = (
 )
 
 
-def _rankdata(values: np.ndarray) -> np.ndarray:
-    """Average ranks (1-indexed), ties get the mean of the ranks they span."""
-    order = np.argsort(values, kind="mergesort")
-    sorted_vals = values[order]
-    ranks = np.empty(len(values), dtype=np.float64)
-    i = 0
-    while i < len(sorted_vals):
-        j = i
-        while j < len(sorted_vals) and sorted_vals[j] == sorted_vals[i]:
-            j += 1
-        avg_rank = (i + 1 + j) / 2.0  # mean of ranks i+1..j (1-indexed)
-        ranks[order[i:j]] = avg_rank
-        i = j
-    return ranks
-
-
 def mannwhitney_ps(vals_a: list[float] | None, vals_b: list[float] | None) -> float | None:
     """Probability of superiority PS = U / (n_a * n_b): the probability a random
     draw from ``vals_a`` exceeds a random draw from ``vals_b`` (ties = 0.5).
-    ``None`` if either side has no data."""
+    ``None`` if either side has no data or either side has zero variance overlap
+    that scipy can't rank (e.g. n=1 on both sides is still fine; only empty
+    inputs return None)."""
     if not vals_a or not vals_b:
         return None
-    a = np.asarray(vals_a, dtype=np.float64)
-    b = np.asarray(vals_b, dtype=np.float64)
-    combined = np.concatenate([a, b])
-    ranks = _rankdata(combined)
-    n_a = a.size
-    r_a = ranks[:n_a].sum()
-    u_a = r_a - n_a * (n_a + 1) / 2.0
-    return float(u_a / (n_a * b.size))
+    u_a = mannwhitneyu(vals_a, vals_b, alternative="two-sided", method="auto").statistic
+    return float(u_a / (len(vals_a) * len(vals_b)))
 
 
 def mannwhitney_preference(vals_a: list[float] | None, vals_b: list[float] | None) -> str | None:
