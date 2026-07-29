@@ -110,7 +110,7 @@ def run_mean_alignment(
     base_pairs = enumerate_cell_pairs(topics, scope=scope)
     per_condition: dict[str, dict[str, Any]] = {
         c: {"score_sum": 0.0, "n": 0, "missing_human": 0, "missing_model": 0,
-            "ties_human": 0, "ties_model": 0, "by_pair": {}}
+            "ties_human": 0, "ties_model": 0, "by_pair": {}, "scores": []}
         for c in eval_conditions
     }
 
@@ -144,6 +144,7 @@ def run_mean_alignment(
                 score = pair_score(h_side, m_side)
                 per_condition[c]["n"] += 1
                 per_condition[c]["score_sum"] += score
+                per_condition[c]["scores"].append(score)
                 row["score"] = score
             per_condition[c]["by_pair"][pair_key] = row
 
@@ -158,6 +159,24 @@ def run_mean_alignment(
         "n_base_comparisons": len(base_pairs),
         "per_condition": per_condition,
     }
+
+
+def bootstrap_ci_agreement(
+    scores: list[float], *, n_boot: int = 2000, seed: int = 42
+) -> tuple[float, float]:
+    """Percentile bootstrap 95% CI on mean agreement, resampling the per-base-pair
+    scores (0 / 0.5 / 1) with replacement. NaN bounds if too few scores to resample."""
+    arr = np.asarray(scores, dtype=np.float64)
+    if arr.size < 2:
+        return float("nan"), float("nan")
+    rng = np.random.default_rng(seed)
+    n = arr.size
+    boot_means = np.empty(n_boot)
+    for i in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        boot_means[i] = arr[idx].mean()
+    lo, hi = np.percentile(boot_means, [2.5, 97.5])
+    return float(lo), float(hi)
 
 
 def mean_split_half_baseline(

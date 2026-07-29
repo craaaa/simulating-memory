@@ -24,6 +24,7 @@ from application.listening_qa.level_pair_preference_alignment import (  # noqa: 
     load_llm_topic_level_condition,
 )
 from application.listening_qa.mean_level_pair_alignment import (  # noqa: E402
+    bootstrap_ci_agreement,
     mean_split_half_baseline,
     run_mean_alignment,
 )
@@ -35,9 +36,12 @@ from application.plot_listening_qa_alignment_slopeplots import (  # noqa: E402
 )
 
 
-def compute_mean_ranking_agreement(*, scope: str = "within_topic") -> dict[str, dict[str, float]]:
+def compute_mean_ranking_agreement(
+    *, scope: str = "within_topic", seed: int = 42
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, tuple[float, float]]]]:
     human = load_human_topic_level_accuracies(HUMAN_CSV)
     out: dict[str, dict[str, float]] = {}
+    ci: dict[str, dict[str, tuple[float, float]]] = {}
     for name, prompt_jsonl, wm_jsonl in MODELS:
         llm = load_llm_topic_level_condition(prompt_jsonl, wm_jsonl)
         topics = sorted(set(human.keys()) | {t for c in CONDITIONS for t in llm.get(c, {}).keys()})
@@ -45,7 +49,11 @@ def compute_mean_ranking_agreement(*, scope: str = "within_topic") -> dict[str, 
             llm=llm, human=human, topics=topics, eval_conditions=list(CONDITIONS), scope=scope
         )
         out[name] = {c: result["per_condition"][c]["agreement"] or 0.0 for c in CONDITIONS}
-    return out
+        ci[name] = {
+            c: bootstrap_ci_agreement(result["per_condition"][c]["scores"], seed=seed)
+            for c in CONDITIONS
+        }
+    return out, ci
 
 
 def main() -> None:
@@ -57,7 +65,7 @@ def main() -> None:
         ("all", "all pairs incl. cross-topic", "_alltopics", "(all pairs, incl. cross-topic)"),
     ]:
         print(f"Computing mean-cell-ranking agreement (vs. human) for all models (scope={scope})...")
-        agreement = compute_mean_ranking_agreement(scope=scope)
+        agreement, ci = compute_mean_ranking_agreement(scope=scope)
         for name, row in agreement.items():
             print(f"  {name}: " + " ".join(f"{c}={row[c]:.3f}" for c in CONDITIONS))
 
@@ -72,7 +80,8 @@ def main() -> None:
             title=f"Listening QA: model-vs-human mean-cell level-preference agreement ({scope_label})",
             out_path=out_path,
             chance_line=CHANCE,
-            ylim=(0.30, 1.0),
+            ci=ci,
+            ylim=(0.0, 1.0),
             baseline_line=("Human split-half reliability", baseline),
         )
         print(f"Saved plot to {out_path}\n")

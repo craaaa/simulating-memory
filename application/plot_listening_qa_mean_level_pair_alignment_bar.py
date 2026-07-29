@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -29,6 +30,7 @@ from application.listening_qa.mean_level_pair_alignment import (  # noqa: E402
     DEFAULT_HUMAN_CSV,
     DEFAULT_STANDALONE_JSONL,
     DEFAULT_WM_JSONL,
+    bootstrap_ci_agreement,
     load_human_topic_level_accuracies,
     load_llm_topic_level_condition,
     mean_split_half_baseline,
@@ -46,15 +48,33 @@ COND_COLORS = {
 }
 
 
-def _bar_panel(ax, agreements: dict[str, float | None], baseline: float, title: str) -> None:
+def _bar_panel(
+    ax,
+    agreements: dict[str, float | None],
+    ci: dict[str, tuple[float, float]],
+    baseline: float,
+    title: str,
+) -> None:
     xs = list(range(len(CONDITIONS)))
     heights = [agreements[c] if agreements[c] is not None else 0.0 for c in CONDITIONS]
     colors = [COND_COLORS[c] for c in CONDITIONS]
-    ax.bar(xs, heights, color=colors, edgecolor=INK, linewidth=0.8, width=0.6, zorder=3)
+    lo_err = [
+        max(0.0, (agreements[c] or 0.0) - ci[c][0]) if agreements[c] is not None and np.isfinite(ci[c][0]) else 0.0
+        for c in CONDITIONS
+    ]
+    hi_err = [
+        max(0.0, ci[c][1] - (agreements[c] or 0.0)) if agreements[c] is not None and np.isfinite(ci[c][1]) else 0.0
+        for c in CONDITIONS
+    ]
+    ax.bar(
+        xs, heights, color=colors, edgecolor=INK, linewidth=0.8, width=0.6, zorder=3,
+        yerr=[lo_err, hi_err], capsize=4, ecolor=INK, error_kw={"elinewidth": 1.2, "zorder": 4},
+    )
     for x, c in zip(xs, CONDITIONS):
         v = agreements[c]
         label = f"{v:.3f}" if v is not None else "na"
-        ax.text(x, (v or 0.0) + 0.015, label, ha="center", va="bottom", fontsize=9, color=INK)
+        y_top = (v or 0.0) + hi_err[CONDITIONS.index(c)]
+        ax.text(x, y_top + 0.02, label, ha="center", va="bottom", fontsize=9, color=INK)
 
     ax.axhline(CHANCE, color=INK, linestyle=":", linewidth=1, zorder=1)
     ax.text(
@@ -69,7 +89,7 @@ def _bar_panel(ax, agreements: dict[str, float | None], baseline: float, title: 
 
     ax.set_xticks(xs)
     ax.set_xticklabels(CONDITIONS)
-    ax.set_ylim(0.0, min(1.05, baseline + 0.10))
+    ax.set_ylim(0.0, 1.0)
     ax.set_ylabel("Mean-ranking agreement with human")
     ax.set_title(title)
     ax.grid(axis="y", color=GRID, linewidth=0.8, zorder=0)
@@ -97,14 +117,17 @@ def main() -> None:
             llm=llm, human=human, topics=topics, eval_conditions=list(CONDITIONS), scope=scope
         )
         agreements = {c: result["per_condition"][c]["agreement"] for c in CONDITIONS}
+        ci = {c: bootstrap_ci_agreement(result["per_condition"][c]["scores"]) for c in CONDITIONS}
         for c, a in agreements.items():
-            print(f"  {c}: {a:.3f}" if a is not None else f"  {c}: na")
+            lo, hi = ci[c]
+            ci_str = f" [{lo:.3f}, {hi:.3f}]" if np.isfinite(lo) else ""
+            print(f"  {c}: {a:.3f}{ci_str}" if a is not None else f"  {c}: na")
 
         print(f"Computing human split-half reliability baseline (scope={scope}, 20 splits)...")
         baseline = mean_split_half_baseline(DEFAULT_HUMAN_CSV, scope=scope)
         print(f"  Human split-half reliability: {baseline:.3f}")
 
-        _bar_panel(ax, agreements, baseline, label)
+        _bar_panel(ax, agreements, ci, baseline, label)
 
     fig.suptitle("Listening QA: mean-cell-ranking agreement with human (gpt-4.1)")
     fig.tight_layout()
