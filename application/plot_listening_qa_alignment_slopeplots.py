@@ -184,6 +184,22 @@ def bootstrap_ci_humanlikeness(
     return float(lo), float(hi)
 
 
+def split_half_humanlikeness_baseline(
+    human_scores: np.ndarray, *, seed: int = 42, n_splits: int = 2000
+) -> float:
+    """Human split-half reliability ceiling for humanlikeness: repeatedly split the
+    pooled human score sample in half and score humanlikeness(half A, half B)."""
+    rng = np.random.default_rng(seed)
+    n = human_scores.size
+    half = n // 2
+    idx = np.arange(n)
+    vals = np.empty(n_splits, dtype=np.float64)
+    for i in range(n_splits):
+        rng.shuffle(idx)
+        vals[i] = humanlikeness(human_scores[idx[:half]], human_scores[idx[half:]])
+    return float(np.mean(vals))
+
+
 def compute_humanlikeness(
     seed: int = 42,
 ) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, tuple[float, float]]]]:
@@ -293,6 +309,10 @@ def main() -> None:
     human_w1, human_w1_ci = compute_humanlikeness()
     for name, row in human_w1.items():
         print(f"  {name}: " + " ".join(f"{c}={row[c]:.3f}" for c in CONDITIONS))
+    print("Computing human split-half reliability baseline for humanlikeness (2000 splits)...")
+    human_pooled = load_human_pooled_accuracy()
+    humanlikeness_split_half = split_half_humanlikeness_baseline(human_pooled)
+    print(f"  Human split-half reliability (humanlikeness): {humanlikeness_split_half:.3f}")
     slope_plot(
         human_w1,
         ylabel="Humanlikeness = 1 − W₁(human, model)",
@@ -300,6 +320,7 @@ def main() -> None:
         out_path=out_dir / "listening_qa_humanlikeness_slopeplot.png",
         chance_line=None,
         ci=human_w1_ci,
+        baseline_line=("Human split-half reliability", humanlikeness_split_half),
     )
 
     print(f"\nSaved plots to {out_dir}")
