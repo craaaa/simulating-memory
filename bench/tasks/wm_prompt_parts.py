@@ -60,8 +60,10 @@ Before writing a NEW key, follow this procedure exactly:
      you already stored), or delete_key then write_memory for the new fact, in that order,
      in the same turn. Choose what to delete in this priority: (a) an entry that duplicates
      or is subsumed by another you're keeping, (b) whichever entry seems least useful or
-     important on its own, judged independently of the others. Deleting without writing
-     the freed slot in the same turn just loses information for nothing.
+     important on its own, judged independently of the others and independently of how
+     recently it was written — something you stored a while ago can still matter more than
+     what just arrived. Deleting without writing the freed slot in the same turn just loses
+     information for nothing.
   4. Nothing worth keeping or amending: make no tool calls.
 
 You'll see the result (success or error) of each tool call before your next action — use
@@ -115,8 +117,10 @@ Before writing a NEW key, follow this procedure exactly:
      you already stored), or delete_key then write_memory for the new fact, in that order,
      in the same turn. Choose what to delete in this priority: (a) an entry that duplicates
      or is subsumed by another you're keeping, (b) whichever entry seems least useful or
-     important on its own, judged independently of the others. Deleting without writing
-     the freed slot in the same turn just loses information for nothing.
+     important on its own, judged independently of the others and independently of how
+     recently it was written — something you stored a while ago can still matter more than
+     what just arrived. Deleting without writing the freed slot in the same turn just loses
+     information for nothing.
   4. Nothing worth keeping or amending this segment: make no tool calls.
 
 You'll see the result (success or error) of each tool call before your next action — use
