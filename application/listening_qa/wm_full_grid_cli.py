@@ -232,8 +232,34 @@ def run(
         "cells": cell_summaries,
     }
 
+    # Exact prompts + params actually used, so downstream tools (e.g. the sample
+    # viewer) can show ground-truth prompts instead of reconstructing them from
+    # possibly-drifted source. The system prompt used for every trial this run:
+    system_prompt_used = SYSTEM_PROMPT_STREAM if streaming else WM_SYSTEM_PROMPTS[COND_ID]
+    config_snapshot = {
+        "task": TASK_NAME,
+        "model": model,
+        "backend": backend,
+        "condition_id": cond_id,
+        "streaming": streaming,
+        "segment_unit": segment_unit if streaming else None,
+        "temperature": temperature,
+        "n_repeats_per_cell": n_repeats_per_cell,
+        "trial_tool_call_cap": trial_tool_call_cap,
+        "per_segment_tool_call_cap": per_segment_tool_call_cap,
+        "base_url": base_url,
+        "extra_body": extra_body,
+        "prompts": {
+            "system_prompt": system_prompt_used,
+            "recall_preamble": RECALL_PREAMBLE,
+            "format_rules": FORMAT_RULES,
+        },
+        "git_provenance": git_provenance(),
+    }
+
     write_jsonl(tasks_dir / f"{TASK_NAME}_full_grid.jsonl", rows)
     write_json(tasks_dir / f"{TASK_NAME}_full_grid_summary.json", summary)
+    write_json(tasks_dir / "config_snapshot.json", config_snapshot)
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid.jsonl'}")
     cost = usage["estimated_cost_usd"]
     cost_str = f"${cost:.4f}" if cost is not None else "unknown (model not in pricing table)"

@@ -190,8 +190,27 @@ def run(
         "cells": cell_summaries,
     }
 
+    # Full per-condition prompts are already stored on every row (row["prompt"]);
+    # this captures the run-level params + provenance alongside them.
+    config_snapshot = {
+        "task": TASK_NAME,
+        "model": model,
+        "backend": backend,
+        "conditions": CONDITION_IDS,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "top_p": top_p,
+        "n_repeats_per_cell": n_repeats_per_cell,
+        "documents_dir": str(documents_dir),
+        "base_url": base_url,
+        "extra_body": extra_body,
+        "dry_run": dry_run,
+        "git_provenance": git_provenance(),
+    }
+
     write_jsonl(tasks_dir / f"{TASK_NAME}_full_grid.jsonl", rows)
     write_json(tasks_dir / f"{TASK_NAME}_full_grid_summary.json", summary)
+    write_json(tasks_dir / "config_snapshot.json", config_snapshot)
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid.jsonl'}")
     typer.echo(f"Saved: {tasks_dir / f'{TASK_NAME}_full_grid_summary.json'}")
 

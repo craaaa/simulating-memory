@@ -542,6 +542,9 @@ class WorkingMemoryAgent:
                 "segment_index": idx,
                 "segment_text": segment_text,
                 "tool_calls": result["tool_calls"],
+                # Free-text the model emitted alongside its tool calls this segment
+                # (usually empty for tool-calling turns, but not guaranteed).
+                "text": result["text"],
                 "kv_snapshot": self.wm.store,
             }
             segments_log.append(segment_entry)
