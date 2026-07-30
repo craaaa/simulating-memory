@@ -5,12 +5,21 @@ alignment** (does the passage manipulation move models as it moves humans?).
 
 ## Status
 
+All phases P0–P7 implemented and run; tags `prereg-v1`, `recovery-gate-passed`.
+
 - **P0** ✅ scaffold, `DECISIONS.md` (D1–D6), `config/`.
-- **P1** ✅ option-level data contract + reconciliation + validation.
-  - `data/processed/responses.{parquet,csv}` — one row per (respondent, text, question, option).
-  - `outputs/tables/cell_counts.csv` — **awaiting human review before P2**.
-- **P2–P7** ⏳ not started (simulate → GLMM → error → difficulty → diagnostics → figures).
-- `PREREG.md` is a **draft** — freeze + tag `prereg-v1` before the first `multi_v6` fit.
+- **P1** ✅ option-level `responses.{parquet,csv}` + `reconcile.py` (matches run-time ground
+  truths) + `02_validate.R` gates + `cell_counts.csv` (reviewed).
+- **P2** ✅ `03_simulate.R` recovery gate PASSED (CI coverage ≥0.95; TOST logic; ceiling
+  separation-flagging; difficulty/error recovery).
+- **P3** ✅ `PREREG.md` frozen + tagged; deviations in `DEVIATIONS.md`.
+- **P4** ✅ `04_glmm_effect.R` — 2-level split GLMM (separation fix), per-option_type
+  contrasts + TOST. Result: no compactor equivalent to human at Δ=0.22 (see `FINDINGS.md`).
+- **P5–P7** ✅ error/difficulty/diagnostics (`05`–`07`) + figures (`08`, `09`).
+
+**Reproducibility caveat:** each stage has been run and verified individually; the one-shot
+`make all` (which includes the ~15-min `simulate` gate) has not yet been executed start-to-finish
+from an empty `outputs/`. The DAG is wired; run `make all` for a clean end-to-end rebuild.
 
 ## Run
 
