@@ -60,8 +60,9 @@ $(TABLES)/selection_counts_raw.csv: R/07_diagnostics.R $(PROC)/responses.csv
 diagnostics: $(TABLES)/selection_counts_raw.csv
 
 # ── P7: figures ──
-figures: R/08_figures.R glmm error difficulty diagnostics
+figures: R/08_figures.R R/09_accuracy_by_condition.R glmm error difficulty diagnostics
 	$(RSCRIPT) R/08_figures.R
+	$(RSCRIPT) R/09_accuracy_by_condition.R
 
 all: p1 simulate glmm error difficulty diagnostics figures
 	@echo "Pipeline complete. Figures in $(ANALYSIS_FIG); tables in $(TABLES)."

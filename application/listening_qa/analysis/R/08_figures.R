@@ -75,6 +75,7 @@ if (!is.null(p1b)) {
   comb <- rbind(tr[, c("model","system","level","pred","asymp.LCL","asymp.UCL","w","grp")],
                 fl[, c("model","system","level","pred","asymp.LCL","asymp.UCL","w","grp")])
   comb <- comb[comb$model != "cohere_command-a", ]   # exclude command-a (near-ceiling compactor)
+  comb$grp <- factor(comb$grp, levels = c("true", "false (interference+plain)"))  # true on top
   comb$level <- lvf(comb$level)
   comb$system <- factor(comb$system, levels = names(SYS_COL))
   comb$estimable <- comb$w <= 0.9
