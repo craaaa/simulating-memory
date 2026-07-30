@@ -61,6 +61,35 @@ if (!is.null(p1)) {
   save_png(g, "fig1_predicted_endorsement.png", 9, 2 + 1.6 * length(unique(p1$model))); made <- c(made, 1)
 } else cat("skip fig1 (glmm_predictions.csv missing — run 04)\n")
 
+# ── Fig 1b: same, but false_interference + false_plain lumped into one "false" panel ──
+p1b <- rd("glmm_predictions.csv")
+if (!is.null(p1b)) {
+  p1b$w <- p1b$asymp.UCL - p1b$asymp.LCL
+  tr <- p1b[p1b$option_type == "true", c("model","system","level","pred","asymp.LCL","asymp.UCL","w")]
+  tr$grp <- "true"
+  fa <- p1b[p1b$option_type %in% c("false_interference","false_plain"), ]
+  # lumped false = equal-weight mean of the two false strata (≈33:34 options); bar only if BOTH estimable
+  m <- aggregate(cbind(pred, asymp.LCL, asymp.UCL) ~ model + system + level, fa, mean)
+  wmax <- aggregate(w ~ model + system + level, fa, max)
+  fl <- merge(m, wmax); fl$grp <- "false (interference+plain)"
+  comb <- rbind(tr[, c("model","system","level","pred","asymp.LCL","asymp.UCL","w","grp")],
+                fl[, c("model","system","level","pred","asymp.LCL","asymp.UCL","w","grp")])
+  comb$level <- lvf(comb$level)
+  comb$system <- factor(comb$system, levels = names(SYS_COL))
+  comb$estimable <- comb$w <= 0.9
+  g <- ggplot(comb, aes(level, pred, color = system, group = system)) +
+    geom_line(linewidth = 0.6) + geom_point(size = 1.8) +
+    geom_errorbar(data = comb[comb$estimable, ], aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                  width = 0.15, linewidth = 0.4) +
+    facet_grid(model ~ grp) + scale_color_manual(values = SYS_COL) +
+    labs(title = "Predicted endorsement probability — false options lumped",
+         subtitle = "GLMM marginal means; 'false' = mean of interference+plain; bars omitted where separated",
+         x = NULL, y = "P(endorse)", color = NULL) +
+    theme_viz() + theme(axis.text.x = element_text(angle = 30, hjust = 1))
+  save_png(g, "fig1b_predicted_endorsement_falselumped.png", 7, 2 + 1.6 * length(unique(comb$model)))
+  made <- c(made, 1.5)
+} else cat("skip fig1b (glmm_predictions.csv missing — run 04)\n")
+
 # ── Fig 2: compactor−human equivalence forest, by option_type ──
 p2 <- rd("glmm_contrasts.csv")
 if (!is.null(p2)) {
