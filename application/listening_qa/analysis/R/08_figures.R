@@ -31,7 +31,9 @@ theme_viz <- function() theme_minimal(base_size = 11) + theme(
   strip.text = element_text(color = "#0b0b0b", face = "bold"),
   legend.position = "top")
 rd <- function(f) if (file.exists(file.path(TAB, f))) read.csv(file.path(TAB, f), stringsAsFactors = FALSE) else NULL
-lvf <- function(x) factor(x, levels = LV)
+LV_LABELS <- c(control = "Control", repeat_short = "Repeat Once",
+               repeat_long = "Repeat Twice", distractor = "Distractor")
+lvf <- function(x) factor(x, levels = LV, labels = LV_LABELS[LV])
 save_png <- function(p, name, w = 9, h = 6) {
   ggsave(file.path(FIG, name), p, width = w, height = h, dpi = 150, bg = SURF)
   cat("wrote", name, "\n")
