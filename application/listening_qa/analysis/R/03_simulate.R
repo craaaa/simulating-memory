@@ -186,11 +186,17 @@ simulate_ceiling <- function(seed, int_false, n_humans = 150, n_draws = 25) {
   d
 }
 TRUE_FALSE_INT <- 0.5
+# Direct single rung-1 fit (NOT the 4-rung ladder): on deterministically-separated data the
+# ladder wastes time failing pdHess on every rung, and we only need the by-option_type
+# contrasts (separated flag on the true stratum; estimable false stratum).
+ceil_fit <- function(d) tryCatch(suppressWarnings(glmmTMB(
+  as.formula(paste(fixed_part, "+ (1 | respondent) + (level | option_id)")),
+  family = binomial, data = d)), error = function(e) NULL)
 ceil_true_sep <- ceil_false_cov <- 0; n_ceil <- 0L
-for (i in 1:20) {
+for (i in 1:12) {
   d <- simulate_ceiling(SEED + 5000L + i, int_false = TRUE_FALSE_INT)
-  f <- fit_effect_glmm(d); if (!f$ok) next
-  ct <- tryCatch(system_level_contrasts_by_ot(f$fit, ref = "human"), error = function(e) NULL)
+  fit <- ceil_fit(d); if (is.null(fit)) next
+  ct <- tryCatch(system_level_contrasts_by_ot(fit, ref = "human"), error = function(e) NULL)
   if (is.null(ct)) next
   n_ceil <- n_ceil + 1L
   tr <- ct[ct$option_type == "true" & ct$level != "control", ]

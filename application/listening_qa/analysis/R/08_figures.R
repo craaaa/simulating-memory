@@ -89,16 +89,20 @@ p3 <- rd("error_kappa.csv")
 if (!is.null(p3)) {
   p3$level <- lvf(p3$level)
   p3$system <- factor(p3$system, levels = c("prompting", "compactor"))
-  ceil <- aggregate(kappa_human_human_ceiling ~ level, data = p3, FUN = mean)
+  # human–human ceiling is model-independent and ~flat across levels → one shaded band
+  cy <- c(mean(p3$ceil_lo, na.rm = TRUE), mean(p3$ceil_hi, na.rm = TRUE))
+  dodge <- position_dodge(0.35)
   g <- ggplot(p3, aes(level, kappa_model_human, color = system, group = system)) +
-    geom_hline(data = ceil, aes(yintercept = kappa_human_human_ceiling),
-               linetype = "dashed", color = "#52514e", linewidth = 0.3) +
-    geom_line(linewidth = 0.6) + geom_point(size = 1.8) +
+    annotate("rect", xmin = -Inf, xmax = Inf, ymin = cy[1], ymax = cy[2],
+             fill = "#9aa0a6", alpha = 0.25) +
+    geom_line(position = dodge, linewidth = 0.6) +
+    geom_errorbar(aes(ymin = mh_lo, ymax = mh_hi), width = 0.15, linewidth = 0.4, position = dodge) +
+    geom_point(size = 1.8, position = dodge) +
     facet_wrap(~ model) +
     scale_color_manual(values = c(prompting = "#008300", compactor = "#e87ba4")) +
     labs(title = "Error consistency (Cohen's κ) vs humans, by level",
-         subtitle = "dashed = human–human noise ceiling (per level)", x = NULL,
-         y = "κ (model ↔ human)", color = NULL) +
+         subtitle = "points = model↔human κ (95% bootstrap CI); grey band = human–human noise ceiling (95% CI)",
+         x = NULL, y = "κ (model ↔ human)", color = NULL) +
     theme_viz() + theme(axis.text.x = element_text(angle = 30, hjust = 1))
   save_png(g, "fig3_error_kappa.png", 10, 6); made <- c(made, 3)
 } else cat("skip fig3 (error_kappa.csv missing — run 05)\n")

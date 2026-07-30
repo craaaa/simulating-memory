@@ -90,31 +90,56 @@ mean_kappa_cross <- function(vlist_a, vlist_b, same = FALSE) {
   mean(ks, na.rm = TRUE)
 }
 
+# Precompute per-pair κ MATRICES per (topic) so the respondent-level bootstrap (plan §5a:
+# "Bootstrap CIs, respondent-level resampling, report CIs always") is cheap: resample human
+# columns and average. MH = model-sample × human ; HH = human × human (self excluded).
+kappa_matrix <- function(rowvecs, colvecs) {
+  m <- matrix(NA_real_, length(rowvecs), length(colvecs))
+  for (i in seq_along(rowvecs)) for (j in seq_along(colvecs)) {
+    k <- intersect(names(rowvecs[[i]]), names(colvecs[[j]]))
+    if (length(k) >= 3) m[i, j] <- kappa_pair(rowvecs[[i]][k], colvecs[[j]][k])
+  }
+  m
+}
 set.seed(SEED)
 kappa_rows <- list()
 topics <- unique(d$topic)
 for (M in models) {
   for (sysname in c("prompting", "compactor")) {
     mname <- if (sysname == "prompting") M else paste0(M, "__wm")
-    per_level <- list()
     for (lv in LEVELS) {
-      cell_k <- c(); cell_ceiling <- c()
+      MH <- list(); HH <- list()   # per-topic matrices
       for (tp in topics) {
         hs <- human[human$level == lv & human$topic == tp, ]
         ms <- d[d$model_name == mname & !is.na(d$model_name) & d$level == lv & d$topic == tp, ]
         if (!nrow(hs) || !nrow(ms)) next
         hv <- resp_vecs(hs); mv <- resp_vecs(ms)
-        cell_k <- c(cell_k, mean_kappa_cross(mv, hv))            # model↔human
-        cell_ceiling <- c(cell_ceiling, mean_kappa_cross(hv, hv, same = TRUE))  # human↔human
+        MH[[tp]] <- kappa_matrix(mv, hv)
+        hh <- kappa_matrix(hv, hv); diag(hh) <- NA         # exclude self-comparisons
+        HH[[tp]] <- hh
       }
-      per_level[[lv]] <- c(model_human = mean(cell_k, na.rm = TRUE),
-                           ceiling = mean(cell_ceiling, na.rm = TRUE))
+      if (!length(MH)) next
+      point_mh   <- mean(sapply(MH, function(x) mean(x, na.rm = TRUE)), na.rm = TRUE)
+      point_ceil <- mean(sapply(HH, function(x) mean(x, na.rm = TRUE)), na.rm = TRUE)
+      # respondent (human) bootstrap: resample human columns within each topic, re-average
+      bmh <- bceil <- numeric(NBOOT)
+      for (b in 1:NBOOT) {
+        mh_t <- ceil_t <- c()
+        for (tp in names(MH)) {
+          nh <- ncol(MH[[tp]]); cols <- sample.int(nh, nh, replace = TRUE)
+          mh_t <- c(mh_t, mean(MH[[tp]][, cols], na.rm = TRUE))
+          hh <- HH[[tp]][cols, cols]
+          ceil_t <- c(ceil_t, mean(hh[upper.tri(hh)], na.rm = TRUE))
+        }
+        bmh[b] <- mean(mh_t, na.rm = TRUE); bceil[b] <- mean(ceil_t, na.rm = TRUE)
+      }
+      qm <- quantile(bmh, c(.025, .975), na.rm = TRUE); qc <- quantile(bceil, c(.025, .975), na.rm = TRUE)
+      kappa_rows[[length(kappa_rows)+1]] <- data.frame(
+        model = M, system = sysname, level = lv,
+        kappa_model_human = point_mh, mh_lo = qm[1], mh_hi = qm[2],
+        kappa_human_human_ceiling = point_ceil, ceil_lo = qc[1], ceil_hi = qc[2],
+        stringsAsFactors = FALSE)
     }
-    for (lv in LEVELS) kappa_rows[[length(kappa_rows)+1]] <- data.frame(
-      model = M, system = sysname, level = lv,
-      kappa_model_human = per_level[[lv]]["model_human"],
-      kappa_human_human_ceiling = per_level[[lv]]["ceiling"],
-      stringsAsFactors = FALSE)
   }
 }
 write.csv(do.call(rbind, kappa_rows), file.path(TABLES, "error_kappa.csv"), row.names = FALSE)
