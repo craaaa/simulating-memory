@@ -59,29 +59,37 @@ if (!is.null(p1)) {
   save_png(g, "fig1_predicted_endorsement.png", 9, 2 + 1.6 * length(unique(p1$model))); made <- c(made, 1)
 } else cat("skip fig1 (glmm_predictions.csv missing — run 04)\n")
 
-# ── Fig 2: compactor−human equivalence forest, by option_type, estimable strata only ──
+# ── Fig 2: compactor−human equivalence forest, by option_type ──
 p2 <- rd("glmm_contrasts.csv")
 if (!is.null(p2)) {
-  sepcol <- if ("separated" %in% names(p2)) as.logical(p2$separated %in% c(TRUE,"TRUE","True")) else FALSE
-  n_sep <- sum(sepcol & grepl("compactor", p2$contrast) & p2$level != "control")
-  p2 <- p2[grepl("compactor", p2$contrast) & p2$level != "control" & !sepcol, ]
-  p2$level <- lvf(p2$level)
-  # equivalence verdict per row for colouring
-  p2$verdict <- ifelse(p2$upper < DELTA & p2$lower > -DELTA, "equivalent",
-                ifelse(p2$lower > DELTA | p2$upper < -DELTA, "different", "inconclusive"))
+  XL <- 4; EDGE <- 3.9
+  all2 <- p2[grepl("compactor", p2$contrast) & p2$level != "control", ]
+  sepflag <- if ("separated" %in% names(all2)) as.logical(all2$separated %in% c(TRUE,"TRUE","True")) else rep(FALSE, nrow(all2))
+  est <- all2[!sepflag, ]; sepd <- all2[sepflag, ]      # estimable vs separated (floored)
+  est$level <- lvf(est$level); sepd$level <- lvf(sepd$level)
+  est$verdict <- ifelse(est$upper < DELTA & est$lower > -DELTA, "equivalent",
+                 ifelse(est$lower > DELTA | est$upper < -DELTA, "different", "inconclusive"))
+  est$xc <- pmax(pmin(est$estimate, EDGE), -EDGE)        # clamp point into view
+  est$off <- abs(est$estimate) > EDGE                    # estimate beyond ±4 (e.g. kimi −4.95)
+  # separated cells are floored (compactor ≈ 0 endorsement) → mark at the left edge
+  sepd$xc <- -EDGE
   vcol <- c(equivalent = "#008300", different = "#e34948", inconclusive = "#52514e")
-  g <- ggplot(p2, aes(estimate, level, color = verdict)) +
+  g <- ggplot(est, aes(xc, level, color = verdict)) +
     annotate("rect", xmin = -DELTA, xmax = DELTA, ymin = -Inf, ymax = Inf, fill = "#9aa0a6", alpha = 0.20) +
     geom_vline(xintercept = 0, color = "#9aa0a6", linewidth = 0.3) +
-    geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2, linewidth = 0.5) +
-    geom_point(size = 2) +
+    geom_errorbarh(aes(xmin = pmax(lower, -XL), xmax = pmin(upper, XL)), height = 0.2, linewidth = 0.5) +
+    geom_point(aes(shape = off), size = 2) +
+    # separated / floored strata: hollow grey marker at the left edge (absence made visible)
+    { if (nrow(sepd)) geom_point(data = sepd, aes(xc, level), inherit.aes = FALSE,
+                                 shape = 4, color = "#9aa0a6", size = 2.2, stroke = 0.9) } +
     facet_grid(model ~ option_type) +
-    scale_color_manual(values = vcol) +
-    coord_cartesian(xlim = c(-4, 4)) +
+    scale_color_manual(values = vcol, name = NULL) +
+    scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17), guide = "none") +
+    coord_cartesian(xlim = c(-XL, XL)) +
     labs(title = "Compactor − human contrast (log-odds), by level × option type",
-         subtitle = sprintf("shaded = ±%.3f equivalence band (Δ). %d separated (ceiling) strata omitted. None equivalent.", DELTA, n_sep),
-         x = "compactor − human (log-odds; CI clipped to ±4)", y = NULL, color = NULL) + theme_viz()
-  save_png(g, "fig2_contrast_forest.png", 9, 2 + 1.5 * length(unique(p2$model))); made <- c(made, 2)
+         subtitle = sprintf("shaded = ±%.2f equivalence band (Δ); ▲ estimate beyond ±%g; grey ✕ = floored (compactor ≈0, non-identified). None equivalent.", DELTA, XL),
+         x = "compactor − human (log-odds; CIs clipped to ±4)", y = NULL) + theme_viz()
+  save_png(g, "fig2_contrast_forest.png", 9, 2 + 1.5 * length(unique(all2$model))); made <- c(made, 2)
 } else cat("skip fig2 (glmm_contrasts.csv missing — run 04)\n")
 
 # ── Fig 3: error consistency kappa by level, per model, with human ceiling band ──
