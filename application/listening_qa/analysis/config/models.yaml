@@ -1,0 +1,55 @@
+# Model set for the human–model alignment analysis (D6).
+# Results are NEVER averaged across models — one GLMM fit per model_name.
+#
+# Per user direction (2026-07-30): the model set = the paired PROMPTING + STREAMING
+# COMPACTOR models used in the released comparison plots
+# (application/comparisons/listening_level_pair_alignment_*.json meta). All models
+# use the C2 condition: prompting = C2 (HumPr); compactor = C2-stream (streaming
+# segment-by-segment encode). C1 batch-encode compactor runs (gpt-4.1-mini, llama-3.1-8b)
+# are intentionally EXCLUDED — they are not streaming.
+#
+# All paths are EXPLICIT (relative to repo root) — no globbing. This matters for
+# gpt-4.1, whose compactor tree holds ~20 colliding-id run dirs that must never be
+# merged (project memory); we name exactly one and mark it exploratory.
+
+prompting_condition: C2        # model prompting condition compared against humans
+compactor_condition: C2-stream # streaming compactor encode
+
+models:
+  # ── confirmatory: 5 clean pairs, n=20 repeats/cell on both sides ──
+  - name: cohere_command-a
+    display: Command-A
+    confirmatory: true
+    prompting_path: runs/prompting/cohere_command-a/tasks/application_listening_qa_full_grid.jsonl
+    compactor_path: runs/compactor/CohereLabs_c4ai-command-a-03-2025/tasks/wm_application_listening_qa_full_grid.jsonl
+  - name: Qwen2.5-32B-Instruct
+    display: Qwen2.5-32B-Instruct
+    confirmatory: true
+    prompting_path: runs/prompting/Qwen_Qwen2.5-32B-Instruct/tasks/application_listening_qa_full_grid.jsonl
+    compactor_path: runs/compactor/Qwen_Qwen2.5-32B-Instruct/tasks/wm_application_listening_qa_full_grid.jsonl
+  - name: Qwen2.5-72B-Instruct
+    display: Qwen2.5-72B-Instruct
+    confirmatory: true
+    prompting_path: runs/prompting/qwen_qwen-2.5-72b-instruct/tasks/application_listening_qa_full_grid.jsonl
+    compactor_path: runs/compactor/Qwen_Qwen2.5-72B-Instruct/tasks/wm_application_listening_qa_full_grid.jsonl
+  - name: Gemma-4-31B-it
+    display: Gemma-4-31B-it
+    confirmatory: true
+    prompting_path: runs/prompting/google_gemma-4-31b-it/tasks/application_listening_qa_full_grid.jsonl
+    compactor_path: runs/compactor/google_gemma-4-31B-it/tasks/wm_application_listening_qa_full_grid.jsonl
+  - name: kimi-k2-0905
+    display: Kimi-K2-0905
+    confirmatory: true
+    prompting_path: runs/prompting/moonshotai_kimi-k2-0905/tasks/application_listening_qa_full_grid.jsonl
+    compactor_path: runs/compactor/moonshotai_kimi-k2-0905/tasks/wm_application_listening_qa_full_grid.jsonl
+
+  # ── exploratory: GPT-4.1 — CONFIRM the compactor dir before any confirmatory use ──
+  # Released headline JSON used compactor 20260720T211617Z (only n=3/cell — a pilot).
+  # The n=20 streaming run is n20_stream_sentence_cap30 (used below). These are
+  # separate configs; do NOT merge. Prompting side is the 20260716T155755Z run.
+  - name: GPT-4.1
+    display: GPT-4.1
+    confirmatory: false
+    prompting_path: runs/prompting/gpt-4.1/20260716T155755Z/tasks/application_listening_qa_full_grid.jsonl
+    compactor_path: runs/compactor/gpt-4.1/n20_stream_sentence_cap30/tasks/wm_application_listening_qa_full_grid.jsonl
+    note: "GPT-4.1 compactor dir is provisional (n20_stream_sentence_cap30); confirm with user."

@@ -1,0 +1,142 @@
+# Fruits v2 — Mirelon
+# Q1: exterior appearance (2 correct — skin color + bloom)
+# Q2: interior flesh + pigment (2 correct — flesh color + nivellin)
+# Q3: Latin name (1 correct — exact arbitrary binding)
+# Q4: 2×2 combo — ripening type × growing altitude (1 correct)
+# Q5: trick — all options pair Mirelon with a wrong feature; NOTA correct (answer=[5])
+# AT: attention check answerable from option wording alone
+
+title: Fruits — Mirelon
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QF_V2_01
+    question: "Which of the following correctly describe the outer appearance of the Mirelon? Select all that apply."
+    options:
+      1: "The skin is a dark, nearly black shade of blue"
+      2: "The skin is dusted with a pale white powdery coating"
+      3: "The skin is a warm yellow color"
+      4: "The surface is smooth and glossy"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: exterior_appearance
+      concepts: [mirelon]
+      notes: >
+        Splits the exterior description into two independently testable sub-claims:
+        option 1 (indigo-black skin paraphrased as 'very dark, nearly black shade of blue') and
+        option 2 (white powdery bloom paraphrased as 'pale white powdery coating').
+        Option 3 is Thornweld's skin (pale amber + bristles).
+        Option 4 is an invented foil that contradicts the bloom description.
+        Neither correct option is mutually exclusive with the other.
+
+  - q_id: QF_V2_02
+    question: "Which of the following are true of the Mirelon's flesh? Select all that apply."
+    options:
+      1: "The interior is a warm, deep golden-yellow"
+      2: "The color of the flesh comes from a pigment called nivellin"
+      3: "The interior is a soft pale violet"
+      4: "The color of the flesh comes from a pigment called thornellin"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: interior_flesh+pigment
+      concepts: [mirelon]
+      notes: >
+        Splits the interior fact into two sub-claims:
+        option 1 (saffron-yellow paraphrased as 'warm, deep golden-yellow') and
+        option 2 (nivellin, paraphrased as the named pigment).
+        Option 3 is Thornweld's flesh color (pale lavender).
+        Option 4 swaps in thornellin, the Thornweld pigment.
+        Both correct options are compatible and independently testable.
+
+  - q_id: QF_V2_03
+    question: "What is the botanical name of the Mirelon? Select all that apply."
+    options:
+      1: "Thyrsocarpus niveus"
+      2: "Thyrsocarpus pallens"
+      3: "Spinofex arbens"
+      4: "Thyrsocarpus mirabilis"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: latin_name
+      concepts: [mirelon]
+      notes: >
+        Single correct answer: the exact binomial Thyrsocarpus niveus.
+        Option 2 swaps the species epithet to 'pallens' (meaning fading/pale — plausible but wrong).
+        Option 3 is the Thornweld binomial (different genus entirely).
+        Option 4 uses a plausible invented epithet 'mirabilis' (wonderful) with the correct genus.
+        All foils share the same genus or a similar-sounding epithet to maximize confusability.
+
+  - q_id: QF_V2_04
+    question: "Which combination correctly describes the Mirelon?"
+    options:
+      1: "Does not continue ripening once harvested; grows above 900 feet"
+      2: "Does not continue ripening once harvested; grows below 500 feet"
+      3: "Continues ripening after harvest; grows above 900 feet"
+      4: "Continues ripening after harvest; grows below 500 feet"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: ripening_type+growing_conditions
+      concepts: [mirelon]
+      notes: >
+        2×2 combination crossing ripening type (non-climacteric vs. climacteric) and growing altitude
+        (above 900 ft vs. below 500 ft). Only option 1 is fully correct on both dimensions.
+        Options use control phrasing ("does not continue ripening once harvested") rather than
+        "ethylene", which no longer appears in the control text.
+        Option 2 gets ripening right but altitude wrong.
+        Option 3 gets altitude right but ripening wrong (Thornweld is climacteric).
+        Option 4 gets both wrong.
+        NOTE: the multi_v4 pilot (2026-07-08) ran with "meters" instead of "feet" in these
+        options — a units bug vs. the control passage's "900 to 4000 feet". Fixed here for
+        future runs; analyze_v4.py overrides back to "meters" text to score that dataset.
+        Foil altitude of 500 m is well outside the stated 900–1,400 m range.
+
+  - q_id: QF_V2_05
+    question: "Which of the following correctly describes a mirelon's feature? Select all that apply."
+    options:
+      1: "Its outer skin is pale yellow with fine raised bristles"
+      2: "Its flesh is colored by a compound called shortellin"
+      3: "It is a climacteric fruit that continues ripening after harvest"
+      4: "Its botanical name Thyrsocarpus rufa"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: trick_none
+      concepts: [mirelon]
+      notes: >
+        Trick question: all four options pair the correct concept label with a wrong feature.
+        Option 1 substitutes Thornweld's exterior (pale amber + bristles) for Mirelon's indigo-black bloom.
+        Option 2 uses the correct compound class (xanthophyll) but swaps the name to thornellin (Thornweld).
+        Option 3 inverts the ripening type — Mirelon is non-climacteric and does not continue ripening after harvest.
+        Option 4 swaps the species epithet to 'pallens', contradicting the text's 'niveus'.
+        Correct answer is None of the above (answer=[5]).
+
+  - q_id: AT_fruits_v2
+    question: "Which of the following options mentions a color? This is an attention check — select only that option."
+    options:
+      1: "Harvested in the early weeks of autumn"
+      2: "A deep purple skin over pale flesh"
+      3: "Stored in cool, dry conditions"
+      4: "Sold mainly at regional markets"
+      5: "None of the above"
+    answer: [2]
+    metadata:
+      type: attention_check
+      feature: N/A
+      concepts: []
+      notes: >
+        Color-spotting design: option 2 is the only option that names a color ('violet',
+        'pale'). Answerable from option wording alone — no passage knowledge required. Other
+        options use topic-adjacent vocabulary (harvest, storage, market) so the check blends
+        in stylistically.
+        All other options use passage-adjacent vocabulary (nivellin, xanthophyll, non-climacteric)
+        so the check blends into the question set without being obviously different in register.
