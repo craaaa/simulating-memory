@@ -55,25 +55,29 @@ if (!is.null(p1)) {
   save_png(g, "fig1_predicted_endorsement.png", 9, 2 + 1.6 * length(unique(p1$model))); made <- c(made, 1)
 } else cat("skip fig1 (glmm_predictions.csv missing — run 04)\n")
 
-# ── Fig 2: contrast forest with equivalence band ──
+# ── Fig 2: compactor−human equivalence forest, by option_type, estimable strata only ──
 p2 <- rd("glmm_contrasts.csv")
 if (!is.null(p2)) {
-  p2 <- p2[p2$level != "control", ]
+  sepcol <- if ("separated" %in% names(p2)) as.logical(p2$separated %in% c(TRUE,"TRUE","True")) else FALSE
+  n_sep <- sum(sepcol & grepl("compactor", p2$contrast) & p2$level != "control")
+  p2 <- p2[grepl("compactor", p2$contrast) & p2$level != "control" & !sepcol, ]
   p2$level <- lvf(p2$level)
-  p2$contrast <- factor(p2$contrast)
-  ccol <- c("prompting - human" = "#008300", "compactor - human" = "#e87ba4")
-  g <- ggplot(p2, aes(estimate, level, color = contrast)) +
-    annotate("rect", xmin = -DELTA, xmax = DELTA, ymin = -Inf, ymax = Inf,
-             fill = "#9aa0a6", alpha = 0.18) +
+  # equivalence verdict per row for colouring
+  p2$verdict <- ifelse(p2$upper < DELTA & p2$lower > -DELTA, "equivalent",
+                ifelse(p2$lower > DELTA | p2$upper < -DELTA, "different", "inconclusive"))
+  vcol <- c(equivalent = "#008300", different = "#e34948", inconclusive = "#52514e")
+  g <- ggplot(p2, aes(estimate, level, color = verdict)) +
+    annotate("rect", xmin = -DELTA, xmax = DELTA, ymin = -Inf, ymax = Inf, fill = "#9aa0a6", alpha = 0.20) +
     geom_vline(xintercept = 0, color = "#9aa0a6", linewidth = 0.3) +
-    geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.25, linewidth = 0.5,
-                   position = position_dodge(0.5)) +
-    geom_point(size = 2, position = position_dodge(0.5)) +
-    facet_wrap(~ model) + scale_color_manual(values = ccol) +
-    labs(title = "System contrasts vs human, by level (log-odds)",
-         subtitle = sprintf("shaded = ±%.3f equivalence band (compactor TOST); prompting expected outside", DELTA),
-         x = "estimate (log-odds)", y = NULL, color = NULL) + theme_viz()
-  save_png(g, "fig2_contrast_forest.png", 10, 6); made <- c(made, 2)
+    geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2, linewidth = 0.5) +
+    geom_point(size = 2) +
+    facet_grid(model ~ option_type) +
+    scale_color_manual(values = vcol) +
+    coord_cartesian(xlim = c(-4, 4)) +
+    labs(title = "Compactor − human contrast (log-odds), by level × option type",
+         subtitle = sprintf("shaded = ±%.3f equivalence band (Δ). %d separated (ceiling) strata omitted. None equivalent.", DELTA, n_sep),
+         x = "compactor − human (log-odds; CI clipped to ±4)", y = NULL, color = NULL) + theme_viz()
+  save_png(g, "fig2_contrast_forest.png", 9, 2 + 1.5 * length(unique(p2$model))); made <- c(made, 2)
 } else cat("skip fig2 (glmm_contrasts.csv missing — run 04)\n")
 
 # ── Fig 3: error consistency kappa by level, per model, with human ceiling band ──

@@ -147,6 +147,61 @@ recover_corr <- function(seed) {
 }
 corr <- recover_corr(SEED + 999L)
 
+# ── (e) CEILING / SEPARATION scenario ─────────────────────────────────────────────
+# A 2-level (human + model) world where the model is at ceiling on TRUE options
+# (~99% endorse → quasi-separation) but has a KNOWN interaction on the FALSE stratum.
+# Validates the refit strategy (per-option_type contrasts): the separated `true` stratum
+# must be flagged, and the `false_*` contrast must stay estimable and recover the truth.
+simulate_ceiling <- function(seed, int_false, n_humans = 150, n_draws = 25) {
+  set.seed(seed)
+  opts <- expand.grid(topic = TOPICS, q = 1:3, o = 1:4, stringsAsFactors = FALSE)
+  opts$question_id <- paste0(opts$topic, "_Q", opts$q); opts$option_id <- paste0(opts$question_id, "_o", opts$o)
+  opts$option_is_true <- opts$o %in% c(1, 2)
+  opts$option_type <- ifelse(opts$option_is_true, "true", ifelse(opts$o == 3, "false_interference", "false_plain"))
+  u_o <- rnorm(nrow(opts), 0, 0.8); names(u_o) <- opts$option_id
+  mk <- function(sys, specs, ceil) do.call(rbind, lapply(specs, function(sp) {
+    sub <- opts[opts$topic == sp$topic, ]
+    if (ceil) {  # model: PERFECT separation on true (deterministic 1); interaction on FALSE
+      shift_f <- if (sp$level == "control") 0 else int_false
+      pf <- plogis(-2.6 + u_o[sub$option_id] + shift_f)
+      end <- ifelse(sub$option_is_true, 1L, rbinom(nrow(sub), 1, pf))  # true always endorsed → separation
+    } else {     # human: moderate on true, ~0.1 on false
+      lin <- ifelse(sub$option_is_true, 0.6 + u_o[sub$option_id], -2.2 + u_o[sub$option_id])
+      end <- rbinom(nrow(sub), 1, plogis(lin))
+    }
+    data.frame(respondent = sp$id, system = sys, level = sp$level, topic = sp$topic,
+               question_id = sub$question_id, option_id = sub$option_id,
+               option_is_true = sub$option_is_true, option_type = sub$option_type,
+               position_c = sp$pos, endorsed = end, stringsAsFactors = FALSE)
+  }))
+  hs <- unlist(lapply(seq_len(n_humans), function(h) { lv <- sample(LEVELS); tp <- sample(TOPICS)
+    lapply(1:4, function(k) list(id = paste0("H", h), level = lv[k], topic = tp[k], pos = c(-1.5,-.5,.5,1.5)[k])) }),
+    recursive = FALSE)
+  ms <- list(); for (tp in TOPICS) for (lv in LEVELS) for (r in 1:n_draws)
+    ms[[length(ms)+1]] <- list(id = paste0("M_",tp,"_",lv,"_r",r), level = lv, topic = tp, pos = 0)
+  d <- rbind(mk("human", hs, FALSE), mk("compactor", ms, TRUE))
+  d$system <- relevel(factor(d$system), ref = "human"); d$level <- relevel(factor(d$level), ref = "control")
+  d$option_type <- factor(d$option_type); d$topic <- factor(d$topic)
+  d$respondent <- factor(d$respondent); d$option_id <- factor(d$option_id)
+  d
+}
+TRUE_FALSE_INT <- 0.5
+ceil_true_sep <- ceil_false_cov <- 0; n_ceil <- 0L
+for (i in 1:20) {
+  d <- simulate_ceiling(SEED + 5000L + i, int_false = TRUE_FALSE_INT)
+  f <- fit_effect_glmm(d); if (!f$ok) next
+  ct <- tryCatch(system_level_contrasts_by_ot(f$fit, ref = "human"), error = function(e) NULL)
+  if (is.null(ct)) next
+  n_ceil <- n_ceil + 1L
+  tr <- ct[ct$option_type == "true" & ct$level != "control", ]
+  fa <- ct[ct$option_type %in% c("false_interference","false_plain") & ct$level != "control", ]
+  ceil_true_sep <- ceil_true_sep + mean(tr$separated)                                  # true stratum flagged
+  fa_ok <- fa[!fa$separated, ]
+  if (nrow(fa_ok)) ceil_false_cov <- ceil_false_cov + mean(fa_ok$lower <= TRUE_FALSE_INT & TRUE_FALSE_INT <= fa_ok$upper)
+}
+ceiling <- list(true_stratum_flagged = ceil_true_sep / n_ceil,
+                false_stratum_coverage = ceil_false_cov / n_ceil, n = n_ceil)
+
 # ── assertions ──
 fails <- character(0); gate <- function(ok, m) if (!isTRUE(ok)) fails <<- c(fails, m)
 gate(rec$ci_cov_compactor >= 0.90, sprintf("CI coverage compactor int = %.3f (<.90)", rec$ci_cov_compactor))
@@ -157,6 +212,14 @@ gate(tost_ok, sprintf("TOST logic unit tests failed (inside=%s bound=%s outside=
                       t_inside$equivalent, t_bound_in$equivalent, t_outside$equivalent, t_wide$equivalent))
 gate(corr$difficulty_spearman >= 0.5, sprintf("difficulty Spearman not recovered = %.3f", corr$difficulty_spearman))
 gate(corr$error_false_spearman >= 0.3, sprintf("false-option overlap Spearman not recovered = %.3f", corr$error_false_spearman))
+# HARD gate: a ceiling (separated) true stratum must be flagged, not silently estimated.
+gate(ceiling$true_stratum_flagged >= 0.90, sprintf("ceiling: true stratum not flagged separated = %.3f (<.90)", ceiling$true_stratum_flagged))
+# DIAGNOSTIC (not a hard gate): coverage of the sparse false-stratum fallback under ceiling.
+# Poor coverage here is itself a FINDING — it means a near-ceiling compactor's equivalence
+# read (which must fall back to the false stratum) is unreliable and is reported ceiling-limited.
+if (ceiling$false_stratum_coverage < 0.80)
+  cat(sprintf("WARNING: ceiling false-stratum coverage = %.3f (<.80) — near-ceiling models' equivalence contrasts are unreliable; report them ceiling-limited/exploratory.\n",
+              ceiling$false_stratum_coverage))
 
 LOGS <- file.path(ANALYSIS, "outputs", "logs"); dir.create(LOGS, showWarnings = FALSE, recursive = TRUE)
 fmt <- function(x) formatC(x, digits = 4, format = "f")
@@ -168,15 +231,17 @@ jsonify <- function(x) {
 }
 out <- list(nsim = NSIM, delta = DELTA, seed = SEED, n_ok = rec$n_ok,
             passed = length(fails) == 0, failures = if (length(fails)) fails else "none",
-            recovery = rec, tost_logic_ok = tost_ok, corr = corr)
+            recovery = rec, tost_logic_ok = tost_ok, corr = corr, ceiling = ceiling)
 writeLines(jsonify(out), file.path(LOGS, "03_simulate_recovery.json"))
 writeLines(capture.output(sessionInfo()), file.path(LOGS, "03_sessionInfo.txt"))
 
 cat("\n=== recovery summary ===\n")
 cat(sprintf("CI coverage: compactor=%.3f prompting=%.3f null=%.3f | null false-pos=%.3f\n",
             rec$ci_cov_compactor, rec$ci_cov_prompting, rec$ci_cov_null, rec$null_false_pos))
-cat(sprintf("TOST logic ok=%s | difficulty r=%.3f error-false r=%.3f ceiling=%.3f\n",
-            tost_ok, corr$difficulty_spearman, corr$error_false_spearman, corr$ceiling))
+cat(sprintf("TOST logic ok=%s | difficulty r=%.3f error-false r=%.3f\n",
+            tost_ok, corr$difficulty_spearman, corr$error_false_spearman))
+cat(sprintf("ceiling: true-stratum flagged=%.3f  false-stratum coverage=%.3f (n=%d)\n",
+            ceiling$true_stratum_flagged, ceiling$false_stratum_coverage, ceiling$n))
 cat("========================\n")
 if (length(fails) == 0) { cat("RECOVERY GATE PASSED.\n"); quit(status = 0) }
 cat("RECOVERY GATE FAILED:\n"); for (f in fails) cat("  -", f, "\n"); quit(status = 1)

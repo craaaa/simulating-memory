@@ -11,8 +11,8 @@ TABLES  := outputs/tables
 .DEFAULT_GOAL := help
 
 help:
-	@echo "Targets: ingest  validate  p1 (=ingest+validate)  clean"
-	@echo "Later (post-PREREG, needs R pkgs): simulate glmm error difficulty diagnostics figures"
+	@echo "Targets: ingest validate p1 | simulate glmm error difficulty diagnostics figures | all clean"
+	@echo "  all = p1 -> recovery gate -> glmm+error+difficulty+diagnostics -> figures"
 
 # ── P1: data contract + validation ──
 $(PROC)/responses.csv: py/01_ingest.py config/models.yaml stimuli/option_labels.yaml \
@@ -35,16 +35,37 @@ validate: $(TABLES)/cell_counts.csv
 
 p1: reconcile validate
 
-# ── later phases (stubs; wired in P2+) ──
-# simulate:    $(RSCRIPT) R/03_simulate.R
-# glmm:        $(RSCRIPT) R/04_glmm_effect.R
-# error:       $(RSCRIPT) R/05_error_alignment.R
-# difficulty:  $(RSCRIPT) R/06_difficulty.R
-# diagnostics: $(RSCRIPT) R/07_diagnostics.R
-# figures:     $(RSCRIPT) R/08_figures.R
+# ── P2: synthetic-data recovery gate (must pass before any real fit) ──
+outputs/logs/03_simulate_recovery.json: R/03_simulate.R R/lib_alignment.R
+	$(RSCRIPT) R/03_simulate.R
+	@grep -q '"passed":true' $@ || (echo "RECOVERY GATE FAILED"; exit 1)
+simulate: outputs/logs/03_simulate_recovery.json
+.PHONY: simulate glmm error difficulty diagnostics figures
 
-all: p1
-	@echo "P1 complete. Human review of $(TABLES)/cell_counts.csv required before P2."
+# ── P4-P6: analyses (real fits gated on the recovery gate) ──
+$(TABLES)/glmm_contrasts.csv: R/04_glmm_effect.R R/lib_alignment.R $(PROC)/responses.csv outputs/logs/03_simulate_recovery.json
+	$(RSCRIPT) R/04_glmm_effect.R
+glmm: $(TABLES)/glmm_contrasts.csv
+
+$(TABLES)/error_kappa.csv: R/05_error_alignment.R $(PROC)/responses.csv
+	$(RSCRIPT) R/05_error_alignment.R
+error: $(TABLES)/error_kappa.csv
+
+$(TABLES)/difficulty_corr.csv: R/06_difficulty.R $(PROC)/responses.csv
+	$(RSCRIPT) R/06_difficulty.R
+difficulty: $(TABLES)/difficulty_corr.csv
+
+$(TABLES)/selection_counts_raw.csv: R/07_diagnostics.R $(PROC)/responses.csv
+	$(RSCRIPT) R/07_diagnostics.R
+diagnostics: $(TABLES)/selection_counts_raw.csv
+
+# ── P7: figures ──
+figures: R/08_figures.R glmm error difficulty diagnostics
+	$(RSCRIPT) R/08_figures.R
+
+all: p1 simulate glmm error difficulty diagnostics figures
+	@echo "Pipeline complete. Figures in $(ANALYSIS_FIG); tables in $(TABLES)."
 
 clean:
-	rm -f $(PROC)/responses.csv $(PROC)/responses.parquet $(TABLES)/cell_counts.csv .reconcile.ok
+	rm -f $(PROC)/responses.csv $(PROC)/responses.parquet $(TABLES)/*.csv .reconcile.ok \
+	      outputs/logs/03_simulate_recovery.json outputs/figures/*.png

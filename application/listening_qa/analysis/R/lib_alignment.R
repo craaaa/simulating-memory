@@ -71,6 +71,31 @@ system_level_contrasts <- function(fit) {
              stringsAsFactors = FALSE)
 }
 
+#' System×level contrasts vs a reference, computed WITHIN each option_type stratum
+#' (NOT marginalized over option_type — a single ceiling stratum would otherwise drive the
+#' marginal to ±Inf and collapse the SDT decomposition). Returns rows with an `option_type`
+#' column and a `separated` flag (|estimate|>10 or SE>10 => non-identified / quasi-separation).
+system_level_contrasts_by_ot <- function(fit, ref = "human") {
+  ots <- levels(fit$frame$option_type)
+  out <- list()
+  for (ot in ots) {
+    emm <- tryCatch(emmeans(fit, ~ system | level,
+                            at = list(position_c = 0, option_type = ot)),
+                    error = function(e) NULL)
+    if (is.null(emm)) next
+    s <- tryCatch(as.data.frame(summary(contrast(emm, "trt.vs.ctrl", ref = ref),
+                                         infer = c(TRUE, FALSE))),
+                  error = function(e) NULL)
+    if (is.null(s)) next
+    out[[ot]] <- data.frame(contrast = s$contrast, level = s$level, option_type = ot,
+                            estimate = s$estimate, SE = s$SE,
+                            lower = s$asymp.LCL, upper = s$asymp.UCL,
+                            separated = (abs(s$estimate) > 10 | s$SE > 10),
+                            stringsAsFactors = FALSE)
+  }
+  do.call(rbind, out)
+}
+
 #' TOST equivalence on a single contrast estimate/SE against symmetric bound ±delta.
 #' Equivalent iff BOTH one-sided tests reject at alpha (i.e. the (1-2a) CI ⊂ (-delta,delta)).
 tost <- function(estimate, se, delta, alpha = 0.05) {
