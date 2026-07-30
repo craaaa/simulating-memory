@@ -43,13 +43,17 @@ p1 <- rd("glmm_predictions.csv")
 if (!is.null(p1)) {
   p1$level <- lvf(p1$level)
   p1$system <- factor(p1$system, levels = names(SYS_COL))
+  # separated strata: CI spans ~the whole scale (non-identified, e.g. prompting at ceiling/floor).
+  # Draw error bars only where estimable; keep the point elsewhere.
+  p1$estimable <- (p1$asymp.UCL - p1$asymp.LCL) <= 0.9
   g <- ggplot(p1, aes(level, pred, color = system, group = system)) +
     geom_line(linewidth = 0.6) + geom_point(size = 1.8) +
-    geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.15, linewidth = 0.4) +
+    geom_errorbar(data = p1[p1$estimable, ],
+                  aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.15, linewidth = 0.4) +
     facet_grid(model ~ option_type) +
     scale_color_manual(values = SYS_COL) +
     labs(title = "Predicted endorsement probability by level × option type",
-         subtitle = "human vs prompting vs compactor (GLMM marginal means, 95% CI)",
+         subtitle = "human vs prompting vs compactor (GLMM marginal means, 95% CI; bars omitted where separated/non-identified)",
          x = NULL, y = "P(endorse)", color = NULL) +
     theme_viz() + theme(axis.text.x = element_text(angle = 30, hjust = 1))
   save_png(g, "fig1_predicted_endorsement.png", 9, 2 + 1.6 * length(unique(p1$model))); made <- c(made, 1)
