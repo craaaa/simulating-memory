@@ -1,8 +1,11 @@
 # Findings — Human–Model Alignment (listening-QA)
 
 Scope: **text-model vs audio-human** (no text-human control batch, D5). 201 humans
-(whole-participant attention pass); 6 models × {prompting C2, compactor C2-stream}, n=20/cell.
-Lead with descriptive rates; GLMM is rigor on top. Results **never averaged across models**.
+(whole-participant attention pass); **7 models** × {prompting C2, compactor C2-stream}, n=20/cell
+(gemini-3.1-pro exploratory — prompting n=5/cell). Lead with descriptive rates; GLMM is rigor
+on top. Results **never averaged across models**. Figures: fig1/fig1b (predicted endorsement),
+fig2 (equivalence forest), fig3 (κ), fig4 (interference scatter), fig5 (facility), fig6
+(selection counts), fig7 (compactor accuracy by condition).
 
 ## Headline
 
@@ -33,7 +36,15 @@ extracted **within each option_type** (see DEVIATIONS.md for why — separation 
 these contrasts are therefore reported **exploratory**).
 
 - **No compactor−human contrast is equivalent** at Δ=0.22 on any (level × option_type) stratum
-  — every estimable verdict is *different* or *inconclusive*, none *equivalent* (fig 2).
+  — every estimable verdict is *different* or *inconclusive*, none *equivalent* (fig 2). Across
+  the 7 models' non-control compactor strata: **31 different, 17 inconclusive, 15 separated**
+  (0 equivalent). By stratum: **true = 15 different / 5 inconclusive**; **false_interference =
+  8 different / 0 inconclusive** (rest separated/floored); **false_plain = 8 different / 12
+  inconclusive**. So "not equivalent" rests on the `different` strata (true over-endorse,
+  interference reject); the inconclusive cells are all benign false_plain.
+- **Power**: median estimable contrast SE = 0.164 < Δ = 0.22. A true-zero effect would yield a
+  CI of ≈±0.32 — so "inconclusive" means genuinely borderline and "not equivalent" is a real
+  finding, not an artifact of an unwinnable equivalence test.
 - Direction is consistent across models:
   - **true options**: compactor − human mostly **positive** (+0.4 to +2.6 log-odds) → compactor
     endorses correct options *more* than humans.

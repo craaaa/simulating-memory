@@ -161,10 +161,11 @@ simulate_ceiling <- function(seed, int_false, n_humans = 150, n_draws = 25) {
   u_o <- rnorm(nrow(opts), 0, 0.8); names(u_o) <- opts$option_id
   mk <- function(sys, specs, ceil) do.call(rbind, lapply(specs, function(sp) {
     sub <- opts[opts$topic == sp$topic, ]
-    if (ceil) {  # model: PERFECT separation on true (deterministic 1); interaction on FALSE
+    if (ceil) {  # model: ~ceiling on true (99.75%, near-separation) so the Hessian survives
+                 # and the FALSE stratum stays estimable; interaction on FALSE at non-control.
       shift_f <- if (sp$level == "control") 0 else int_false
-      pf <- plogis(-2.6 + u_o[sub$option_id] + shift_f)
-      end <- ifelse(sub$option_is_true, 1L, rbinom(nrow(sub), 1, pf))  # true always endorsed → separation
+      lin <- ifelse(sub$option_is_true, 6.0, -2.6 + u_o[sub$option_id] + shift_f)
+      end <- rbinom(nrow(sub), 1, plogis(lin))
     } else {     # human: moderate on true, ~0.1 on false
       lin <- ifelse(sub$option_is_true, 0.6 + u_o[sub$option_id], -2.2 + u_o[sub$option_id])
       end <- rbinom(nrow(sub), 1, plogis(lin))
