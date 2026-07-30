@@ -4,7 +4,7 @@ human split-half reliability baseline. Two panels: within-topic level pairs
 (the original comparison) and all pairs (cross-topic included).
 
 Uses ``application.listening_qa.mean_level_pair_alignment`` (compares cell
-MEANS, tie=0.5, not individual sample draws). Default model: gpt-4.1.
+MEANS, tie=0.5, not individual sample draws). Default model: gemini-3.1-pro-preview.
 Colors/style match ``plot_listening_qa_alignment_slopeplots.py``.
 
 Usage:
@@ -38,13 +38,14 @@ from application.listening_qa.mean_level_pair_alignment import (  # noqa: E402
 )
 from application.plot_listening_qa_alignment_slopeplots import CHANCE, GRID, INK  # noqa: E402
 
-# One color per condition, reusing the slopeplot palette's tone family
-# (grey -> warm accent) rather than introducing a new scheme.
+# Same condition palette as listening_level_pair_alignment_{model}.png
+# (application/listening_qa/plot_level_pair_alignment.py): blue shades for
+# prompting conditions, green for the compactor.
 COND_COLORS = {
-    "C1": "#6b6b6b",
-    "C2": "#9e9e9e",
-    "C3": "#d62728",
-    "WM": "#eb6834",
+    "C1": "#c6dbef",
+    "C2": "#6baed6",
+    "C3": "#2171b5",
+    "WM": "#238b45",
 }
 
 
@@ -129,7 +130,7 @@ def main() -> None:
 
         _bar_panel(ax, agreements, ci, baseline, label)
 
-    fig.suptitle("Listening QA: mean-cell-ranking agreement with human (gpt-4.1)")
+    fig.suptitle("Listening QA: mean-cell-ranking agreement with human (gemini-3.1-pro-preview)")
     fig.tight_layout()
     out_path = out_dir / "listening_qa_mean_level_pair_alignment_bar.png"
     fig.savefig(out_path, dpi=200)

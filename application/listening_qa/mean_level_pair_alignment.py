@@ -47,11 +47,11 @@ from .level_pair_preference_alignment import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STANDALONE_JSONL = (
-    REPO_ROOT / "runs" / "prompting" / "gpt-4.1" / "20260716T155755Z"
+    REPO_ROOT / "runs" / "prompting" / "gemini-3.1-pro-preview"
     / "tasks" / "application_listening_qa_full_grid.jsonl"
 )
 DEFAULT_WM_JSONL = (
-    REPO_ROOT / "runs" / "compactor" / "gpt-4.1" / "n20_stream_sentence_cap30"
+    REPO_ROOT / "runs" / "compactor" / "gemini-3.1-pro-preview" / "n20_stream_sentence_thinklow"
     / "tasks" / "wm_application_listening_qa_full_grid.jsonl"
 )
 
