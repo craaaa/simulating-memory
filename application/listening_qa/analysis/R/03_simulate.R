@@ -192,7 +192,7 @@ TRUE_FALSE_INT <- 0.5
 ceil_fit <- function(d) tryCatch(suppressWarnings(glmmTMB(
   as.formula(paste(fixed_part, "+ (1 | respondent) + (level | option_id)")),
   family = binomial, data = d)), error = function(e) NULL)
-ceil_true_sep <- ceil_false_cov <- 0; n_ceil <- 0L
+ceil_true_sep <- ceil_false_cov <- 0; n_ceil <- 0L; n_false <- 0L
 for (i in 1:12) {
   d <- simulate_ceiling(SEED + 5000L + i, int_false = TRUE_FALSE_INT)
   fit <- ceil_fit(d); if (is.null(fit)) next
@@ -201,12 +201,16 @@ for (i in 1:12) {
   n_ceil <- n_ceil + 1L
   tr <- ct[ct$option_type == "true" & ct$level != "control", ]
   fa <- ct[ct$option_type %in% c("false_interference","false_plain") & ct$level != "control", ]
-  ceil_true_sep <- ceil_true_sep + mean(tr$separated)                                  # true stratum flagged
+  ceil_true_sep <- ceil_true_sep + mean(tr$separated, na.rm = TRUE)                     # true stratum flagged
   fa_ok <- fa[!fa$separated, ]
-  if (nrow(fa_ok)) ceil_false_cov <- ceil_false_cov + mean(fa_ok$lower <= TRUE_FALSE_INT & TRUE_FALSE_INT <= fa_ok$upper)
+  if (nrow(fa_ok)) {
+    ceil_false_cov <- ceil_false_cov + mean(fa_ok$lower <= TRUE_FALSE_INT & TRUE_FALSE_INT <= fa_ok$upper)
+    n_false <- n_false + 1L
+  }
 }
-ceiling <- list(true_stratum_flagged = ceil_true_sep / n_ceil,
-                false_stratum_coverage = ceil_false_cov / n_ceil, n = n_ceil)
+ceiling <- list(true_stratum_flagged = if (n_ceil) ceil_true_sep / n_ceil else NA_real_,
+                false_stratum_coverage = if (n_false) ceil_false_cov / n_false else NA_real_,
+                n = n_ceil, n_false = n_false)
 
 # ── assertions ──
 fails <- character(0); gate <- function(ok, m) if (!isTRUE(ok)) fails <<- c(fails, m)
@@ -219,11 +223,11 @@ gate(tost_ok, sprintf("TOST logic unit tests failed (inside=%s bound=%s outside=
 gate(corr$difficulty_spearman >= 0.5, sprintf("difficulty Spearman not recovered = %.3f", corr$difficulty_spearman))
 gate(corr$error_false_spearman >= 0.3, sprintf("false-option overlap Spearman not recovered = %.3f", corr$error_false_spearman))
 # HARD gate: a ceiling (separated) true stratum must be flagged, not silently estimated.
-gate(ceiling$true_stratum_flagged >= 0.90, sprintf("ceiling: true stratum not flagged separated = %.3f (<.90)", ceiling$true_stratum_flagged))
+gate(isTRUE(ceiling$true_stratum_flagged >= 0.90), sprintf("ceiling: true stratum not flagged separated = %.3f (<.90)", ceiling$true_stratum_flagged))
 # DIAGNOSTIC (not a hard gate): coverage of the sparse false-stratum fallback under ceiling.
 # Poor coverage here is itself a FINDING — it means a near-ceiling compactor's equivalence
 # read (which must fall back to the false stratum) is unreliable and is reported ceiling-limited.
-if (ceiling$false_stratum_coverage < 0.80)
+if (isTRUE(ceiling$false_stratum_coverage < 0.80))
   cat(sprintf("WARNING: ceiling false-stratum coverage = %.3f (<.80) — near-ceiling models' equivalence contrasts are unreliable; report them ceiling-limited/exploratory.\n",
               ceiling$false_stratum_coverage))
 

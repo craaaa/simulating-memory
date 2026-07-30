@@ -87,10 +87,11 @@ system_level_contrasts_by_ot <- function(fit, ref = "human") {
                                          infer = c(TRUE, FALSE))),
                   error = function(e) NULL)
     if (is.null(s)) next
+    sep <- is.na(s$estimate) | is.na(s$SE) | abs(s$estimate) > 10 | s$SE > 10  # NA => non-identified
     out[[ot]] <- data.frame(contrast = s$contrast, level = s$level, option_type = ot,
                             estimate = s$estimate, SE = s$SE,
                             lower = s$asymp.LCL, upper = s$asymp.UCL,
-                            separated = (abs(s$estimate) > 10 | s$SE > 10),
+                            separated = sep,
                             stringsAsFactors = FALSE)
   }
   do.call(rbind, out)
