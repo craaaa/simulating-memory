@@ -74,6 +74,7 @@ if (!is.null(p1b)) {
   fl <- merge(m, wmax); fl$grp <- "false (interference+plain)"
   comb <- rbind(tr[, c("model","system","level","pred","asymp.LCL","asymp.UCL","w","grp")],
                 fl[, c("model","system","level","pred","asymp.LCL","asymp.UCL","w","grp")])
+  comb <- comb[comb$model != "cohere_command-a", ]   # exclude command-a (near-ceiling compactor)
   comb$level <- lvf(comb$level)
   comb$system <- factor(comb$system, levels = names(SYS_COL))
   comb$estimable <- comb$w <= 0.9
@@ -81,12 +82,12 @@ if (!is.null(p1b)) {
     geom_line(linewidth = 0.6) + geom_point(size = 1.8) +
     geom_errorbar(data = comb[comb$estimable, ], aes(ymin = asymp.LCL, ymax = asymp.UCL),
                   width = 0.15, linewidth = 0.4) +
-    facet_grid(model ~ grp) + scale_color_manual(values = SYS_COL) +
+    facet_grid(grp ~ model) + scale_color_manual(values = SYS_COL) +
     labs(title = "Predicted endorsement probability — false options lumped",
-         subtitle = "GLMM marginal means; 'false' = mean of interference+plain; bars omitted where separated",
+         subtitle = "GLMM marginal means; 'false' = mean of interference+plain; bars omitted where separated (command-a excluded)",
          x = NULL, y = "P(endorse)", color = NULL) +
     theme_viz() + theme(axis.text.x = element_text(angle = 30, hjust = 1))
-  save_png(g, "fig1b_predicted_endorsement_falselumped.png", 7, 2 + 1.6 * length(unique(comb$model)))
+  save_png(g, "fig1b_predicted_endorsement_falselumped.png", 2 + 1.7 * length(unique(comb$model)), 5.5)
   made <- c(made, 1.5)
 } else cat("skip fig1b (glmm_predictions.csv missing — run 04)\n")
 
