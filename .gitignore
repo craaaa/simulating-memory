@@ -57,3 +57,6 @@ secrets.json
 *.log
 .tmp/
 tmp/
+
+# API error dumps (11k+ files; 168 legacy ones remain tracked)
+logs/llm_openai_errors/
