@@ -23,6 +23,11 @@ QUESTION_DIFF_RE = re.compile(r"^question\s+difficulty:\s*([0-9]{1,2})\s*$", re.
 
 TASK_DESC = "Listen to an audio passage, answer all multiple-select questions, then rate passage and question difficulty."
 HUMAN_PROMPT = "The human will listen to an audio recording once, after which the audio cannot be replayed. The human will then be asked to answer questions about the recording based on their memory, selecting all options that apply for each question, and rate passage and question difficulty out of 10."
+# Vanilla capability screener (V1): plain reading-comprehension prompt, no human-sim /
+# memory framing. The transcript sits fully in-context, so this measures the model's
+# true ceiling on the multiselect questions (can it answer them at all?), not simulated
+# limited-memory behavior. Routes through the C1 self-answer prompt shell (see build_prompt).
+VANILLA_TASK_DESC = "You are given the transcript of a passage below, followed by multiple-select questions about it. Read the transcript, then answer every question. Also rate how difficult the passage and the questions were."
 
 FORMAT_RULES = """Output ONLY lines in this exact format:
 Question 1: 1,3
@@ -52,7 +57,16 @@ CONDITIONS: Dict[str, Dict[str, str]] = {
         "name": "Task + human + limited memory",
         "prompt_prefix": HUMAN_SIM_INTRO_C3_C4_BEFORE_HUMAN + HUMAN_PROMPT,
     },
+    # Vanilla capability screener — see VANILLA_TASK_DESC.
+    "V1": {
+        "name": "Vanilla screener (plain reading comprehension)",
+        "prompt_prefix": VANILLA_TASK_DESC,
+    },
 }
+
+# Conditions that use the C1-style self-answer shell ("Give your response"),
+# not the human-prediction shell ("Predict their response").
+SELF_ANSWER_CONDITIONS = frozenset({"C1", "V1"})
 
 
 def build_prompt(
@@ -71,9 +85,12 @@ def build_prompt(
 
     stimulus = "\n".join(lines)
     prefix = CONDITIONS[condition_id]["prompt_prefix"]
+    # V1 (vanilla) reuses the C1 self-answer shell; map it so wrap_stimulus_prompt
+    # emits "Give your response" rather than "Predict their response".
+    shell_condition = "C1" if condition_id in SELF_ANSWER_CONDITIONS else condition_id
     return wrap_stimulus_prompt(
         prefix,
-        condition_id,
+        shell_condition,
         stimulus,
         FORMAT_RULES,
         sep_before_rules=DIGIT_SPAN_SEP_BEFORE_RULES,

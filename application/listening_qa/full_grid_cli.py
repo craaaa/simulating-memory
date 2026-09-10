@@ -52,6 +52,11 @@ def run(
     model: str = typer.Option(..., "--model", help="Model id."),
     backend: str = typer.Option("openai", "--backend", help="openai or anthropic"),
     n_repeats_per_cell: int = typer.Option(30, "--n-repeats-per-cell", min=1),
+    conditions: str = typer.Option(
+        ",".join(CONDITION_IDS),
+        "--conditions",
+        help="Comma-separated condition ids to run. Screener use: --conditions V1 (vanilla ceiling).",
+    ),
     documents_dir: str = typer.Option(
         "application/listening_qa/data",
         "--documents-dir",
@@ -78,6 +83,11 @@ def run(
         help="JSON object merged into each request's extra_body (e.g. reasoning/thinking toggles).",
     ),
 ):
+    condition_ids = [c.strip() for c in conditions.split(",") if c.strip()]
+    unknown = [c for c in condition_ids if c not in CONDITIONS]
+    if unknown:
+        raise typer.BadParameter(f"Unknown condition id(s): {unknown}. Known: {sorted(CONDITIONS)}")
+
     model_slug = model.replace("/", "_").replace("\\", "_")
     tasks_dir = Path(out_dir) if out_dir else Path("runs/prompting") / model_slug / run_timestamp() / "tasks"
     ensure_dir(tasks_dir)
@@ -100,7 +110,7 @@ def run(
         (topic, level, cond_id)
         for topic in topics
         for level in LEVELS
-        for cond_id in CONDITION_IDS
+        for cond_id in condition_ids
     ]
     jobs = [
         (topic, level, cond_id, repeat_index)
@@ -191,7 +201,7 @@ def run(
     summary = {
         "task": TASK_NAME,
         "model": model,
-        "conditions": CONDITION_IDS,
+        "conditions": condition_ids,
         "n_repeats_per_cell": n_repeats_per_cell,
         "n_cells": len(cells),
         "n_total_trials": len(jobs),
@@ -208,7 +218,7 @@ def run(
         "task": TASK_NAME,
         "model": model,
         "backend": backend,
-        "conditions": CONDITION_IDS,
+        "conditions": condition_ids,
         "temperature": temperature,
         "max_tokens": max_tokens,
         "top_p": top_p,
