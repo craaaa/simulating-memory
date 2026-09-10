@@ -75,6 +75,12 @@ COMPACTOR_RUNS: list[tuple[str, str]] = [
 ]
 
 LEVEL_ORDER = ("control", "repeat_short", "repeat_long", "distractor")
+LEVEL_LABELS = {
+    "control": "control",
+    "repeat_short": "Repeat Once",
+    "repeat_long": "Repeat Twice",
+    "distractor": "distractor",
+}
 
 
 N_BOOT = 2000
@@ -215,7 +221,7 @@ def plot_ceiling_vs_compactor(out_path: Path) -> None:
 
 
 def plot_compactor_by_level(out_path: Path) -> None:
-    models = ["Human"] + [name for name, _ in COMPACTOR_RUNS]
+    models = ["Human"] + sorted(name for name, _ in COMPACTOR_RUNS)
     by_level = {name: compactor_accuracy_by_level(run_dir) for name, run_dir in COMPACTOR_RUNS}
     by_level["Human"] = human_accuracy_by_level()
     raw_by_level = {name: compactor_raw_by_level(run_dir) for name, run_dir in COMPACTOR_RUNS}
@@ -235,7 +241,7 @@ def plot_compactor_by_level(out_path: Path) -> None:
         his = [max(0.0, c[1] - v) for v, c in zip(vals, cis)]
         offsets = [i + (j - (n_levels - 1) / 2) * width for i in range(n_models)]
         ax.bar(
-            offsets, vals, width, color=LEVEL_COLORS[level], label=level.replace("_", " "),
+            offsets, vals, width, color=LEVEL_COLORS[level], label=LEVEL_LABELS[level],
             yerr=[los, his], capsize=2, error_kw={"elinewidth": 0.8, "alpha": 0.6},
             zorder=3,
         )
