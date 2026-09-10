@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "generated_at_utc": "2026-07-23T17:12:14.903194+00:00",
+    "seed": 42,
+    "method": "individual_sample_draws_within_topic",
+    "n_samples_per_pair": 500,
+    "levels": [
+      "control",
+      "repeat_short",
+      "repeat_long",
+      "distractor"
+    ],
+    "eval_conditions": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "WM"
+    ],
+    "topics": [
+      "astronomy",
+      "fabrics",
+      "fruits",
+      "martial_arts"
+    ],
+    "standalone_jsonl": "runs/prompting/nousresearch_hermes-4-70b/tasks/application_listening_qa_full_grid.jsonl",
+    "wm_jsonl": "/private/tmp/claude-502/-Users-cl5625-simulating-memory/fdc66f94-b0f1-4fba-9cff-2e380e7d8d44/scratchpad/empty_wm.jsonl",
+    "human_csv": "/Users/cl5625/simulating-memory/.claude/worktrees/compare-task/application/prolific_study/multi_v6/longdata_strict.csv"
+  },
+  "result": {
+    "n_base_pairs": 24,
+    "n_samples_per_pair": 500,
+    "n_draws_human_defined": 12000,
+    "hits": {
+      "C1": 6227,
+      "C2": 6059,
+      "C3": 6032,
+      "C4": 6052,
+      "WM": 0
+    },
+    "denom": {
+      "C1": 12000,
+      "C2": 12000,
+      "C3": 12000,
+      "C4": 12000,
+      "WM": 0
+    },
+    "accuracy_by_condition": {
+      "C1": {
+        "agreement": 0.5189166666666667,
+        "ci_lo": 0.51008125,
+        "ci_hi": 0.5286666666666666,
+        "n": 12000,
+        "by_level_pair": {
+          "control_vs_distractor": {
+            "agreement": 0.492,
+            "ci_lo": 0.471,
+            "ci_hi": 0.5145,
+            "n": 2000
+          },
+          "control_vs_repeat_long": {
+            "agreement": 0.5365,
+            "ci_lo": 0.5154875,
+            "ci_hi": 0.558,
+            "n": 2000
+          },
+          "control_vs_repeat_short": {
+            "agreement": 0.518,
+            "ci_lo": 0.496,
+            "ci_hi": 0.5400125,
+            "n": 2000
+          },
+          "repeat_long_vs_distractor": {
+            "agreement": 0.535,
+            "ci_lo": 0.5135,
+            "ci_hi": 0.557,
+            "n": 2000
+          },
+          "repeat_short_vs_distractor": {
+            "agreement": 0.511,
+            "ci_lo": 0.48898749999999996,
+            "ci_hi": 0.5325,
+            "n": 2000
+          },
+          "repeat_short_vs_repeat_long": {
+            "agreement": 0.521,
+            "ci_lo": 0.4985,
+            "ci_hi": 0.5425125,
+            "n": 2000
+          }
+        }
+      },
+      "C2": {
+        "agreement": 0.5049166666666667,
+        "ci_lo": 0.4959166666666667,
+        "ci_hi": 0.5138333333333334,
+        "n": 12000,
+        "by_level_pair": {
+          "control_vs_distractor": {
+            "agreement": 0.5255,
+            "ci_lo": 0.5035,
+            "ci_hi": 0.5485,
+            "n": 2000
+          },
+          "control_vs_repeat_long": {
+            "agreement": 0.496,
+            "ci_lo": 0.474,
+            "ci_hi": 0.518,
+            "n": 2000
+          },
+          "control_vs_repeat_short": {
+            "agreement": 0.5035,
+            "ci_lo": 0.48148749999999996,
+            "ci_hi": 0.5255,
+            "n": 2000
+          },
+          "repeat_long_vs_distractor": {
+            "agreement": 0.5045,
+            "ci_lo": 0.4835,
+            "ci_hi": 0.527,
+            "n": 2000
+          },
+          "repeat_short_vs_distractor": {
+            "agreement": 0.5055,
+            "ci_lo": 0.483,
+            "ci_hi": 0.527,
+            "n": 2000
+          },
+          "repeat_short_vs_repeat_long": {
+            "agreement": 0.4945,
+            "ci_lo": 0.4725,
+            "ci_hi": 0.5155,
+            "n": 2000
+          }
+        }
+      },
+      "C3": {
+        "agreement": 0.5026666666666667,
+        "ci_lo": 0.49358124999999997,
+        "ci_hi": 0.5123354166666666,
+        "n": 12000,
+        "by_level_pair": {
+          "control_vs_distractor": {
+            "agreement": 0.4905,
+            "ci_lo": 0.468,
+            "ci_hi": 0.513,
+            "n": 2000
+          },
+          "control_vs_repeat_long": {
+            "agreement": 0.5175,
+            "ci_lo": 0.4955,
+            "ci_hi": 0.54,
+            "n": 2000
+          },
+          "control_vs_repeat_short": {
+            "agreement": 0.5065,
+            "ci_lo": 0.4845,
+            "ci_hi": 0.5285124999999999,
+            "n": 2000
+          },
+          "repeat_long_vs_distractor": {
+            "agreement": 0.4895,
+            "ci_lo": 0.4674875,
+            "ci_hi": 0.5115,
+            "n": 2000
+          },
+          "repeat_short_vs_distractor": {
+            "agreement": 0.52,
+            "ci_lo": 0.4965,
+            "ci_hi": 0.5425,
+            "n": 2000
+          },
+          "repeat_short_vs_repeat_long": {
+            "agreement": 0.492,
+            "ci_lo": 0.4695,
+            "ci_hi": 0.514,
+            "n": 2000
+          }
+        }
+      },
+      "C4": {
+        "agreement": 0.5043333333333333,
+        "ci_lo": 0.4956645833333333,
+        "ci_hi": 0.5128333333333334,
+        "n": 12000,
+        "by_level_pair": {
+          "control_vs_distractor": {
+            "agreement": 0.4745,
+            "ci_lo": 0.4515,
+            "ci_hi": 0.497,
+            "n": 2000
+          },
+          "control_vs_repeat_long": {
+            "agreement": 0.51,
+            "ci_lo": 0.4885,
+            "ci_hi": 0.5325,
+            "n": 2000
+          },
+          "control_vs_repeat_short": {
+            "agreement": 0.506,
+            "ci_lo": 0.483,
+            "ci_hi": 0.528,
+            "n": 2000
+          },
+          "repeat_long_vs_distractor": {
+            "agreement": 0.514,
+            "ci_lo": 0.4925,
+            "ci_hi": 0.5355,
+            "n": 2000
+          },
+          "repeat_short_vs_distractor": {
+            "agreement": 0.512,
+            "ci_lo": 0.4895,
+            "ci_hi": 0.5345,
+            "n": 2000
+          },
+          "repeat_short_vs_repeat_long": {
+            "agreement": 0.5095,
+            "ci_lo": 0.488,
+            "ci_hi": 0.5315,
+            "n": 2000
+          }
+        }
+      },
+      "WM": {
+        "agreement": null,
+        "ci_lo": null,
+        "ci_hi": null,
+        "n": 0,
+        "by_level_pair": {
+          "control_vs_distractor": {
+            "agreement": null,
+            "ci_lo": null,
+            "ci_hi": null,
+            "n": 0
+          },
+          "control_vs_repeat_long": {
+            "agreement": null,
+            "ci_lo": null,
+            "ci_hi": null,
+            "n": 0
+          },
+          "control_vs_repeat_short": {
+            "agreement": null,
+            "ci_lo": null,
+            "ci_hi": null,
+            "n": 0
+          },
+          "repeat_long_vs_distractor": {
+            "agreement": null,
+            "ci_lo": null,
+            "ci_hi": null,
+            "n": 0
+          },
+          "repeat_short_vs_distractor": {
+            "agreement": null,
+            "ci_lo": null,
+            "ci_hi": null,
+            "n": 0
+          },
+          "repeat_short_vs_repeat_long": {
+            "agreement": null,
+            "ci_lo": null,
+            "ci_hi": null,
+            "n": 0
+          }
+        }
+      }
+    }
+  },
+  "paired_wm_vs_prompting": [
+    {
+      "cond_a": "WM",
+      "cond_b": "C1",
+      "n_paired": 0,
+      "agreement_a": null,
+      "agreement_b": null,
+      "observed_diff_a_minus_b": null,
+      "bootstrap_ci_lo": null,
+      "bootstrap_ci_hi": null,
+      "mcnemar_b_discordant": 0,
+      "mcnemar_c_discordant": 0,
+      "mcnemar_p_value": 1.0
+    },
+    {
+      "cond_a": "WM",
+      "cond_b": "C2",
+      "n_paired": 0,
+      "agreement_a": null,
+      "agreement_b": null,
+      "observed_diff_a_minus_b": null,
+      "bootstrap_ci_lo": null,
+      "bootstrap_ci_hi": null,
+      "mcnemar_b_discordant": 0,
+      "mcnemar_c_discordant": 0,
+      "mcnemar_p_value": 1.0
+    },
+    {
+      "cond_a": "WM",
+      "cond_b": "C3",
+      "n_paired": 0,
+      "agreement_a": null,
+      "agreement_b": null,
+      "observed_diff_a_minus_b": null,
+      "bootstrap_ci_lo": null,
+      "bootstrap_ci_hi": null,
+      "mcnemar_b_discordant": 0,
+      "mcnemar_c_discordant": 0,
+      "mcnemar_p_value": 1.0
+    },
+    {
+      "cond_a": "WM",
+      "cond_b": "C4",
+      "n_paired": 0,
+      "agreement_a": null,
+      "agreement_b": null,
+      "observed_diff_a_minus_b": null,
+      "bootstrap_ci_lo": null,
+      "bootstrap_ci_hi": null,
+      "mcnemar_b_discordant": 0,
+      "mcnemar_c_discordant": 0,
+      "mcnemar_p_value": 1.0
+    }
+  ]
+}
