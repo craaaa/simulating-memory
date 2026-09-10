@@ -60,3 +60,7 @@ tmp/
 
 # API error dumps (11k+ files; 168 legacy ones remain tracked)
 logs/llm_openai_errors/
+
+# merge_repeat_batch pre-merge backups
+*.bak_n5
+tasks_bak_n5/
