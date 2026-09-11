@@ -1,0 +1,41 @@
+{
+  "n_trials_sampled": 556,
+  "n_trials_skipped_already_done": 0,
+  "n_samples": 902,
+  "workers": 556,
+  "resumed": false,
+  "pool_path": "/Users/cl5625/simulating-memory/rationales/out/Qwen_Qwen3-8B/20260911T063609Z/rounds/round_1/sample_pool.jsonl",
+  "stats": {
+    "cells": {
+      "forward:fail": {
+        "n": 134,
+        "accepted": 127,
+        "generation": 3,
+        "rationalization": 124
+      },
+      "forward:success": {
+        "n": 150,
+        "accepted": 149,
+        "generation": 85,
+        "rationalization": 64
+      },
+      "reverse:fail": {
+        "n": 144,
+        "accepted": 138,
+        "generation": 1,
+        "rationalization": 137
+      },
+      "reverse:success": {
+        "n": 128,
+        "accepted": 128,
+        "generation": 121,
+        "rationalization": 7
+      }
+    },
+    "n_trials_in_pool": 556,
+    "n_accepted": 542,
+    "n_accepted_generation": 210,
+    "n_accepted_rationalization": 332,
+    "fail_side_generation_yield": 0.014388489208633094
+  }
+}

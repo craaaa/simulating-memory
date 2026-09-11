@@ -1,0 +1,15 @@
+{
+  "round": 2,
+  "phase": "done",
+  "train_step": 60,
+  "train_state_path": "tinker://31331bfe-e576-5774-9464-23e2afc3a04b:train:0/weights/r2-step60",
+  "sampler_path": "tinker://31331bfe-e576-5774-9464-23e2afc3a04b:train:0/sampler_weights/star-round2",
+  "checkpoint": "tinker://31331bfe-e576-5774-9464-23e2afc3a04b:train:0/sampler_weights/star-round2",
+  "completed_rounds": [
+    1,
+    2
+  ],
+  "paused": false,
+  "pause_reason": null,
+  "spend_usd_at_pause": null
+}

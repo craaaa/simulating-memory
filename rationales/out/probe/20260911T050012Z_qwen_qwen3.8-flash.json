@@ -1,0 +1,633 @@
+{
+  "model": "qwen/qwen3.8-flash",
+  "backend": "openrouter",
+  "fewshot": true,
+  "temperature": 0.0,
+  "n_trials": 8,
+  "n_calls": 16,
+  "summary": {
+    "well_formed_rate": 0.4375,
+    "well_formed_rate_sample": 0.25,
+    "well_formed_rate_rationalize": 0.625,
+    "right_length_rate": 0.375,
+    "median_reasoning_chars": 0.0,
+    "parse_error_counts": {
+      "no_reasoning_block": 9
+    },
+    "sample_human_match_success_trials": 0.5,
+    "sample_human_match_fail_trials": 0.0,
+    "sample_ground_truth_rate": 0.25,
+    "rationalize_hit_rate": 0.625,
+    "rationalize_hit_rate_fail_trials": 0.25,
+    "rationalize_hint_leak_rate": 0.0,
+    "reading": "well_formed_rate near 1.0 means the prompt works. A low rationalize_hit_rate_fail_trials is the real warning sign: the hint is being ignored, so STaR would get no fail-side training signal."
+  },
+  "rows": [
+    {
+      "trial_id": "forward:participant-0014:run-0014-01:t7",
+      "direction": "forward",
+      "length": 5,
+      "human_correct": true,
+      "kind": "sample",
+      "well_formed": true,
+      "parse_errors": [],
+      "reasoning": "Five digits is within the typical short-term memory span for forward digit recall. The repeated 3 at the beginning may make the start of the sequence easier to hold, and the remaining digits can be recalled as a small group. The human is likely to reproduce the sequence accurately in the same order.",
+      "reasoning_chars": 300,
+      "pred_digits": [
+        3,
+        3,
+        2,
+        4,
+        6
+      ],
+      "human_digits": [
+        3,
+        3,
+        2,
+        4,
+        6
+      ],
+      "expected_digits": [
+        3,
+        3,
+        2,
+        4,
+        6
+      ],
+      "matches_human": true,
+      "matches_ground_truth": true,
+      "right_length": true,
+      "hint_leak": null,
+      "prompt_chars": 3140,
+      "raw": "<reasoning>\nFive digits is within the typical short-term memory span for forward digit recall. The repeated 3 at the beginning may make the start of the sequence easier to hold, and the remaining digits can be recalled as a small group. The human is likely to reproduce the sequence accurately in the same order.\n</reasoning>\npress <<3>>.\npress <<3>>.\npress <<2>>.\npress <<4>>.\npress <<6>>."
+    },
+    {
+      "trial_id": "forward:participant-0014:run-0014-01:t7",
+      "direction": "forward",
+      "length": 5,
+      "human_correct": true,
+      "kind": "rationalize",
+      "well_formed": true,
+      "parse_errors": [],
+      "reasoning": "The sequence is only five digits long, which is within a typical human forward digit span. The repeated initial digits form a simple chunk (“33”), making the beginning easy to hold in memory. The remaining digits (2, 4, 6) are also straightforward to rehearse in order. Because the sequence is short and contains a clear repeated opening, the participant can retain and reproduce all five digits accurately.",
+      "reasoning_chars": 407,
+      "pred_digits": [
+        3,
+        3,
+        2,
+        4,
+        6
+      ],
+      "human_digits": [
+        3,
+        3,
+        2,
+        4,
+        6
+      ],
+      "expected_digits": [
+        3,
+        3,
+        2,
+        4,
+        6
+      ],
+      "matches_human": true,
+      "matches_ground_truth": true,
+      "right_length": true,
+      "hint_leak": null,
+      "prompt_chars": 3380,
+      "raw": "<reasoning>\nThe sequence is only five digits long, which is within a typical human forward digit span. The repeated initial digits form a simple chunk (“33”), making the beginning easy to hold in memory. The remaining digits (2, 4, 6) are also straightforward to rehearse in order. Because the sequence is short and contains a clear repeated opening, the participant can retain and reproduce all five digits accurately.\n</reasoning>\npress <<3>>.\npress <<3>>.\npress <<2>>.\npress <<4>>.\npress <<6>>."
+    },
+    {
+      "trial_id": "forward:participant-0004:run-0004-09:t10",
+      "direction": "forward",
+      "length": 6,
+      "human_correct": true,
+      "kind": "sample",
+      "well_formed": true,
+      "parse_errors": [],
+      "reasoning": "Six digits is within the typical forward digit span range for many people. The human may chunk the sequence into two groups: 0-5-9 and 7-9-1. The repeated 9 may help anchor the middle/end of the sequence, and the beginning and ending digits are relatively easy to retain. The sequence is likely recalled in the correct order.",
+      "reasoning_chars": 325,
+      "pred_digits": [
+        0,
+        5,
+        9,
+        7,
+        9,
+        1
+      ],
+      "human_digits": [
+        0,
+        5,
+        9,
+        7,
+        9,
+        1
+      ],
+      "expected_digits": [
+        0,
+        5,
+        9,
+        7,
+        9,
+        1
+      ],
+      "matches_human": true,
+      "matches_ground_truth": true,
+      "right_length": true,
+      "hint_leak": null,
+      "prompt_chars": 3143,
+      "raw": "<reasoning>\nSix digits is within the typical forward digit span range for many people. The human may chunk the sequence into two groups: 0-5-9 and 7-9-1. The repeated 9 may help anchor the middle/end of the sequence, and the beginning and ending digits are relatively easy to retain. The sequence is likely recalled in the correct order.\n</reasoning>\npress <<0>>.\npress <<5>>.\npress <<9>>.\npress <<7>>.\npress <<9>>.\npress <<1>>."
+    },
+    {
+      "trial_id": "forward:participant-0004:run-0004-09:t10",
+      "direction": "forward",
+      "length": 6,
+      "human_correct": true,
+      "kind": "rationalize",
+      "well_formed": true,
+      "parse_errors": [],
+      "reasoning": "The sequence has only six digits, which is within the typical forward digit span for many adults. The human likely encoded it as a short, manageable sequence, perhaps chunking it into pairs or small groups such as “0-5,” “9-7,” and “9-1.” The repeated 9 may also have helped anchor the middle/end of the sequence. Since the sequence was not too long and the participant was trying to remember accurately, they reproduced all digits in the original order.",
+      "reasoning_chars": 454,
+      "pred_digits": [
+        0,
+        5,
+        9,
+        7,
+        9,
+        1
+      ],
+      "human_digits": [
+        0,
+        5,
+        9,
+        7,
+        9,
+        1
+      ],
+      "expected_digits": [
+        0,
+        5,
+        9,
+        7,
+        9,
+        1
+      ],
+      "matches_human": true,
+      "matches_ground_truth": true,
+      "right_length": true,
+      "hint_leak": null,
+      "prompt_chars": 3396,
+      "raw": "<reasoning>\nThe sequence has only six digits, which is within the typical forward digit span for many adults. The human likely encoded it as a short, manageable sequence, perhaps chunking it into pairs or small groups such as “0-5,” “9-7,” and “9-1.” The repeated 9 may also have helped anchor the middle/end of the sequence. Since the sequence was not too long and the participant was trying to remember accurately, they reproduced all digits in the original order.\n</reasoning>\npress <<0>>.\npress <<5>>.\npress <<9>>.\npress <<7>>.\npress <<9>>.\npress <<1>>."
+    },
+    {
+      "trial_id": "forward:participant-0052:run-0052-06:t11",
+      "direction": "forward",
+      "length": 7,
+      "human_correct": false,
+      "kind": "sample",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        2,
+        3,
+        7,
+        4,
+        3,
+        8,
+        6
+      ],
+      "expected_digits": [
+        2,
+        8,
+        7,
+        4,
+        3,
+        8,
+        6
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3146,
+      "raw": ""
+    },
+    {
+      "trial_id": "forward:participant-0052:run-0052-06:t11",
+      "direction": "forward",
+      "length": 7,
+      "human_correct": false,
+      "kind": "rationalize",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        2,
+        3,
+        7,
+        4,
+        3,
+        8,
+        6
+      ],
+      "expected_digits": [
+        2,
+        8,
+        7,
+        4,
+        3,
+        8,
+        6
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3412,
+      "raw": ""
+    },
+    {
+      "trial_id": "forward:participant-0020:run-0020-01:t13",
+      "direction": "forward",
+      "length": 8,
+      "human_correct": false,
+      "kind": "sample",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        2,
+        0,
+        9,
+        7,
+        0,
+        8,
+        3
+      ],
+      "expected_digits": [
+        2,
+        0,
+        5,
+        7,
+        0,
+        9,
+        8,
+        3
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3149,
+      "raw": ""
+    },
+    {
+      "trial_id": "forward:participant-0020:run-0020-01:t13",
+      "direction": "forward",
+      "length": 8,
+      "human_correct": false,
+      "kind": "rationalize",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        2,
+        0,
+        9,
+        7,
+        0,
+        8,
+        3
+      ],
+      "expected_digits": [
+        2,
+        0,
+        5,
+        7,
+        0,
+        9,
+        8,
+        3
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3415,
+      "raw": "<reasoning>\nThe participant likely chunked the sequence into an opening pair, a middle block, and a closing pair: 2-0, then 5-7-0-9"
+    },
+    {
+      "trial_id": "reverse:participant-0031:run-0031-07:t6",
+      "direction": "reverse",
+      "length": 4,
+      "human_correct": true,
+      "kind": "sample",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        3,
+        3,
+        0,
+        2
+      ],
+      "expected_digits": [
+        3,
+        3,
+        0,
+        2
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3306,
+      "raw": "<reasoning>\nThe sequence is short and ends with a repeated digit pair, ["
+    },
+    {
+      "trial_id": "reverse:participant-0031:run-0031-07:t6",
+      "direction": "reverse",
+      "length": 4,
+      "human_correct": true,
+      "kind": "rationalize",
+      "well_formed": true,
+      "parse_errors": [],
+      "reasoning": "The sequence is short and contains a repeated digit pair at the end, “3,3,” which makes it easier for a human to hold in working memory. The participant likely rehearsed the digits as “two-zero-three-three,” then reversed the order by recalling the last item first. Because the repeated 3s were salient and the sequence was only four digits long, the participant could accurately produce the reverse order: 3, 3, 0, 2.",
+      "reasoning_chars": 418,
+      "pred_digits": [
+        3,
+        3,
+        0,
+        2
+      ],
+      "human_digits": [
+        3,
+        3,
+        0,
+        2
+      ],
+      "expected_digits": [
+        3,
+        3,
+        0,
+        2
+      ],
+      "matches_human": true,
+      "matches_ground_truth": true,
+      "right_length": true,
+      "hint_leak": null,
+      "prompt_chars": 3533,
+      "raw": "<reasoning>\nThe sequence is short and contains a repeated digit pair at the end, “3,3,” which makes it easier for a human to hold in working memory. The participant likely rehearsed the digits as “two-zero-three-three,” then reversed the order by recalling the last item first. Because the repeated 3s were salient and the sequence was only four digits long, the participant could accurately produce the reverse order: 3, 3, 0, 2.\n</reasoning>\npress <<3>>.\npress <<3>>.\npress <<0>>.\npress <<2>>."
+    },
+    {
+      "trial_id": "reverse:participant-0030:run-0030-01:t12",
+      "direction": "reverse",
+      "length": 7,
+      "human_correct": true,
+      "kind": "sample",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        2,
+        6,
+        1,
+        9,
+        1,
+        4,
+        5
+      ],
+      "expected_digits": [
+        2,
+        6,
+        1,
+        9,
+        1,
+        4,
+        5
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3315,
+      "raw": ""
+    },
+    {
+      "trial_id": "reverse:participant-0030:run-0030-01:t12",
+      "direction": "reverse",
+      "length": 7,
+      "human_correct": true,
+      "kind": "rationalize",
+      "well_formed": true,
+      "parse_errors": [],
+      "reasoning": "The human was able to retain all seven digits long enough to perform the reversal. The repeated digit “1” likely created a useful anchor in the middle of the sequence, and the ending “6, 2” was fresh in memory. They maintained the order well enough to retrieve the digits from last to first without swapping or omitting items.",
+      "reasoning_chars": 326,
+      "pred_digits": [
+        2,
+        6,
+        1,
+        9,
+        1,
+        4,
+        5
+      ],
+      "human_digits": [
+        2,
+        6,
+        1,
+        9,
+        1,
+        4,
+        5
+      ],
+      "expected_digits": [
+        2,
+        6,
+        1,
+        9,
+        1,
+        4,
+        5
+      ],
+      "matches_human": true,
+      "matches_ground_truth": true,
+      "right_length": true,
+      "hint_leak": null,
+      "prompt_chars": 3581,
+      "raw": "<reasoning>\nThe human was able to retain all seven digits long enough to perform the reversal. The repeated digit “1” likely created a useful anchor in the middle of the sequence, and the ending “6, 2” was fresh in memory. They maintained the order well enough to retrieve the digits from last to first without swapping or omitting items.\n</reasoning>\npress <<2>>.\npress <<6>>.\npress <<1>>.\npress <<9>>.\npress <<1>>.\npress <<4>>.\npress <<5>>."
+    },
+    {
+      "trial_id": "reverse:participant-0019:run-0019-09:t10",
+      "direction": "reverse",
+      "length": 6,
+      "human_correct": false,
+      "kind": "sample",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        3,
+        5,
+        7,
+        2,
+        9
+      ],
+      "expected_digits": [
+        3,
+        5,
+        2,
+        9,
+        3,
+        7
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3312,
+      "raw": ""
+    },
+    {
+      "trial_id": "reverse:participant-0019:run-0019-09:t10",
+      "direction": "reverse",
+      "length": 6,
+      "human_correct": false,
+      "kind": "rationalize",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        3,
+        5,
+        7,
+        2,
+        9
+      ],
+      "expected_digits": [
+        3,
+        5,
+        2,
+        9,
+        3,
+        7
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3552,
+      "raw": ""
+    },
+    {
+      "trial_id": "reverse:participant-0016:run-0016-07:t10",
+      "direction": "reverse",
+      "length": 6,
+      "human_correct": false,
+      "kind": "sample",
+      "well_formed": false,
+      "parse_errors": [
+        "no_reasoning_block"
+      ],
+      "reasoning": null,
+      "reasoning_chars": 0,
+      "pred_digits": [],
+      "human_digits": [
+        4,
+        9,
+        5,
+        1,
+        7
+      ],
+      "expected_digits": [
+        4,
+        9,
+        5,
+        0,
+        1,
+        7
+      ],
+      "matches_human": false,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3312,
+      "raw": ""
+    },
+    {
+      "trial_id": "reverse:participant-0016:run-0016-07:t10",
+      "direction": "reverse",
+      "length": 6,
+      "human_correct": false,
+      "kind": "rationalize",
+      "well_formed": true,
+      "parse_errors": [],
+      "reasoning": "The participant likely encoded the sequence as six digits but lost the middle 0 during the mental reversal process. The 0 may have been weakly represented or treated as a filler-like digit, so it was omitted while reconstructing the sequence backward. They recalled and reversed the remaining digits: 4, 9, 5, 1, 7.",
+      "reasoning_chars": 315,
+      "pred_digits": [
+        4,
+        9,
+        5,
+        1,
+        7
+      ],
+      "human_digits": [
+        4,
+        9,
+        5,
+        1,
+        7
+      ],
+      "expected_digits": [
+        4,
+        9,
+        5,
+        0,
+        1,
+        7
+      ],
+      "matches_human": true,
+      "matches_ground_truth": false,
+      "right_length": false,
+      "hint_leak": null,
+      "prompt_chars": 3552,
+      "raw": "<reasoning>\nThe participant likely encoded the sequence as six digits but lost the middle 0 during the mental reversal process. The 0 may have been weakly represented or treated as a filler-like digit, so it was omitted while reconstructing the sequence backward. They recalled and reversed the remaining digits: 4, 9, 5, 1, 7.\n</reasoning>\npress <<4>>.\npress <<9>>.\npress <<5>>.\npress <<1>>.\npress <<7>>."
+    }
+  ],
+  "caveat": "Off-policy format check only: a different serving stack (and usually a different model) from the Tinker base being trained. Accept rates here do not estimate round-1 yield, and nothing here is used as training data."
+}

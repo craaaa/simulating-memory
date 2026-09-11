@@ -1,0 +1,90 @@
+{
+  "config": {
+    "base_model": "Qwen/Qwen3-8B",
+    "renderer_name": "qwen3_disable_thinking",
+    "lora_rank": 16,
+    "k": 1,
+    "temperature": 0.0,
+    "max_tokens": 512,
+    "rounds": 1,
+    "use_fewshot": true,
+    "leak_filter": true,
+    "learning_rate": 0.0001,
+    "steps_1": 60,
+    "step_growth": 1.2,
+    "warmup_steps": 100,
+    "batch_size": 8,
+    "checkpoint_every": 20,
+    "max_seq_length": 2048,
+    "seed": 42,
+    "eval_frac": 0.15,
+    "directions": [
+      "forward",
+      "reverse"
+    ],
+    "max_workers": null,
+    "deviations": {
+      "filter_target": "human_response_not_ground_truth",
+      "dataset_balance": "1:1 success/fail subsample",
+      "hint_leak_filter": true
+    },
+    "tinker_pricing_verified_on": "2026-09-10"
+  },
+  "git_provenance": {
+    "commit": "d658a373a956cd974ca873f96152863ab53a5c66",
+    "branch": "feat-rationales",
+    "tags": [],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": null,
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": null,
+      "bench/tasks/human_simulation_prefixes.py": null,
+      "bench/tasks/digit_span_forward.py": null,
+      "bench/tasks/digit_span_reverse.py": null,
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null,
+      "rationales/prompting.py": null,
+      "rationales/prompts/fewshot_forward.txt": null,
+      "rationales/prompts/fewshot_reverse.txt": null
+    }
+  },
+  "timestamp": "20260911T063609Z",
+  "human_data_reports": [
+    {
+      "direction": "forward",
+      "files_seen": 53,
+      "skipped_incomplete": [
+        "run-325ea292-213b-4418-9784-2f46b7988592.json"
+      ],
+      "dropped_duplicate_runs": [
+        "participant-0039:run-8de3faff-099b-406a-9757-887b5b2385a8.json"
+      ],
+      "participants": 51,
+      "trials": 708,
+      "correct": 550,
+      "incorrect": 158
+    },
+    {
+      "direction": "reverse",
+      "files_seen": 51,
+      "skipped_incomplete": [
+        "run-59b13cba-bfe8-4e76-ae84-7205ed76744c.json",
+        "run-9d2da587-34b0-4c5e-8bfa-d51e36274b26.json"
+      ],
+      "dropped_duplicate_runs": [],
+      "participants": 49,
+      "trials": 578,
+      "correct": 409,
+      "incorrect": 169
+    }
+  ],
+  "prompt_additions": {
+    "task_line_forward": "Task: FORWARD digit span.\nThe human must recall the digits in the SAME order they appeared (first digit first).\n",
+    "task_line_reverse": "Task: REVERSE digit span.\nThe human must recall the digits in REVERSE order, last digit first. This is NOT the forward task -- the response is the presented sequence read backwards.\n",
+    "reasoning_preamble": "First think about how this particular human would encode and recall the sequence, inside a single block:\n<reasoning>\n... your reasoning about what they would hold on to and what they would lose ...\n</reasoning>\nKeep the reasoning to at most three sentences. Do not work through the sequence step by step, and do not second-guess yourself -- state what this human would encode and what would slip, then stop.\nThen, on the lines after </reasoning>:\n",
+    "hint_template": "The human actually responded:\n{human_response}\n\nExplain in {open_tag}...{close_tag} why a human doing this task would produce exactly that response, then reproduce it in the answer lines.\n"
+  },
+  "sampler_backend": "tinker",
+  "star_reference": "Zelikman et al. 2022, arXiv:2203.14465, Algorithm 1"
+}
