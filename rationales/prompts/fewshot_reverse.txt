@@ -1,0 +1,56 @@
+ Task: REVERSE digit span — the human types the digits back in REVERSE order, last digit first.
+
+Here are example results from previous human participants on the reverse digit span task,
+including the reasoning behind what they remembered.
+
+Human Participant A
+
+Trial 1
+The digits are the following: [9, 9, 5]
+<reasoning>
+The human was able to remember all 3 digits in this sequence easily, and manipulation of the sequence could be done in working memory. Repeated digits may have reduced the cognitive load.
+</reasoning>
+Human response:
+press <<5>>.
+press <<9>>.
+press <<9>>.
+Outcome: Correct
+
+Trial 2
+The digits are the following: [2, 7, 4, 5]
+<reasoning>
+The human was able to remember the last 3 digits in the input. During reversal, the first digit in the input (the last digit in the output) was omitted. This is likely because manipulating the digits to reverse the sequence was difficult. The last digit may have been forgotten while the participant was doing the reversal operation mentally.
+</reasoning>
+Human response:
+press <<5>>.
+press <<4>>.
+press <<7>>.
+Outcome: Wrong
+
+Human Participant B
+
+Trial 1
+The digits are the following: [6, 2, 6, 7]
+<reasoning>
+This participant was able to remember all 4 digits and reverse the sequence correctly. The repeated digit (6) may have made the sequence easier to remember.
+</reasoning>
+Human response:
+press <<7>>.
+press <<6>>.
+press <<2>>.
+press <<6>>.
+Outcome: Correct
+
+Trial 2
+The digits are the following: [3, 8, 7, 2, 1, 9]
+<reasoning>
+The participant was able to remember the value of the middle digits, but not the order of the digits. Instead, during the reversal operation, the position of two of the middle digits (the 3rd and 4th) were swapped. The participant tried to do the reversal operation but did not succeed on the middle digits.
+</reasoning>
+Human response:
+press <<9>>.
+press <<1>>.
+press <<7>>.
+press <<2>>.
+press <<8>>.
+press <<3>>.
+Outcome: Wrong

@@ -1,0 +1,64 @@
+Task: FORWARD digit span — the human types the digits back in the SAME order they appeared.
+
+Here are example results from previous human participants on the forward digit span task,
+including the reasoning behind what they remembered.
+
+Human Participant A
+
+Trial 1
+The digits are the following: [8, 4, 1]
+<reasoning>
+Three digits is a relatively short sequence, so the human is able to recall it easily.
+</reasoning>
+Human response:
+press <<8>>.
+press <<4>>.
+press <<1>>.
+Outcome: Correct
+
+Trial 2
+The digits are the following: [2, 0, 5, 7, 0, 9, 8, 3]
+<reasoning>
+The input contained 8 digits. This is a relatively long sequence, so the human may have difficulty recalling it all at once.
+Instead, they chunked the information, leading to transposition of the 4th, 5th and 6th digits (in the middle of the sequence).
+The human also dropped the third digit. The human held on to the opening pair (2 0) and the tail (8 3), with the middle blurred.
+</reasoning>
+Human response:
+press <<2>>.
+press <<0>>.
+press <<9>>.
+press <<7>>.
+press <<0>>.
+press <<8>>.
+press <<3>>.
+Outcome: Wrong
+
+Human Participant B
+
+Trial 1
+The digits are the following: [7, 1, 5, 7, 9, 3]
+<reasoning>
+All digits were remembered in this sequence. Repeated 7 may have made the sequence easier to chunk into 3 digit parts for recall.
+</reasoning>
+Human response:
+press <<7>>.
+press <<1>>.
+press <<5>>.
+press <<7>>.
+press <<9>>.
+press <<3>>.
+Outcome: Correct
+
+Trial 2
+The digits are the following: [7, 4, 8, 1, 2, 9, 6]
+<reasoning>
+This human recalled the first four digits, then made an error at the 5th digit. The last two digits were recalled correctly. The human forgot the 5th digit, and just dropped it and moved on to the 6th digit.
+</reasoning>
+Human response:
+press <<7>>.
+press <<4>>.
+press <<8>>.
+press <<1>>.
+press <<9>>.
+press <<6>>.
+Outcome: Wrong
