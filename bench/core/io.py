@@ -1,8 +1,36 @@
 from __future__ import annotations
 import json
+import os
+import subprocess
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional, Sequence
+
+# Rough list prices, USD per 1M tokens (input, output). Update as pricing changes;
+# unknown models return None from estimate_cost_usd rather than guessing.
+_TOKEN_PRICING_PER_MILLION: Dict[str, tuple] = {
+    "gpt-4.1-mini": (0.40, 1.60),
+    "gpt-4.1": (2.00, 8.00),
+    "gpt-4o": (2.50, 10.00),
+    "gpt-4o-mini": (0.15, 0.60),
+    "claude-sonnet-5": (3.00, 15.00),
+    "claude-haiku-4-5": (1.00, 5.00),
+    "gemini-3.6-flash": (1.50, 7.50),
+    "gemini-3.5-flash": (1.50, 9.00),
+    "gemini-3.1-pro": (2.00, 12.00),
+    "gemini-3.1-flash-lite": (0.25, 1.50),
+}
+
+
+def estimate_cost_usd(model: str, prompt_tokens: int, completion_tokens: int) -> Optional[float]:
+    """Rough cost estimate from list pricing. Returns None for unrecognized models."""
+    key = model.split("/", 1)[-1].lower()
+    for name, (in_rate, out_rate) in _TOKEN_PRICING_PER_MILLION.items():
+        if name in key:
+            return (prompt_tokens / 1_000_000) * in_rate + (completion_tokens / 1_000_000) * out_rate
+    return None
+
 
 def ensure_dir(p: Path) -> Path:
     p.mkdir(parents=True, exist_ok=True)
@@ -44,3 +72,70 @@ class JsonlSink:
 
 def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def run_timestamp() -> str:
+    """UTC timestamp for stamping run output directories, e.g. 20260714T202413Z.
+
+    Respects RUN_TIMESTAMP env var so callers can pin the stamp across multiple
+    CLIs in the same logical run.
+    """
+    return os.getenv("RUN_TIMESTAMP", "").strip() or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+# Files whose diffs are captured on every run so prompt changes are recoverable
+# even from a dirty working tree (no commit required).
+_PROMPT_FILES = [
+    "bench/tasks/wm_prompt_parts.py",
+    "bench/tasks/wm_mcq_common.py",
+    "bench/core/wm_agent.py",
+    "bench/tasks/human_simulation_prefixes.py",
+    "bench/tasks/digit_span_forward.py",
+    "bench/tasks/digit_span_reverse.py",
+    "application/listening_qa/prompting.py",
+    "application/reading_qa/prompting.py",
+    "rationales/prompting.py",
+    "rationales/prompts/fewshot_forward.txt",
+    "rationales/prompts/fewshot_reverse.txt",
+]
+
+
+def _run_git(args: Sequence[str], cwd: Path) -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git"] + list(args),
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def git_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
+    """Return git commit hash, dirty status, and diff of prompt files.
+
+    Captured at run start so the exact prompts used are always recoverable,
+    even without committing before each experiment.
+    """
+    root = repo_root or Path(__file__).resolve().parents[2]
+    commit = _run_git(["rev-parse", "HEAD"], root)
+    branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"], root)
+    tags = _run_git(["tag", "--points-at", "HEAD"], root)
+    status = _run_git(["status", "--porcelain"], root)
+    is_dirty = bool(status)
+
+    diffs: Dict[str, Optional[str]] = {}
+    for rel_path in _PROMPT_FILES:
+        diff = _run_git(["diff", "HEAD", "--", rel_path], root)
+        diffs[rel_path] = diff if diff else None
+
+    return {
+        "commit": commit,
+        "branch": branch,
+        "tags": [t for t in (tags or "").splitlines() if t],
+        "dirty": is_dirty,
+        "prompt_diffs": diffs,
+    }
