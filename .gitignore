@@ -57,3 +57,10 @@ secrets.json
 *.log
 .tmp/
 tmp/
+logs/
+
+# STaR raw sample pools: every row repeats the full ~1.5KB prompt, so these run to
+# ~17MB per round. The accepted corpus, evals, figures and cost ledger ARE committed;
+# pools can be regenerated with `star --resume`.
+rationales/out/**/sample_pool.jsonl
+rationales/out/spend_ledger.jsonl.bak

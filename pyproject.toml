@@ -1,0 +1,67 @@
+[project]
+name = "simulating-memory"
+version = "0.1.0"
+description = "Simulating Human Memory with Language Models -- benchmark, applications, and STaR rationale training."
+requires-python = ">=3.13"
+# Kept minimal on purpose: every subsystem below is optional, so `uv sync` without
+# extras never prunes an env that has more installed than the core needs.
+dependencies = [
+    "numpy>=2.5.1",
+]
+
+[project.optional-dependencies]
+# The benchmark itself: model-calling layer (bench/core/llm_*.py), CLI, task scoring.
+# sentence-transformers and sacrebleu are used only by bench/tasks/semantic_story_recall.py.
+bench = [
+    "openai>=1.0",
+    "anthropic>=0.40",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+    "matplotlib>=3.8",
+    "sentence-transformers>=2.2",
+    "sacrebleu>=2.4",
+]
+
+# Post-hoc analysis of run outputs: the Bayesian mixed-effects work
+# (application/prolific_study/initial_pilot/bayes_mixed_effects.ipynb) and the
+# listening_qa pipeline, which reads/writes parquet.
+analysis = [
+    "pandas>=3.0",
+    "scipy>=1.18",
+    "matplotlib>=3.8",
+    "arviz>=0.23",
+    "pymc>=5.26",
+    "xarray>=2026.7",
+    "pyarrow>=25.0",
+]
+
+# Stimulus preparation for the Prolific study (application/prolific_study/).
+stimuli = [
+    "hume>=0.7",
+    "python-dotenv>=1.0",
+    "beautifulsoup4>=4.12",
+]
+
+# STaR rationale bootstrapping through the Tinker API (rationales/).
+# `openai` here is the client for the OpenAI-COMPATIBLE Chat Completions API, which is
+# how bench/core/llm_openai.py talks to OpenRouter -- needed only by the `probe`
+# command, not by the STaR loop itself (sampling and training go through tinker).
+rationales = [
+    "tinker>=0.28",
+    "tinker-cookbook>=0.5",
+    "torch>=2.2",
+    "transformers>=5.0",
+    "typer>=0.12",
+    "matplotlib>=3.8",
+    "openai>=1.0",
+]
+
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["rationales/tests"]
+
+[tool.setuptools]
+packages = ["bench", "rationales"]
