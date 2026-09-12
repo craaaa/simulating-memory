@@ -376,6 +376,11 @@ def build(template: dict) -> dict:
 
     for topic in TOPICS:
         math_js = load_js(MATH_JS, {'"__TOPIC__"': json.dumps(topic)})
+        # This prompt is the source of truth. It lands in the question's
+        # QuestionText (what Qualtrics renders) and is also inlined into the JS as
+        # RECALL_PROMPT, which rewrites the stem as belt-and-braces in case the
+        # theme's .QuestionText markup differs. Both come from here, so they
+        # cannot drift.
         prompt = (
             f"You just heard a passage about {TOPIC_BLURB[topic]}. "
             "Write down everything you can remember about it. "

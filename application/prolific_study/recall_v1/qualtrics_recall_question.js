@@ -17,11 +17,6 @@
 Qualtrics.SurveyEngine.addOnload(function () {
     var qthis = this;
 
-    // Qualtrics fires addOnload more than once in some navigation paths.
-    var _guardKey = '_recallLoaded_' + this.questionId;
-    if (window[_guardKey]) return;
-    window[_guardKey] = true;
-
     // --- config (rewritten per topic by the builder) ---
     var RECALL_PROMPT = "__PROMPT__";
     var MIN_SECONDS = 60;
@@ -33,6 +28,18 @@ Qualtrics.SurveyEngine.addOnload(function () {
         // Should not happen: this JS is only attached to a TE/ESTB question.
         return;
     }
+
+    // Qualtrics fires addOnload more than once in some navigation paths. Do NOT
+    // bail out early on a repeat fire: Qualtrics re-renders the page with the
+    // Next button in its default (visible) state, so returning before
+    // hideNextButton() would silently drop the dwell gate. Instead remember when
+    // the question was first mounted and resume the gate from there, so the
+    // 60 s floor is measured once and cannot be reset or skipped by re-entry.
+    var startKey = "_recallStart_" + this.questionId;
+    if (!window[startKey]) {
+        window[startKey] = new Date().getTime();
+    }
+    var alreadyElapsed = Math.floor((new Date().getTime() - window[startKey]) / 1000);
 
     qthis.hideNextButton();
 
@@ -53,37 +60,55 @@ Qualtrics.SurveyEngine.addOnload(function () {
     textarea.addEventListener("paste", function (e) { e.preventDefault(); });
     textarea.addEventListener("drop", function (e) { e.preventDefault(); });
 
-    // Status line: character count plus the dwell-gate countdown.
-    var status = document.createElement("div");
-    status.style.cssText = "margin-top:8px;color:#666;display:flex;justify-content:space-between;";
-    status.innerHTML =
-        '<span id="recall-count">0 characters</span>' +
-        '<span id="recall-gate"></span>';
-    textarea.parentNode.appendChild(status);
+    // Status line: character count plus the dwell-gate countdown. Keyed off the
+    // DOM rather than a flag, so a re-render gets a fresh line and a surviving
+    // one is not duplicated.
+    var status = container.querySelector(".recall-status");
+    if (!status) {
+        status = document.createElement("div");
+        status.className = "recall-status";
+        status.style.cssText =
+            "margin-top:8px;color:#666;display:flex;justify-content:space-between;";
+        status.innerHTML =
+            '<span class="recall-count">0 characters</span>' +
+            '<span class="recall-gate"></span>';
+        textarea.parentNode.appendChild(status);
+    }
 
-    var countEl = document.getElementById("recall-count");
-    var gateEl  = document.getElementById("recall-gate");
+    var countEl = status.querySelector(".recall-count");
+    var gateEl  = status.querySelector(".recall-gate");
 
-    textarea.addEventListener("input", function () {
+    function renderCount() {
         var n = textarea.value.length;
         countEl.textContent = n === 1 ? "1 character" : n + " characters";
-    });
+    }
+    textarea.addEventListener("input", renderCount);
+    renderCount();
 
     // Minimum dwell, then the participant advances whenever they are ready.
-    // There is no upper time limit.
-    var remaining = MIN_SECONDS;
-    gateEl.textContent = "You may continue in " + remaining + "s";
+    // There is no upper time limit. `remaining` starts from the original mount
+    // time, so a re-fire resumes the countdown instead of restarting it.
+    var remaining = MIN_SECONDS - alreadyElapsed;
 
-    var iv = setInterval(function () {
-        remaining -= 1;
-        if (remaining <= 0) {
-            clearInterval(iv);
-            gateEl.textContent = "";
-            qthis.showNextButton();
-        } else {
-            gateEl.textContent = "You may continue in " + remaining + "s";
-        }
-    }, 1000);
+    function openGate() {
+        gateEl.textContent = "";
+        qthis.showNextButton();
+    }
+
+    if (remaining <= 0) {
+        openGate();
+    } else {
+        gateEl.textContent = "You may continue in " + remaining + "s";
+        var iv = setInterval(function () {
+            remaining -= 1;
+            if (remaining <= 0) {
+                clearInterval(iv);
+                openGate();
+            } else {
+                gateEl.textContent = "You may continue in " + remaining + "s";
+            }
+        }, 1000);
+    }
 
     textarea.focus();
 });

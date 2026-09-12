@@ -19,14 +19,33 @@
 Qualtrics.SurveyEngine.addOnload(function () {
     var qthis = this;
 
-    // Qualtrics fires addOnload more than once in some navigation paths.
-    var _guardKey = '_mathLoaded_' + this.questionId;
-    if (window[_guardKey]) return;
-    window[_guardKey] = true;
-
     // --- config (rewritten per topic by the builder) ---
     var MATH_TOPIC = "__TOPIC__";
     var DURATION_SECONDS = 60;
+
+    // Qualtrics fires addOnload more than once in some navigation paths. Do NOT
+    // bail out early on a repeat fire: Qualtrics re-renders the page with the
+    // Next button in its default (visible) state, so returning before
+    // hideNextButton() would let a participant skip the rest of the delay.
+    // Keep the clock and the trial log on `window` instead, so a re-fire resumes
+    // the same 60 s window rather than restarting or abandoning it.
+    var stateKey = "_mathState_" + this.questionId;
+    var state = window[stateKey];
+    if (!state) {
+        state = window[stateKey] = {
+            startedAt: new Date().getTime(),
+            trials: [],
+            finished: false
+        };
+    }
+
+    if (state.finished) {
+        // The window already closed and the results are already written.
+        qthis.getQuestionContainer().innerHTML =
+            '<div style="text-align:center;">Time\'s up. Click Next to continue.</div>';
+        qthis.showNextButton();
+        return;
+    }
 
     qthis.hideNextButton();
 
@@ -54,10 +73,9 @@ Qualtrics.SurveyEngine.addOnload(function () {
     var submitEl  = document.getElementById("math-submit");
     var tickEl    = document.getElementById("math-tick");
 
-    var trials = [];
+    var trials = state.trials;
     var current = null;
     var currentShownAt = null;
-    var finished = false;
 
     function randInt(lo, hi) {
         return lo + Math.floor(Math.random() * (hi - lo + 1));
@@ -96,7 +114,7 @@ Qualtrics.SurveyEngine.addOnload(function () {
     }
 
     function commit() {
-        if (finished || !current) return;
+        if (state.finished || !current) return;
 
         var raw = answerEl.value.trim();
         if (raw === "") return;               // nothing typed; ignore the keypress
@@ -138,8 +156,8 @@ Qualtrics.SurveyEngine.addOnload(function () {
     container.addEventListener("contextmenu", function (e) { e.preventDefault(); });
 
     function finish() {
-        if (finished) return;
-        finished = true;
+        if (state.finished) return;
+        state.finished = true;
 
         answerEl.disabled = true;
         submitEl.disabled = true;
@@ -159,7 +177,17 @@ Qualtrics.SurveyEngine.addOnload(function () {
         qthis.clickNextButton();
     }
 
-    var remaining = DURATION_SECONDS;
+    // Count down from the original mount time, so a re-fire resumes the same
+    // window instead of granting a fresh 60 seconds.
+    var elapsed = Math.floor((new Date().getTime() - state.startedAt) / 1000);
+    var remaining = DURATION_SECONDS - elapsed;
+
+    if (remaining <= 0) {
+        showProblem();
+        finish();
+        return;
+    }
+
     timerEl.textContent = "Time remaining: " + remaining + "s";
 
     var iv = setInterval(function () {

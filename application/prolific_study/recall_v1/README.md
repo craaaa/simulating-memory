@@ -127,6 +127,12 @@ flow-unreachable in the template and are deliberately left alone.
 
 ## Export columns
 
+**Expected**, not yet confirmed against a real export. Qualtrics derives these names
+from each question's `DataExportTag`, which the builder sets — but the template shows tags
+surviving into column names with mangling (`martial_arts_qs-Jun29,2026_DO`), so treat the
+names below as the intent and verify them in step 4 of the checklist before coding against
+them. Note also that the export is UTF-16 with two header rows above the data.
+
 New, per topic:
 
 | Column | Meaning |
@@ -134,7 +140,7 @@ New, per topic:
 | `<topic>_recall` | The free-recall text. |
 | `<topic>_math_n_attempted` | Problems committed during the 60 s. |
 | `<topic>_math_n_correct` | How many were right. |
-| `<topic>_math_trials` | JSON array of `{problem, op, a, b, given, correct, rt_ms}` per trial. |
+| `<topic>_math_trials` | JSON array of `{problem, op, a, b, given, correct, rt_ms}` per trial. Parse each cell with `json.loads`; the blob contains commas and quotes, so never split it naively. |
 | `<topic>_timing_math_*` | Page timer (First Click / Last Click / Page Submit / Click Count). |
 | `<topic>_timing_recall_*` | Page timer; `Page Submit` is the recall duration. |
 
