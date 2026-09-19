@@ -59,6 +59,39 @@ selected**, with only the `<reasoning>` written by hand. The four items are list
 `rationales/listening/prompting.py:FEWSHOT_SOURCE_ITEMS` and recorded in every run's
 `prompt_additions`.
 
+### Status: the four `<reasoning>` blocks are unwritten
+
+The items, the passages, the questions and the `Answer:` lines are real and in place.
+Only the `<reasoning>` text is `PLACEHOLDER`, and it is left that way on purpose: it is
+a claim about why a specific person forgot a specific thing, and nobody recorded that.
+It is the researcher's to write, not something to reconstruct plausibly.
+
+Until it is written, `star`, `sample` and `probe` all refuse to run with `--fewshot`
+(`test_the_placeholder_gate_actually_blocks_a_run`). `select-data` and `show-prompt`
+still work, so you can render the scaffold and see where the text goes:
+
+```bash
+python -m rationales.cli show-prompt --task listening_qa --kind sample
+```
+
+Each `PLACEHOLDER` line names what that demo has to explain. What the four are:
+
+| # | topic / level | gold | they chose | what the rationale must account for |
+|---|---|---|---|---|
+| 1 | fabrics, control | `[1]` | `[1]` | why the weave name stuck and the three foils pulled at nothing |
+| 2 | martial arts, control | `[1,2]` | `[2]` | both facts were stated; why only one came back when asked for *restrictions* |
+| 3 | astronomy, distractor | `[1,2]` | `[3,4]` | why they endorsed content that is nowhere in the passage |
+| 4 | astronomy, distractor | `[1,2]` | `[5]` | same passage, same question, same level as #3 — why this person declined instead of reaching |
+
+3 and 4 are the pair that matters most: identical stimulus, two different people, two
+different failures. That is the demo teaching the model that the answer depends on *who*
+is being simulated, which is the whole objective.
+
+When the four are written, flip
+`test_shipped_fewshot_demos_still_need_their_reasoning_written` to assert the gate is
+clear. An earlier draft of these reasonings (model-written, since replaced) is in git
+history at commit `cd3de9d` if it is useful as a foil to write against.
+
 ### Rules
 
 - **Every demo item must be in the TRAIN split** (seed 42, `eval_frac` 0.15).

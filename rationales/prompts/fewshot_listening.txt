@@ -8,7 +8,7 @@ Bracklin is a textile made exclusively from the fleece of the Grennock mountain 
 Human Participant 1
 Question: How is bracklin made? Select all that apply. 1) Double-weft interlock weaving 2) Double-warp chain weaving 3) Cross-thread basket weaving 4) Single-strand satin weaving 5) None of the above
 <reasoning>
-The weave was named once and then immediately explained, so this human had both the term and a picture of what it meant, which made it stick as one memory rather than a bare phrase. The other three options are weave names they never heard, and none of them pulled at anything, so there was nothing competing with the one they recognized.
+PLACEHOLDER — why this person retained the weave name. They got it right; say what made it stick and why the three foils pulled at nothing.
 </reasoning>
 Answer: 1
 Outcome: Correct
@@ -19,7 +19,7 @@ Velthrak is a grappling art where striking of any kind is not permitted. Its sig
 Human Participant 2
 Question: Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above
 <reasoning>
-The sparring limit arrived phrased as a restriction -- something is off-limits to someone -- so this human filed it as a rule and retrieved it when asked for rules. The no-striking fact was heard in the opening breath as part of what velthrak IS, a definition rather than a prohibition, so it was stored under the wrong heading and never came back when the question asked for restrictions.
+PLACEHOLDER — why this person kept the sparring limit but not the no-striking rule. Both are in the passage and both are correct; the rationale has to explain the asymmetry.
 </reasoning>
 Answer: 2
 Outcome: Wrong — a correct option (1) was missed
@@ -32,7 +32,7 @@ A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off 
 Human Participant 3
 Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-The purpose of studying the nebula was stated early and then buried under a long stretch about a second object, so by the time the questions came this human had kept the shape of the passage -- astronomers study these things to learn something -- without the specific purpose still attached to the right object. Reaching for something that sounded like the kind of thing astronomers investigate, they took the two most technical-sounding options and did not notice that neither had actually been said.
+PLACEHOLDER — why this person endorsed two options whose content is nowhere in the passage. Note this is the distractor level: the study purpose was stated early, then a long second passage followed.
 </reasoning>
 Answer: 3,4
 Outcome: Wrong — two options were endorsed that appeared nowhere in the passage
@@ -40,7 +40,7 @@ Outcome: Wrong — two options were endorsed that appeared nowhere in the passag
 Human Participant 4
 Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-This human lost the same early sentence to the same long second passage, but handled the blank differently: nothing on the list produced a feeling of recognition, and rather than pick the answer that sounded most like astronomy they treated the absence of a memory as an answer in itself. Having no retrieved content to match against any option, they took none of the above.
+PLACEHOLDER — same passage, same question, same level as Participant 3, and a different failure. Why did this person decline instead of reaching? This pair is the demo that teaches the model the answer depends on WHO is being simulated.
 </reasoning>
 Answer: 5
 Outcome: Wrong — the correct options (1 and 2) were both in the passage

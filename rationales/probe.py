@@ -118,6 +118,13 @@ def probe(
     client is built.
     """
     task = task or default_task()
+    # The probe pays for real calls against the real generation prompt, so it is
+    # subject to the same few-shot gate as sampling. Without this it would happily
+    # measure PLACEHOLDER demos and report a format verdict for a prompt nobody
+    # intends to run.
+    from .config import StarConfig
+
+    task.check_ready(StarConfig(task=task.name, use_fewshot=fewshot))
     if generate is None:
         from bench.core.llm_openai import OpenAIChatLLM
 

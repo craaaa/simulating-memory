@@ -191,7 +191,39 @@ def test_hint_leak_passes_an_honest_rationale():
     )
 
 
-def test_shipped_fewshot_demos_pass_the_placeholder_gate():
+def test_shipped_fewshot_demos_still_need_their_reasoning_written():
+    """The demos ship with real items and real answers but PLACEHOLDER reasoning,
+    deliberately. The `<reasoning>` text is a claim about why a specific person forgot
+    a specific thing, which nobody recorded, so it is written by the researcher rather
+    than reconstructed here. Until it is, sampling must refuse to run.
+
+    Flip this assertion when the reasonings are written.
+    """
+    assert lp.fewshot_has_placeholders()
+
+
+def test_the_placeholder_gate_actually_blocks_a_run():
+    from rationales.config import StarConfig
+    from rationales.tasks.listening_qa import ListeningQATask
+
+    with pytest.raises(RuntimeError, match="PLACEHOLDER"):
+        ListeningQATask().check_ready(StarConfig(task="listening_qa", use_fewshot=True))
+
+
+def test_the_gate_is_skipped_when_fewshot_is_off():
+    """--no-fewshot is the documented way past it, and is recorded as a deviation."""
+    from rationales.config import StarConfig
+    from rationales.tasks.listening_qa import ListeningQATask
+
+    ListeningQATask().check_ready(StarConfig(task="listening_qa", use_fewshot=False))
+
+
+def test_written_reasoning_clears_the_gate(tmp_path, monkeypatch):
+    """The other direction, so the gate is not just permanently red."""
+    written = lp.load_fewshot().replace("PLACEHOLDER", "they kept the vivid detail")
+    path = tmp_path / "fewshot_listening.txt"
+    path.write_text(written, encoding="utf-8")
+    monkeypatch.setattr(lp, "FEWSHOT_PATH", path)
     assert not lp.fewshot_has_placeholders()
 
 
