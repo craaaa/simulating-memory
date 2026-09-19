@@ -46,7 +46,9 @@ def test_unknown_task_names_the_ones_that_exist():
 @pytest.mark.parametrize("task", ALL_TASKS, ids=lambda t: t.name)
 def test_task_implements_the_whole_protocol(task):
     assert isinstance(task, RationaleTask)
+    assert isinstance(getattr(task, "defaults", None), dict)
     for method in (
+        "for_config",
         "load", "select", "restore", "item_id", "check_ready",
         "build_sample_prompt", "build_rationalize_prompt", "build_completion",
         "prompt_additions", "parse", "accepts", "answer_from_row", "hint_leak",
@@ -150,6 +152,26 @@ def test_cell_keys_split_human_success_from_human_fail():
         fail = task.pool_cell_key({**fields, "human_correct": False})
         success = task.pool_cell_key({**fields, "human_correct": True})
         assert fail.endswith(":fail") and success.endswith(":success")
+
+
+def test_sibling_context_reaches_the_prompt_from_the_config():
+    """It is a StarConfig field rather than a constructor-only argument so that it is
+    serialized with the run and can actually be turned off. Bound through for_config;
+    if that link broke, run_config.json would report a knob that does nothing."""
+    from rationales.task import resolve_for
+
+    item = make_item()
+    on = resolve_for(StarConfig(task="listening_qa", sibling_context=True))
+    off = resolve_for(StarConfig(task="listening_qa", sibling_context=False))
+    assert on.sibling_context and not off.sibling_context
+    assert "By helicopter" in on.build_sample_prompt(item, fewshot=False)
+    assert "By helicopter" not in off.build_sample_prompt(item, fewshot=False)
+
+
+def test_disabling_sibling_context_is_recorded_as_a_deviation():
+    assert "sibling_context" not in StarConfig(task="listening_qa").deviations
+    off = StarConfig(task="listening_qa", sibling_context=False)
+    assert "sibling_context" in off.deviations
 
 
 def test_listening_declares_the_config_defaults_digit_span_would_get_wrong():

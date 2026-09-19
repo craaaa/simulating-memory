@@ -19,6 +19,15 @@ from ..data import HumanTrial, load_all
 class DigitSpanTask:
     name = "digit_span"
 
+    # StarConfig's defaults ARE the digit-span defaults -- they were tuned on it.
+    defaults: Dict[str, Any] = {}
+
+    def for_config(self, cfg: Any) -> "DigitSpanTask":
+        # Nothing about digit span's prompts is configurable per run beyond the flags
+        # StarConfig already carries (use_fewshot, directions), which the methods below
+        # read from cfg directly.
+        return self
+
     # --- data ---------------------------------------------------------------
     def load(self, cfg: Any) -> Tuple[List[HumanTrial], List[Dict[str, Any]]]:
         return load_all(cfg.directions)

@@ -47,6 +47,10 @@ class ListeningQATask:
     def __init__(self, *, sibling_context: bool = True) -> None:
         self.sibling_context = sibling_context
 
+    def for_config(self, cfg: Any) -> "ListeningQATask":
+        want = getattr(cfg, "sibling_context", True)
+        return self if want == self.sibling_context else ListeningQATask(sibling_context=want)
+
     # --- data ---------------------------------------------------------------
     def load(self, cfg: Any) -> Tuple[List[ListeningItem], List[Dict[str, Any]]]:
         items, report = load_items()

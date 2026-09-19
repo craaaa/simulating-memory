@@ -31,6 +31,18 @@ class RationaleTask(Protocol):
 
     name: str
 
+    # StarConfig fields whose defaults were tuned for another task and are wrong for
+    # this one. An explicit CLI flag still wins; see rationales/cli.py:_cfg.
+    defaults: Dict[str, Any]
+
+    def for_config(self, cfg: Any) -> "RationaleTask":
+        """The task as this config asks for it.
+
+        Prompt-shaping knobs that live on StarConfig (so they are serialized into
+        run_config.json and can be set per run) are bound here. Optional: a task
+        without one is used as-is.
+        """
+
     # --- data ---------------------------------------------------------------
     def load(self, cfg: Any) -> Tuple[List[Any], List[Dict[str, Any]]]:
         """Every item, plus per-source provenance reports for run_config.json."""
@@ -70,6 +82,13 @@ class RationaleTask(Protocol):
 
     def accepts(self, item: Any, answer: Any) -> bool:
         """The STaR filter: does this answer match the human's own response?"""
+
+    def hint_leak(self, reasoning: str) -> Optional[str]:
+        """The matched phrase if this rationale gives away that it was handed the
+        answer, else None. Called by filter.build_corpus on every accepted rationale.
+
+        Not part of STaR -- the paper only removes the hint from the prompt.
+        """
 
     def answer_from_row(self, row: Dict[str, Any]) -> Any:
         """Inverse of ``answer_fields``, for rebuilding a written pool."""
@@ -148,6 +167,13 @@ def resolve(name: str) -> RationaleTask:
     import importlib
 
     return getattr(importlib.import_module(module_name), attr)
+
+
+def resolve_for(cfg: Any) -> RationaleTask:
+    """The task named by a config, bound to that config's prompt-shaping knobs."""
+    task = resolve(getattr(cfg, "task", DEFAULT_TASK))
+    binder = getattr(task, "for_config", None)
+    return binder(cfg) if binder is not None else task
 
 
 def default_task() -> RationaleTask:

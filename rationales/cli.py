@@ -27,11 +27,16 @@ from bench.core.io import run_timestamp, write_json
 from .config import StarConfig
 from .star import dry_run as plan_dry_run
 from .star import prepare_run, run_star
-from .task import DEFAULT_TASK, resolve, task_names
+from .task import DEFAULT_TASK, resolve, resolve_for, task_names
 
 app = typer.Typer(add_completion=False, help=__doc__)
 
 _TASK_HELP = f"Which task to run: {' | '.join(task_names())}."
+_SIBLING_HELP = (
+    "listening_qa only: show the human's answers to the passage's other four "
+    "questions. Run it BOTH ways -- one question per topic is built as a 2x2 "
+    "combination of two others, so the siblings can hand the model the answer."
+)
 
 
 def _cfg(**overrides) -> StarConfig:
@@ -52,9 +57,10 @@ def _cfg(**overrides) -> StarConfig:
     return StarConfig(**defaults)
 
 
-def _resolve(name: str):
+def _task_for(cfg) -> "object":
+    """The task a config asks for, with its prompt-shaping knobs bound."""
     try:
-        return resolve(name)
+        return resolve_for(cfg)
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from None
 
@@ -78,8 +84,8 @@ def select_data(
     out: Optional[Path] = typer.Option(None, help="Write selection.json here."),
 ) -> None:
     """Build D and split it, without calling any API."""
-    tsk = _resolve(task)
     cfg = _cfg(task=task, seed=seed, eval_frac=eval_frac)
+    tsk = _task_for(cfg)
     items, reports = tsk.load(cfg)
     for r in reports:
         typer.echo(json.dumps(r))
@@ -141,10 +147,15 @@ def show_prompt(
     direction: str = typer.Option("forward", help="digit span only: forward | reverse"),
     kind: str = typer.Option("sample", help="sample | rationalize | training"),
     fewshot: bool = typer.Option(True, help="Include the few-shot rationale demos."),
+    sibling_context: bool = typer.Option(True, help=_SIBLING_HELP),
 ) -> None:
     """Render one fully-assembled prompt for eyeball review."""
-    tsk = _resolve(task)
-    cfg = _cfg(task=task, directions=(direction,) if task == "digit_span" else None)
+    cfg = _cfg(
+        task=task,
+        sibling_context=sibling_context,
+        directions=(direction,) if task == "digit_span" else None,
+    )
+    tsk = _task_for(cfg)
     items, _ = tsk.load(cfg)
     # A human-fail item: the interesting case, and the only one where the hint prompt
     # differs from the generation prompt in a visible way.
@@ -171,9 +182,9 @@ def dry_run_cmd(
     fewshot: bool = typer.Option(True),
     max_seq_length: Optional[int] = typer.Option(None),
     steps_1: Optional[int] = typer.Option(None),
+    sibling_context: bool = typer.Option(True, help=_SIBLING_HELP),
 ) -> None:
     """Plan a round: request counts, token estimate, cost estimate. No API calls."""
-    tsk = _resolve(task)
     cfg = _cfg(
         task=task,
         base_model=base_model,
@@ -183,8 +194,9 @@ def dry_run_cmd(
         use_fewshot=fewshot,
         max_seq_length=max_seq_length,
         steps_1=steps_1,
+        sibling_context=sibling_context,
     )
-    plan = plan_dry_run(cfg, task=tsk)
+    plan = plan_dry_run(cfg, task=_task_for(cfg))
     for key in [
         "task",
         "base_model",
@@ -227,6 +239,7 @@ def star_cmd(
         help="Prompt+completion token budget per training datum. Truncation cuts from "
         "the right, i.e. the answer the loss covers, so raise this for long stimuli.",
     ),
+    sibling_context: bool = typer.Option(True, help=_SIBLING_HELP),
     max_usd: Optional[float] = typer.Option(
         None, help="Spend ceiling; the run PAUSES when live cost crosses it (resumable)."
     ),
@@ -237,9 +250,9 @@ def star_cmd(
     yes: bool = typer.Option(False, "--yes", help="Skip the cost confirmation."),
 ) -> None:
     """Run the STaR loop end to end (sample -> filter -> train -> eval)."""
-    tsk = _resolve(task)
     cfg = _cfg(
         task=task,
+        sibling_context=sibling_context,
         base_model=base_model,
         rounds=rounds,
         k=k,
@@ -254,6 +267,7 @@ def star_cmd(
         checkpoint_every=checkpoint_every,
         max_seq_length=max_seq_length,
     )
+    tsk = _task_for(cfg)
 
     if resume and run_dir is None:
         from .config import PKG_DIR
@@ -263,6 +277,16 @@ def star_cmd(
             raise typer.BadParameter("no run to resume; drop --resume to start one")
         run_dir = paused[-1].parent
     if resume:
+        # out_root has no task segment, and --resume without --run-dir takes the most
+        # recent run of ANY task. restore() would raise on the unknown item ids, but
+        # only after a sampling client is up; say so here instead.
+        prior = json.loads((run_dir / "run_config.json").read_text())
+        prior_task = prior.get("task", DEFAULT_TASK)
+        if prior_task != task:
+            raise typer.BadParameter(
+                f"{run_dir.name} is a {prior_task} run, not {task}. Pass "
+                f"--task {prior_task}, or name a different --run-dir."
+            )
         state = json.loads((run_dir / "progress.json").read_text())
         typer.echo(
             f"resuming {run_dir.name}: round {state['round']}, phase {state['phase']}"
@@ -325,13 +349,9 @@ def probe_cmd(
             "OPENROUTER_API_KEY=... python -m rationales.cli probe"
         )
 
-    tsk = _resolve(task)
-    if task == "listening_qa":
-        from .tasks.listening_qa import ListeningQATask
-
-        tsk = ListeningQATask(sibling_context=sibling_context)
-    elif not sibling_context:
+    if task != "listening_qa" and not sibling_context:
         raise typer.BadParameter("--no-sibling-context applies only to --task listening_qa")
+    tsk = _task_for(_cfg(task=task, sibling_context=sibling_context))
 
     items = tsk.probe_items(n_per_cell, seed=seed)
     n_calls = 2 * len(items)
@@ -456,9 +476,8 @@ def prepare(
     seed: int = typer.Option(42),
 ) -> None:
     """Create the run dir with selection.json + provenance, without calling the API."""
-    tsk = _resolve(task)
     cfg = _cfg(task=task, base_model=base_model, seed=seed)
-    root, sel = prepare_run(cfg, timestamp=run_timestamp(), task=tsk)
+    root, sel = prepare_run(cfg, timestamp=run_timestamp(), task=_task_for(cfg))
     typer.echo(f"{root}  train={len(sel.train)} eval={len(sel.eval)}")
 
 

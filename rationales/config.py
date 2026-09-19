@@ -92,6 +92,11 @@ class StarConfig:
     rounds: int = 1
     use_fewshot: bool = True
     leak_filter: bool = True
+    # listening_qa only: show the participant's answers to the passage's other four
+    # questions. A prompt-shaping knob, same class as use_fewshot, and on StarConfig
+    # rather than baked into the task so that it is serialized with the run and can
+    # actually be turned off. See ListeningQATask for why it might need to be.
+    sibling_context: bool = True
 
     # --- training ----------------------------------------------------------
     # Paper: 100-step LR warmup then constant LR; 40 steps at the first outer loop,
@@ -149,6 +154,11 @@ class StarConfig:
             )
         if not self.use_fewshot:
             out["fewshot"] = "disabled (STaR prompts with few-shot rationales)"
+        if self.task == "listening_qa" and not self.sibling_context:
+            out["sibling_context"] = (
+                "disabled (the prompt normally carries the participant's answers to "
+                "the passage's other four questions)"
+            )
         return out
 
     def to_dict(self) -> Dict[str, Any]:
