@@ -29,10 +29,15 @@ class ListeningQATask:
     # StarConfig defaults that were tuned on digit span and are wrong here. An explicit
     # CLI flag still wins; see rationales/cli.py:_cfg.
     #
-    #   max_seq_length  a training prompt is a passage (up to ~2.5k characters for the
-    #                   distractor level) plus four sibling Q&A plus five options plus
-    #                   the reasoning block. 2048 tokens would truncate, and build_datum
-    #                   cuts from the RIGHT -- removing the answer line the loss covers.
+    #   max_seq_length  headroom, not a fix for a known overflow. Measured over 300
+    #                   items with the real Qwen tokenizer: the zero-shot training
+    #                   prompt runs 698-945 tokens, so even with a generous completion
+    #                   a datum is ~1120 and 2048 would in fact have held. 4096 costs
+    #                   nothing (training is billed on actual datum length, not the
+    #                   cap) and buys room for a longer stimulus or a fifth sibling.
+    #                   It matters because build_datum truncates from the RIGHT, so an
+    #                   overflow would remove the answer line the loss covers rather
+    #                   than failing.
     #   steps_1         60 steps x batch 8 = 480 examples, tuned for a ~560-item
     #                   corpus. Here the corpus is ~7x that, so 60 steps is well under
     #                   one epoch. 200 is a starting point; set the real value off the
