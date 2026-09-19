@@ -38,6 +38,24 @@ PROMPTS_DIR = Path(__file__).resolve().parents[1] / "prompts"
 FEWSHOT_PATH = PROMPTS_DIR / "fewshot_listening.txt"
 PLACEHOLDER_MARKER = "PLACEHOLDER"
 
+# The demos are real study passages and the responses four real participants actually
+# gave -- not invented behavior. These are the items they were written from, recorded
+# here so the constraint that matters can be tested rather than trusted: every one must
+# be in the TRAIN split, or the demos would be showing a held-out person's answers.
+#
+# Note what this does NOT prevent. There are only sixteen stimuli, and the split is by
+# participant, so these passages and questions also appear in eval items belonging to
+# other people. A demo therefore reveals the correct-ish answer shape for the questions
+# it covers. That is a property of the dataset, not of the demos: no choice of demo item
+# avoids it. It is why the eval to read is human_match, which the demos cannot give away
+# for an unseen person, rather than ground-truth accuracy.
+FEWSHOT_SOURCE_ITEMS = (
+    "586ad3a6da731b0001049cad:fabrics:QFB03",
+    "55acf681fdf99b3d5b2ab68c:martial_arts:QMA05",
+    "55acf681fdf99b3d5b2ab68c:astronomy:QA03",
+    "589f4b4b4d580c0001e0a155:astronomy:QA03",
+)
+
 CONDITION_ID = "C3"
 
 # Every question in all four banks has exactly five options, the fifth being "None of
@@ -270,4 +288,5 @@ def prompt_additions() -> Dict[str, str]:
             "one (participant, topic, question); the listening task's own prompt asks "
             "for all five questions of a passage at once"
         ),
+        "fewshot_source_items": ", ".join(FEWSHOT_SOURCE_ITEMS),
     }

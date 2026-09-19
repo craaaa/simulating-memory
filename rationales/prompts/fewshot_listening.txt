@@ -1,49 +1,48 @@
-Here are example results from previous human participants on the listening comprehension task,
-including the reasoning behind what they remembered. Each participant heard the passage once,
-as audio, and could not replay it.
+Here are results from previous human participants on this listening comprehension task,
+including the reasoning behind what they remembered. Each participant heard their passage
+once, as audio, and could not replay it. Every response below is one a real person gave.
 
-These examples use a practice passage that is not one of the study passages.
+Passage heard by Participant 1:
+Bracklin is a textile made exclusively from the fleece of the Grennock mountain sheep. Bracklin is woven using double-weft interlock weaving: two threads lock around each other, binding two layers of cloth together without any stitching. Because of its warmth, bracklin cloth is used mainly for winter outerwear and ceremonial robes. Before it is dyed, bracklin fabric ranges from warm ivory to ash grey.
 
-Practice transcript:
-The Calder Viaduct carries the coastal railway across the Mersen estuary. It was finished in 1878, and its thirty brick arches were built by hand over six years. Engineers inspect it every spring using small boats at low tide, checking the brickwork for salt damage. The viaduct matters to historians because it shows how Victorian builders solved the problem of soft estuary mud, which had swallowed two earlier bridges on the same site. Further inland, the Tarn Aqueduct is a very different structure: a cast-iron trough finished in 1805, inspected by drone, and studied mostly for its ironwork.
-
-Human Participant A
-
-Question: Which of the following correctly describe the Calder Viaduct? Select all that apply. 1) It carries a railway 2) It was finished in 1878 3) It has thirty brick arches 4) It is a cast-iron trough 5) None of the above
+Human Participant 1
+Question: How is bracklin made? Select all that apply. 1) Double-weft interlock weaving 2) Double-warp chain weaving 3) Cross-thread basket weaving 4) Single-strand satin weaving 5) None of the above
 <reasoning>
-The opening sentence names the railway and the estuary together, so this human held on to the railway function without effort. The date and the arch count came later in the same burst of numbers, and one of the two survived; here it was the arch count, because "thirty arches built by hand" carried an image where a bare year did not.
+The weave was named once and then immediately explained, so this human had both the term and a picture of what it meant, which made it stick as one memory rather than a bare phrase. The other three options are weave names they never heard, and none of them pulled at anything, so there was nothing competing with the one they recognized.
 </reasoning>
-Answer: 1,3
-Outcome: Wrong — the human missed a correct option (2)
-
-Question: How is the Calder Viaduct inspected? Select all that apply. 1) From small boats 2) At low tide 3) By drone 4) By divers in the spring 5) None of the above
-<reasoning>
-The boats-at-low-tide detail was vivid and stayed intact. The drone belongs to the other structure in the passage, and this human had stopped tracking which inspection method went with which bridge by the time the second one was described, so the more recent method attached itself to the one they were asked about.
-</reasoning>
-Answer: 1,2,3
-Outcome: Wrong — the human endorsed an option that describes the other structure
-
-Human Participant B
-
-Question: What do historians study the Calder Viaduct to learn? Select all that apply. 1) How Victorian builders handled soft estuary mud 2) Why two earlier bridges failed on the site 3) How cast-iron troughs were manufactured 4) How salt damages brickwork 5) None of the above
-<reasoning>
-The mud and the two swallowed bridges arrived in a single causal sentence, so this human kept them as one memory rather than two facts and recalled both together. The ironwork was clearly marked as belonging to the other structure, and the salt detail was stored as part of the inspection routine rather than as something historians study.
-</reasoning>
-Answer: 1,2
+Answer: 1
 Outcome: Correct
 
-Question: Which of the following describes the Calder Viaduct? Select all that apply. 1) An iron trough finished in 1805 that is studied for its ironwork 2) An iron trough finished in 1805 that is studied for its handling of estuary mud 3) A brick viaduct finished in 1878 that is studied for its ironwork 4) A brick viaduct finished in 1878 that is studied for its handling of estuary mud 5) None of the above
+Passage heard by Participant 2:
+Velthrak is a grappling art where striking of any kind is not permitted. Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. Full-resistance sparring is off-limits for anyone with under two years of experience. Originating in the Dalviri Highlands, velthrak is governed by the Dalviri Arts Council, which was founded in 1947.
+
+Human Participant 2
+Question: Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above
 <reasoning>
-This human remembered the viaduct as brick and the aqueduct as iron, and that distinction was firm enough to rule out the first two options. What had blurred was the pairing of each structure with its year, so they fell back on the study purpose, which they did remember clearly, and chose the option built around estuary mud.
+The sparring limit arrived phrased as a restriction -- something is off-limits to someone -- so this human filed it as a rule and retrieved it when asked for rules. The no-striking fact was heard in the opening breath as part of what velthrak IS, a definition rather than a prohibition, so it was stored under the wrong heading and never came back when the question asked for restrictions.
 </reasoning>
-Answer: 4
-Outcome: Correct
+Answer: 2
+Outcome: Wrong — a correct option (1) was missed
 
-Human Participant C
+Passage heard by Participants 3 and 4:
+About four thousand light-years away from Earth sits the Pictor Nebula. The Pictor nebula is an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.
 
-Question: Where is the Calder Viaduct located? Select all that apply. 1) It crosses the Tarn valley 2) It stands beside a disused quarry 3) It is the longest viaduct in the country 4) It was moved to its present site in 1920 5) None of the above
+A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off by an aging star as it shed its outer layers near the end of its life. Sitting roughly nine thousand light-years out, the Fornax Loop is fainter and colder than younger nebulae, and its structure shows up best in infrared surveys rather than through visible light. Researchers study the Loop mainly to trace how dying stars enrich space with the heavier elements they've built up over their lifetimes. Because it emits so little visible light, it went unnoticed by early sky surveys and was only identified once infrared instruments became sensitive enough to pick it out.
+
+Human Participant 3
+Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-None of these matched anything this human had heard; the only place name they retained was the Mersen estuary, and nothing in the passage ranked the viaduct by length or mentioned moving it. Having found no option they could attach to a memory, they took the none-of-the-above option rather than guessing at the most plausible-sounding one.
+The purpose of studying the nebula was stated early and then buried under a long stretch about a second object, so by the time the questions came this human had kept the shape of the passage -- astronomers study these things to learn something -- without the specific purpose still attached to the right object. Reaching for something that sounded like the kind of thing astronomers investigate, they took the two most technical-sounding options and did not notice that neither had actually been said.
+</reasoning>
+Answer: 3,4
+Outcome: Wrong — two options were endorsed that appeared nowhere in the passage
+
+Human Participant 4
+Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
+<reasoning>
+This human lost the same early sentence to the same long second passage, but handled the blank differently: nothing on the list produced a feeling of recognition, and rather than pick the answer that sounded most like astronomy they treated the absence of a memory as an answer in itself. Having no retrieved content to match against any option, they took none of the above.
 </reasoning>
 Answer: 5
-Outcome: Correct
+Outcome: Wrong — the correct options (1 and 2) were both in the passage
+
+Those are the examples. Now do the same for the participant below.
