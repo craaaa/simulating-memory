@@ -25,14 +25,23 @@ bench = [
 # Post-hoc analysis of run outputs: the Bayesian mixed-effects work
 # (application/prolific_study/initial_pilot/bayes_mixed_effects.ipynb) and the
 # listening_qa pipeline, which reads/writes parquet.
+# Upper bounds are deliberate. pymc 6 / arviz 1.0 / pytensor 3 are major releases with
+# breaking API changes, and the existing notebooks (e.g.
+# application/prolific_study/initial_pilot/bayes_mixed_effects.ipynb) were written
+# against pymc 5. An unpinned `uv sync` silently upgraded all three, which is the kind
+# of change that produces confusing posteriors rather than an obvious import error.
+# Raise these deliberately, with the notebooks migrated in the same commit.
 analysis = [
     "pandas>=3.0",
     "scipy>=1.18",
     "matplotlib>=3.8",
-    "arviz>=0.23",
-    "pymc>=5.26",
+    "arviz>=0.23,<1",
+    "pymc>=5.26,<6",
+    "pytensor>=2.35,<3",
     "xarray>=2026.7",
     "pyarrow>=25.0",
+    # arviz netcdf IO backends; dropped as orphans when pymc 6 removed them.
+    "h5netcdf>=1.3",
 ]
 
 # Stimulus preparation for the Prolific study (application/prolific_study/).
