@@ -1,0 +1,49 @@
+Here are example results from previous human participants on the listening comprehension task,
+including the reasoning behind what they remembered. Each participant heard the passage once,
+as audio, and could not replay it.
+
+These examples use a practice passage that is not one of the study passages.
+
+Practice transcript:
+The Calder Viaduct carries the coastal railway across the Mersen estuary. It was finished in 1878, and its thirty brick arches were built by hand over six years. Engineers inspect it every spring using small boats at low tide, checking the brickwork for salt damage. The viaduct matters to historians because it shows how Victorian builders solved the problem of soft estuary mud, which had swallowed two earlier bridges on the same site. Further inland, the Tarn Aqueduct is a very different structure: a cast-iron trough finished in 1805, inspected by drone, and studied mostly for its ironwork.
+
+Human Participant A
+
+Question: Which of the following correctly describe the Calder Viaduct? Select all that apply. 1) It carries a railway 2) It was finished in 1878 3) It has thirty brick arches 4) It is a cast-iron trough 5) None of the above
+<reasoning>
+The opening sentence names the railway and the estuary together, so this human held on to the railway function without effort. The date and the arch count came later in the same burst of numbers, and one of the two survived; here it was the arch count, because "thirty arches built by hand" carried an image where a bare year did not.
+</reasoning>
+Answer: 1,3
+Outcome: Wrong — the human missed a correct option (2)
+
+Question: How is the Calder Viaduct inspected? Select all that apply. 1) From small boats 2) At low tide 3) By drone 4) By divers in the spring 5) None of the above
+<reasoning>
+The boats-at-low-tide detail was vivid and stayed intact. The drone belongs to the other structure in the passage, and this human had stopped tracking which inspection method went with which bridge by the time the second one was described, so the more recent method attached itself to the one they were asked about.
+</reasoning>
+Answer: 1,2,3
+Outcome: Wrong — the human endorsed an option that describes the other structure
+
+Human Participant B
+
+Question: What do historians study the Calder Viaduct to learn? Select all that apply. 1) How Victorian builders handled soft estuary mud 2) Why two earlier bridges failed on the site 3) How cast-iron troughs were manufactured 4) How salt damages brickwork 5) None of the above
+<reasoning>
+The mud and the two swallowed bridges arrived in a single causal sentence, so this human kept them as one memory rather than two facts and recalled both together. The ironwork was clearly marked as belonging to the other structure, and the salt detail was stored as part of the inspection routine rather than as something historians study.
+</reasoning>
+Answer: 1,2
+Outcome: Correct
+
+Question: Which of the following describes the Calder Viaduct? Select all that apply. 1) An iron trough finished in 1805 that is studied for its ironwork 2) An iron trough finished in 1805 that is studied for its handling of estuary mud 3) A brick viaduct finished in 1878 that is studied for its ironwork 4) A brick viaduct finished in 1878 that is studied for its handling of estuary mud 5) None of the above
+<reasoning>
+This human remembered the viaduct as brick and the aqueduct as iron, and that distinction was firm enough to rule out the first two options. What had blurred was the pairing of each structure with its year, so they fell back on the study purpose, which they did remember clearly, and chose the option built around estuary mud.
+</reasoning>
+Answer: 4
+Outcome: Correct
+
+Human Participant C
+
+Question: Where is the Calder Viaduct located? Select all that apply. 1) It crosses the Tarn valley 2) It stands beside a disused quarry 3) It is the longest viaduct in the country 4) It was moved to its present site in 1920 5) None of the above
+<reasoning>
+None of these matched anything this human had heard; the only place name they retained was the Mersen estuary, and nothing in the passage ranked the viaduct by length or mentioned moving it. Having found no option they could attach to a memory, they took the none-of-the-above option rather than guessing at the most plausible-sounding one.
+</reasoning>
+Answer: 5
+Outcome: Correct

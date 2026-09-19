@@ -68,6 +68,17 @@ class DigitSpanTask:
     def answer_from_row(self, row: Dict[str, Any]) -> List[int]:
         return row.get("pred_digits") or []
 
+    def human_answer(self, item: HumanTrial) -> List[int]:
+        return item.user_digits
+
+    def gold_answer(self, item: HumanTrial) -> List[int]:
+        return item.expected_digits
+
+    def probe_items(self, n_per_cell: int, *, seed: int) -> List[HumanTrial]:
+        from ..probe import pick_trials
+
+        return pick_trials(n_per_cell, seed=seed)
+
     def hint_leak(self, reasoning: str) -> Optional[str]:
         return prompting.hint_leak(reasoning)
 

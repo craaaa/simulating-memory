@@ -25,12 +25,7 @@ from bench.core.io import run_timestamp, write_json
 
 from .config import PKG_DIR
 from .data import HumanTrial, load_all
-from .prompting import (
-    build_rationalize_prompt,
-    build_sample_prompt,
-    hint_leak,
-    parse_rationale,
-)
+from .task import default_task
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -58,13 +53,16 @@ def pick_trials(n_per_cell: int = 2, *, seed: int = 42) -> List[HumanTrial]:
     return out
 
 
-def _row(trial: HumanTrial, kind: str, prompt: str, raw: str) -> Dict[str, Any]:
-    reasoning, digits, parse_errors = parse_rationale(raw)
+def _row(trial: Any, kind: str, prompt: str, raw: str, task: Any = None) -> Dict[str, Any]:
+    task = task or default_task()
+    reasoning, digits, parse_errors = task.parse(raw)
+    human = task.human_answer(trial)
+    gold = task.gold_answer(trial)
+    fields = task.item_fields(trial)
     return {
-        "trial_id": trial.trial_id,
-        "direction": trial.direction,
-        "length": trial.length,
-        "human_correct": trial.correct,
+        "trial_id": task.item_id(trial),
+        **{k: v for k, v in fields.items() if k in {"direction", "length", "level", "topic", "question_id"}},
+        "human_correct": fields["human_correct"],
         "kind": kind,
         # Tracked separately from parse failures: an empty completion means the
         # provider returned nothing (budget spent on hidden reasoning, filtered, etc.),
@@ -75,16 +73,17 @@ def _row(trial: HumanTrial, kind: str, prompt: str, raw: str) -> Dict[str, Any]:
         "reasoning": reasoning,
         "reasoning_chars": len(reasoning or ""),
         "pred_digits": digits,
-        "human_digits": trial.user_digits,
-        "expected_digits": trial.expected_digits,
-        "matches_human": digits == trial.user_digits,
-        "matches_ground_truth": digits == trial.expected_digits,
-        # Length is judged against y_i (the human's response), not the correct answer:
-        # faithfully reproducing a human's truncation has the "wrong" length by design,
-        # and scoring it against gold made a success look like a failure.
-        "right_length": len(digits) == len(trial.user_digits),
-        "right_length_vs_gold": len(digits) == len(trial.expected_digits),
-        "hint_leak": hint_leak(reasoning or "") if kind == "rationalize" else None,
+        "human_digits": human,
+        "expected_digits": gold,
+        "matches_human": task.accepts(trial, digits),
+        "matches_ground_truth": list(digits or []) == list(gold),
+        # Size is judged against y_i (the human's response), not the correct answer:
+        # faithfully reproducing a human's truncation, or their missed option, has the
+        # "wrong" size by design, and scoring it against gold made a success look like
+        # a failure.
+        "right_length": len(digits or []) == len(human),
+        "right_length_vs_gold": len(digits or []) == len(gold),
+        "hint_leak": task.hint_leak(reasoning or "") if kind == "rationalize" else None,
         "prompt_chars": len(prompt),
         "raw": raw,
     }
@@ -111,12 +110,14 @@ def probe(
     seed: int = 42,
     thinking: bool = False,
     generate=None,
+    task: Any = None,
 ) -> Dict[str, Any]:
     """Run both prompt kinds over a few trials and summarize format validity.
 
     ``generate(prompt) -> str`` can be injected for tests; otherwise an OpenRouter
     client is built.
     """
+    task = task or default_task()
     if generate is None:
         from bench.core.llm_openai import OpenAIChatLLM
 
@@ -135,19 +136,20 @@ def probe(
     else:
         usage_source = None
 
-    trials = pick_trials(n_per_cell, seed=seed)
+    trials = task.probe_items(n_per_cell, seed=seed)
     rows: List[Dict[str, Any]] = []
 
     for t in trials:
-        gen_prompt = build_sample_prompt(t, fewshot=fewshot)
-        rows.append(_row(t, "sample", gen_prompt, generate(gen_prompt)))
+        gen_prompt = task.build_sample_prompt(t, fewshot=fewshot)
+        rows.append(_row(t, "sample", gen_prompt, generate(gen_prompt), task))
 
-        rat_prompt = build_rationalize_prompt(t, fewshot=fewshot)
-        rows.append(_row(t, "rationalize", rat_prompt, generate(rat_prompt)))
+        rat_prompt = task.build_rationalize_prompt(t, fewshot=fewshot)
+        rows.append(_row(t, "rationalize", rat_prompt, generate(rat_prompt), task))
 
     report = {
         "model": model,
         "backend": "openrouter",
+        "task": task.name,
         "fewshot": fewshot,
         "temperature": temperature,
         "max_tokens": max_tokens,
@@ -228,6 +230,9 @@ def _counts(items) -> Dict[str, int]:
 def write_report(report: Dict[str, Any], *, timestamp: Optional[str] = None) -> Path:
     ts = timestamp or run_timestamp()
     slug = report["model"].replace("/", "_")
+    # The task is recorded inside the report rather than in the filename: the name is
+    # already unique per invocation (timestamp + model), and putting it in the path
+    # would rename the reports already written under out/probe/.
     path = PKG_DIR / "out" / "probe" / f"{ts}_{slug}.json"
     write_json(path, report)
     return path

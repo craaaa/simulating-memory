@@ -72,7 +72,17 @@ class RationaleTask(Protocol):
         """The STaR filter: does this answer match the human's own response?"""
 
     def answer_from_row(self, row: Dict[str, Any]) -> Any:
-        """Inverse of ``row_fields``' answer column, for rebuilding a written pool."""
+        """Inverse of ``answer_fields``, for rebuilding a written pool."""
+
+    def human_answer(self, item: Any) -> Any:
+        """y_i -- what the participant actually did. What ``accepts`` compares against."""
+
+    def gold_answer(self, item: Any) -> Any:
+        """The correct answer. Never the filter target here; used only to report how
+        far the model has moved away from being right and toward being human."""
+
+    def probe_items(self, n_per_cell: int, *, seed: int) -> List[Any]:
+        """A handful of items per cell for the off-policy format probe."""
 
     # --- row shapes ---------------------------------------------------------
     def item_fields(self, item: Any) -> Dict[str, Any]:
