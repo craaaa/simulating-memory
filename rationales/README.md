@@ -1,15 +1,40 @@
-# `rationales/` — STaR for forward and reverse digit span
+# `rationales/` — STaR against human responses
 
-Training-time lever for the gap this repo measures: out-of-the-box LMs recall digit
-sequences far better than humans do. `bench/` attacks that with prompting (C1–C4) and a
-compactor; this package fine-tunes instead, using **STaR** (Zelikman et al. 2022,
+Training-time lever for the gap this repo measures: out-of-the-box LMs remember far
+better than humans do. `bench/` attacks that with prompting (C1–C4) and a compactor;
+this package fine-tunes instead, using **STaR** (Zelikman et al. 2022,
 [arXiv:2203.14465](https://arxiv.org/abs/2203.14465)) through the
 [Tinker](https://tinker-docs.thinkingmachines.ai) API.
 
-The model learns to emit a `<reasoning>` block and then a recall response. A rationale
-is kept only if the response **matches what a real human actually typed** — correct
-recall on success trials, that human's *specific* error on failures. The dataset is 1:1
-success/fail, so "always recall correctly" does not satisfy the objective.
+The model learns to emit a `<reasoning>` block and then a response. A rationale is kept
+only if that response **matches what a real human actually did** — not what was correct.
+On trials the human got right the two coincide; on the ones they got wrong, the model
+has to reproduce *that person's specific error*.
+
+## Two tasks
+
+| `--task` | An item is | y_i | Human data |
+|---|---|---|---|
+| `digit_span` (default) | one presented sequence | the digits that participant typed | `runs/human/working-memory-{digit-span,reverse-digit-span}/` |
+| `listening_qa` | one (participant, topic, question) | the options that participant endorsed | `application/listening_qa/data/` + the analysis pipeline's `responses.csv` |
+
+Everything the loop does is task-independent; everything task-specific sits behind the
+`RationaleTask` protocol in `task.py`. The two implementations are thin adapters in
+`tasks/` — over `data.py` / `select.py` / `prompting.py` / `errors.py` / `evaluate.py` /
+`plotting.py` for digit span, and over the parallel modules in `listening/` for
+listening QA.
+
+The balance story differs by task, and is worth knowing before reading any result:
+
+* **digit span** subsamples to 1:1 success/fail, because otherwise "always recall
+  correctly" satisfies the objective. Fails then concentrate at long spans, which is a
+  shortcut the per-length eval curve exists to detect.
+* **listening QA** subsamples nothing — the pool is already 46.7% exact-correct — and
+  splits **by participant**, not by item, because each prompt carries that
+  participant's answers to the passage's other four questions. Pooled 46.7% is not the
+  reading: across the 80 (topic, level, question) cells the correct share runs 0.09 to
+  0.93, and `select-data` flags the five outside 0.15–0.85, since a cell pinned near 0
+  or 1 is learnable from the question's shape alone.
 
 ---
 
@@ -71,6 +96,8 @@ failing to fall and the per-length curve staying flat.
 | Module | Responsibility |
 |---|---|
 | `config.py` | `StarConfig` (every tunable, placeholders marked), Tinker price table verified 2026-09-10, `tinker_cost_usd()`, output-path helpers. |
+| `task.py` | The `RationaleTask` protocol and the task registry. Everything the loop needs to know about a task: how to load and split items, build the three prompt variants, parse a completion, and — above all — `accepts()`, the STaR filter. |
+| `tasks/` | The two implementations. `digit_span.py` is a pure adapter over the modules below; `listening_qa.py` over `listening/`. |
 | `data.py` | Loads `runs/human/working-memory-{digit-span,reverse-digit-span}/run-*.json` into `HumanTrial`. Excludes `.claude/worktrees/` (byte-identical copy — a recursive glob double-counts), drops `status != completed` runs, de-dupes repeat participants by earliest `started_at`, and re-derives `correct` from the strings as an assertion. **Stores `user_digits`/`expected_digits` as `list[int]`** so they compare directly against parsed output. |
 | `select.py` | Builds `D`: all fail trials + an equal random sample of successes (global 1:1), then a trial-level split stratified on (direction, correct). Drops eval trials whose digit sequence also appears in train. `restore()` re-reads `selection.json` so every round uses the identical `D`. |
 | `prompting.py` | Assembles prompts from bench's **C3** condition (imported, not copied) plus an explicit task line and a `<reasoning>` block. Three variants: generation, rationalization (hint), and the zero-shot training prompt. `parse_rationale()` splits on `</reasoning>` and applies bench's `PRESS_RE` **to the answer only**. `hint_leak()` flags rationales that give away the hint. |
@@ -84,7 +111,31 @@ failing to fall and the per-length curve staying flat.
 | `plotting.py` | Per-length curves (base/tuned/human on one axis), error-profile bars, bootstrap-signal plot. Figure failures never lose a completed round. |
 | `star.py` | The outer loop and `dry_run()` cost planning. Round N+1 *samples* from round N's checkpoint; training still starts from base. |
 | `cli.py` | Typer entry points (below). |
-| `tests/` | 115 tests. `conftest.py` fakes the Tinker SDK and torch, so masking, model routing, and round-over-round behavior are all testable with no API key and no spend. |
+| `tests/` | 261 tests. `conftest.py` fakes the Tinker SDK and torch, so masking, model routing, and round-over-round behavior are all testable with no API key and no spend. |
+
+### `listening/` — the listening-QA task
+
+| Module | Responsibility |
+|---|---|
+| `listening/data.py` | Joins `analysis/data/processed/responses.csv` (what was endorsed, plus the blind `option_type` / `cue_match` labels), `data/<topic>/questions.yaml` (question, options, gold) and `data/<topic>/texts/<level>.md` (the transcript) into 4020 `ListeningItem`s. Asserts `agent == "human"` — the CSV holds ~106k model rows too — and raises if the CSV and the question bank disagree about which options are correct. Records a sha256 of every source in `run_config.json`. |
+| `listening/select.py` | Splits **by participant**, stratified on the counterbalancing group. Deliberately not `select.select`: its stimulus-overlap drop would empty the eval split (sixteen stimuli, all in train) and its 1:1 subsample would discard half the data. Reports every (topic, level, question) cell and flags degenerate ones. |
+| `listening/prompting.py` | The listening task's **C3** condition (imported from `application/listening_qa/prompting.py`, not copied) plus a task line, a `<reasoning>` block, and the sibling-answer context. One question per prompt, answered as `Answer: 1,3`. |
+| `listening/evaluate.py` | Exact set match against the human, per-option agreement, and the endorsement profile over `option_type × cue_match` — the listening analogue of digit span's error taxonomy, reusing labels the analysis pipeline already assigns blind. |
+| `listening/plotting.py` | By-level curves (base/tuned/human on one axis) and endorsement-profile bars. |
+
+**The open question about this task.** Each topic's fourth question is built as a 2×2
+combination of two earlier questions' content, so for those items the sibling answers
+may let a model *derive* the answer rather than simulate a memory. Nothing in the design
+separates "learned human-like forgetting" from "inferred it from the siblings". Run
+`probe` both ways before reading any fine-tune result:
+
+```bash
+python -m rationales.cli probe --task listening_qa --n-per-cell 10
+python -m rationales.cli probe --task listening_qa --n-per-cell 10 --no-sibling-context
+```
+
+If the base model already matches humans well *with* siblings, the tuned-vs-base
+comparison is not interpretable and `--no-sibling-context` is the lever.
 
 ## Output layout
 
@@ -335,6 +386,8 @@ first; it also warns when a model has no price on file.
 
 ## Suggested first run
 
+Digit span:
+
 ```bash
 python -m rationales.cli select-data                  # sanity-check D
 # write the rationales in prompts/fewshot_{forward,reverse}.txt
@@ -344,5 +397,24 @@ git tag exp/star-v1
 python -m rationales.cli star --rounds 1
 ```
 
+Listening QA:
+
+```bash
+python -m rationales.cli select-data --task listening_qa      # 4020 items; check the
+                                                              # flagged degenerate cells
+python -m rationales.cli show-prompt --task listening_qa --kind training
+
+# the sibling-context control -- cents, and the gate on whether a fine-tune result
+# can be read at all (see "The open question about this task")
+python -m rationales.cli probe --task listening_qa --n-per-cell 10
+python -m rationales.cli probe --task listening_qa --n-per-cell 10 --no-sibling-context
+
+python -m rationales.cli dry-run --task listening_qa           # ~$3.50/round on Qwen3-8B
+git tag exp/listening-star-v1
+python -m rationales.cli star --task listening_qa --rounds 1 --max-usd <ceiling>
+```
+
 Then read, in order: `filter_stats.json` (is `D_n` non-empty?),
-`fail_side_generation_yield`, the per-length figure, and the error-profile figure.
+`fail_side_generation_yield` (if human-fail items only ever accept via the hint path,
+round over round, STaR is not bootstrapping and more rounds will not fix it), the
+by-length / by-level figure, and the error-profile figure.
