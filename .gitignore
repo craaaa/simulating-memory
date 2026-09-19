@@ -57,6 +57,9 @@ secrets.json
 *.log
 .tmp/
 tmp/
+# Everything under logs/, which subsumes the API error dumps (11k+ files) that used
+# to be listed separately as logs/llm_openai_errors/. The 168 legacy error dumps
+# committed before this rule stay tracked -- ignoring a path does not untrack it.
 logs/
 
 # STaR raw sample pools: every row repeats the full ~1.5KB prompt, so these run to
@@ -64,3 +67,7 @@ logs/
 # pools can be regenerated with `star --resume`.
 rationales/out/**/sample_pool.jsonl
 rationales/out/spend_ledger.jsonl.bak
+
+# merge_repeat_batch pre-merge backups
+*.bak_n5
+tasks_bak_n5/

@@ -1,0 +1,47 @@
+# Analysis configuration. Seeds live here — never inline a seed in a script.
+
+seeds:
+  simulate: 20260730      # 03_simulate.R
+  bootstrap: 11081       # bootstrap CIs (§5, §6)
+  splithalf: 22162       # split-half noise ceiling (§6)
+
+inference:
+  alpha: 0.05
+  # Multiplicity: Holm across the 3 non-reference level contrasts, confirmatory axis only.
+  multiplicity: holm
+  n_bootstrap: 2000
+  n_splithalf: 100
+
+# D4 equivalence bounds — MUST be non-null and frozen in PREREG.md before the first
+# multi_v6 fit (P4). Derived from an EARLIER pilot (multi_v5/pilot_v4) or literature,
+# NEVER from multi_v6. Provenance string is mandatory.
+equivalence:
+  bound_logodds: 0.2213         # ±0.2213 log-odds (≈ OR 1.25); frozen 2026-07-30
+  bound_provenance: "0.5 x smallest RELIABLE human level effect (repeat_long = 0.4426, p=0.005) on per-option correctness, multi_v5 human GLM (n=21, whole-participant attn pass). Distractor (0.11, p=0.43) excluded as noise — see DEVIATIONS.md. Applies to compactor - human contrast only."
+  method: TOST                  # TOST (frequentist, R/TOSTER) — D1=R
+  applies_to: "system contrast: compactor - human"
+
+# Latin-square / validation expectations (see 02_validate.R gates §2)
+validation:
+  n_levels: 4
+  n_topics: 4
+  n_content_questions_per_topic: 5
+  min_humans_per_topic_level: 25
+  model_repeats_per_cell: 20    # C1; gpt-4.1-mini & llama-8b have 30 (>= ok)
+
+levels: [control, repeat_short, repeat_long, distractor]
+topics: [astronomy, fruits, martial_arts, fabrics]
+
+# GLMM formula (§4 primary) — pre-registered in PREREG.md.
+glmm:
+  # 3-level `system` factor (ref=human) replaces binary `agent`. Per-model fit on
+  # {human, prompting(M), compactor(M)}. Two confirmatory contrasts vs human:
+  #   prompting - human  → difference test ; compactor - human → equivalence test (TOST, D4).
+  formula: "endorsed ~ system * level * option_type + position_c + topic + (1 | respondent) + (level | option_id)"
+  family: binomial
+  system_reference: human
+  # Convergence ladder rungs (§4): 1 full, 2 (level||option_id), 3 (1|option_id), 4 BFGS.
+  contrasts:
+    system: treatment     # reference = human
+    level: treatment      # reference = control
+    topic: sum

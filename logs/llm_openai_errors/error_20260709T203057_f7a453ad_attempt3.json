@@ -1,0 +1,79 @@
+{
+  "saved_at_utc": "2026-07-09T20:30:57.989749+00:00",
+  "attempt": 3,
+  "error": {
+    "exception_type": "NotFoundError",
+    "exception_message": "Error code: 404 - {'error': {'message': 'No endpoints found that support tool use. Try disabling \"write_memory\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection', 'code': 404}}",
+    "http_status": 404,
+    "response_text": "{\"error\":{\"message\":\"No endpoints found that support tool use. Try disabling \\\"write_memory\\\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\",\"code\":404}}",
+    "body": {
+      "message": "No endpoints found that support tool use. Try disabling \"write_memory\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection",
+      "code": 404
+    }
+  },
+  "request_kwargs": {
+    "model": "meta-llama/llama-3-8b-instruct",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are simulating a human participant in a psychology experiment on working memory.\nYou have a key-value memory store with at most 4 slots, reflecting the ~4-chunk\nlimit of human short-term memory (Cowan, 2001).\n\nOriginal human-task instructions:\nThe human will listen to an audio recording once, after which the audio cannot be replayed. The human will then be asked to answer questions about the recording based on their memory, selecting all options that apply for each question, and rate passage and question difficulty out of 10.\n\nUse write_memory and delete_key to maintain the key-value store while doing the original task.\nEach slot should hold ONE chunk — a small bundle of information a person would bind together\nbecause it feels meaningfully connected (a name with its role, a group of related items or\nnumbers, one gist). When the task asks for verbatim retrieval of a sequence, a human will\nform meaningful chunks of 1–3 items, starting from the beginning.\n\nNEVER pack a long run of items into one slot. Once your slots are filled, accept\nthat the rest will be lost. Compress realistically, and behave as a real human would:\nimperfect and sensitive to what seems important."
+      },
+      {
+        "role": "user",
+        "content": "Here is the material to remember:\n\nTopic: Astronomy — Pictor Nebula\nLevel: control\n\nAbout four thousand light-years away from Earth sits the Pictor Nebula. The Pictor nebula is an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.\n\nImages of the nebula tend to leave a strong impression, even on people who don't usually pay much attention to astronomy. The colors and shapes seem almost too vivid to be real, though they're exactly what the telescope captures. It's the kind of sight that makes clear why so many people find deep-sky objects captivating."
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "write_memory",
+          "description": "Store a key-value memory entry. The key should be a short word or phrase that labels the concept or chunk. The value should be an abstractive summary of the relevant information. Maximum 4 keys total — overwriting an existing key is allowed.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Short word or phrase identifying the concept (e.g. 'beginning', 'characters', 'theme')."
+              },
+              "value": {
+                "type": "string",
+                "description": "Abstractive summary of the information to retain for this key."
+              }
+            },
+            "required": [
+              "key",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "delete_key",
+          "description": "Remove a key and its value from working memory.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "The key to delete."
+              }
+            },
+            "required": [
+              "key"
+            ],
+            "additionalProperties": false
+          },
+          "strict": true
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "temperature": 0.0,
+    "max_tokens": 1024
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "generated_at_utc": "2026-07-10T17:49:11.441618+00:00",
+    "seed": 42,
+    "trial_design": "enumerate_within_topic_level_pairs",
+    "n_trials_requested": null,
+    "levels": [
+      "control",
+      "repeat_short",
+      "repeat_long",
+      "distractor"
+    ],
+    "eval_conditions": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "WM"
+    ],
+    "topics": [
+      "astronomy",
+      "fabrics",
+      "fruits",
+      "martial_arts"
+    ],
+    "standalone_jsonl": "/Users/cl5625/simulating-memory/runs/prompting/meta-llama_llama-3.1-8b-instruct/tasks/application_listening_qa_full_grid.jsonl",
+    "wm_jsonl": "/Users/cl5625/simulating-memory/runs/compactor/meta-llama_llama-3.1-8b-instruct/tasks/wm_application_listening_qa_full_grid.jsonl",
+    "human_csv": "/Users/cl5625/simulating-memory/.claude/worktrees/compare-task/application/prolific_study/multi_v6/longdata_strict.csv"
+  },
+  "result": {
+    "n_trials_drawn": 24,
+    "n_trials_human_defined": 24,
+    "hits": {
+      "C1": 12,
+      "C2": 14,
+      "C3": 16,
+      "C4": 15,
+      "WM": 17
+    },
+    "denom": {
+      "C1": 24,
+      "C2": 24,
+      "C3": 24,
+      "C4": 24,
+      "WM": 24
+    },
+    "accuracy_by_condition": {
+      "C1": 0.5,
+      "C2": 0.5833333333333334,
+      "C3": 0.6666666666666666,
+      "C4": 0.625,
+      "WM": 0.7083333333333334
+    }
+  }
+}

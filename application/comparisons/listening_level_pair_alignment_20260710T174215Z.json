@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "generated_at_utc": "2026-07-10T17:42:15.059403+00:00",
+    "seed": 42,
+    "n_trials_requested": 5000,
+    "levels": [
+      "control",
+      "repeat_short",
+      "repeat_long",
+      "distractor"
+    ],
+    "eval_conditions": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "WM"
+    ],
+    "topics": [
+      "astronomy",
+      "fabrics",
+      "fruits",
+      "martial_arts"
+    ],
+    "standalone_jsonl": "/Users/cl5625/simulating-memory/runs/prompting/meta-llama_llama-3.1-8b-instruct/tasks/application_listening_qa_full_grid.jsonl",
+    "wm_jsonl": "/Users/cl5625/simulating-memory/runs/compactor/meta-llama_llama-3.1-8b-instruct/tasks/wm_application_listening_qa_full_grid.jsonl",
+    "human_csv": "/Users/cl5625/simulating-memory/.claude/worktrees/compare-task/application/prolific_study/multi_v6/longdata_strict.csv"
+  },
+  "result": {
+    "n_trials_drawn": 5000,
+    "n_trials_human_defined": 5000,
+    "hits": {
+      "C1": 2333,
+      "C2": 2943,
+      "C3": 2670,
+      "C4": 2842,
+      "WM": 2470
+    },
+    "denom": {
+      "C1": 5000,
+      "C2": 5000,
+      "C3": 5000,
+      "C4": 5000,
+      "WM": 5000
+    },
+    "accuracy_by_condition": {
+      "C1": 0.4666,
+      "C2": 0.5886,
+      "C3": 0.534,
+      "C4": 0.5684,
+      "WM": 0.494
+    }
+  }
+}

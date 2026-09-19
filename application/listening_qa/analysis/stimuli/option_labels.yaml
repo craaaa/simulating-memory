@@ -1,0 +1,166 @@
+# Blind option-type + cue_match labels. Derived ONLY from question banks, blind to all results.
+# option_type: true | false_interference | false_plain
+#   true               = option is in the question's `answer` list
+#   false_interference = trait-swap / cross-entity foil (content from another entity in the
+#                        passage family, or a mismatched label-description pairing)
+#   false_plain        = generic wrong answer, invented distractor, or NOTA when not the answer
+# cue_match: exact (near-verbatim lift of passage wording/term) | paraphrase (restated)
+# attention_check: true  = this option belongs to an attention_check question (marked, still labeled)
+# NOTE: several `notes` fields describe an option ordering that no longer matches the current
+#       option text (banks were edited). Labels were derived from the current option text +
+#       the foil-provenance intent, not stale ordering.
+topics:
+  astronomy:
+    QA01:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: true, cue_match: exact}
+      3: {option_type: true, cue_match: paraphrase}
+      4: {option_type: false_interference, cue_match: paraphrase}   # Pyxis Cluster foil
+      5: {option_type: false_plain, cue_match: paraphrase}          # NOTA, not answer
+    QA02:
+      1: {option_type: true, cue_match: exact}
+      2: {option_type: true, cue_match: paraphrase}
+      3: {option_type: false_interference, cue_match: paraphrase}   # Aquila Pulsar method
+      4: {option_type: false_interference, cue_match: paraphrase}   # W Microscopii method
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QA03:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: true, cue_match: exact}
+      3: {option_type: false_interference, cue_match: paraphrase}   # Aquila (gravitational waves)
+      4: {option_type: false_interference, cue_match: paraphrase}   # Pyxis (black hole emissions)
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QA04:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: false_interference, cue_match: paraphrase}   # right type, Aquila purpose
+      3: {option_type: false_interference, cue_match: paraphrase}   # Aquila pulsar type
+      4: {option_type: false_interference, cue_match: paraphrase}   # both wrong (Aquila)
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QA05:
+      1: {option_type: false_interference, cue_match: paraphrase}   # mismatched label/description
+      2: {option_type: false_interference, cue_match: paraphrase}   # mismatched label/description
+      3: {option_type: false_interference, cue_match: paraphrase}   # pulsar (Aquila) description
+      4: {option_type: false_interference, cue_match: paraphrase}   # binary-star (W Mic) description
+      5: {option_type: true, cue_match: paraphrase}                 # NOTA IS the answer
+    AT_astronomy:
+      1: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      2: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      3: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      4: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      5: {option_type: true, cue_match: paraphrase, attention_check: true}
+  fruits:
+    QF_V2_01:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: true, cue_match: paraphrase}
+      3: {option_type: false_interference, cue_match: paraphrase}   # Thornweld skin
+      4: {option_type: false_plain, cue_match: paraphrase}          # invented foil
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QF_V2_02:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: true, cue_match: exact}                      # named pigment 'nivellin'
+      3: {option_type: false_interference, cue_match: paraphrase}   # Thornweld flesh (lavender)
+      4: {option_type: false_interference, cue_match: exact}        # thornellin (Thornweld pigment)
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QF_V2_03:
+      1: {option_type: true, cue_match: exact}                      # exact binomial
+      2: {option_type: false_plain, cue_match: exact}               # invented epithet 'pallens'
+      3: {option_type: false_interference, cue_match: exact}        # Thornweld binomial (Spinofex)
+      4: {option_type: false_plain, cue_match: exact}               # invented epithet 'mirabilis'
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QF_V2_04:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: false_plain, cue_match: paraphrase}          # wrong altitude only (invented)
+      3: {option_type: false_interference, cue_match: paraphrase}   # Thornweld climacteric
+      4: {option_type: false_interference, cue_match: paraphrase}   # Thornweld climacteric + wrong alt
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QF_V2_05:
+      1: {option_type: false_interference, cue_match: paraphrase}   # Thornweld exterior
+      2: {option_type: false_interference, cue_match: exact}        # swapped pigment name
+      3: {option_type: false_interference, cue_match: paraphrase}   # climacteric = Thornweld trait
+      4: {option_type: false_plain, cue_match: exact}               # invented epithet binomial
+      5: {option_type: true, cue_match: paraphrase}                 # NOTA IS the answer
+    AT_fruits_v2:
+      1: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      2: {option_type: true, cue_match: paraphrase, attention_check: true}
+      3: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      4: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      5: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+  martial_arts:
+    QMA01:
+      1: {option_type: true, cue_match: exact}                      # 'grappling'
+      2: {option_type: true, cue_match: exact}                      # 'no striking of any kind'
+      3: {option_type: false_interference, cue_match: paraphrase}   # Penkarra (striking art)
+      4: {option_type: false_plain, cue_match: paraphrase}          # contradicts prohibition
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QMA02:
+      1: {option_type: true, cue_match: exact}                      # 'signature technique'
+      2: {option_type: true, cue_match: paraphrase}                 # hip throw (paraphrased)
+      3: {option_type: false_interference, cue_match: paraphrase}   # faldik (Penkarra technique)
+      4: {option_type: false_plain, cue_match: paraphrase}          # wrong technique (invented)
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QMA03:
+      1: {option_type: true, cue_match: exact}                      # Dalviri Arts Council (correct body)
+      2: {option_type: false_plain, cue_match: exact}               # wrong year 1967 (frame reused)
+      3: {option_type: true, cue_match: exact}                      # 1947 (correct year)
+      4: {option_type: false_plain, cue_match: exact}               # invented body name
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QMA04:
+      1: {option_type: false_interference, cue_match: paraphrase}   # kicking/punching = Penkarra
+      2: {option_type: false_interference, cue_match: paraphrase}   # 200 strikes = Penkarra rule
+      3: {option_type: false_plain, cue_match: exact}               # wrong year count (frame reused)
+      4: {option_type: true, cue_match: exact}                      # two years (correct rule)
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QMA05:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: true, cue_match: paraphrase}
+      3: {option_type: false_plain, cue_match: paraphrase}          # invented foil
+      4: {option_type: false_plain, cue_match: paraphrase}          # invented foil
+      5: {option_type: false_plain, cue_match: paraphrase}
+    AT_martial_arts:
+      1: {option_type: true, cue_match: paraphrase, attention_check: true}
+      2: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      3: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      4: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+      5: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+  fabrics:
+    QFB01:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: true, cue_match: paraphrase}
+      3: {option_type: false_plain, cue_match: paraphrase}          # over-generalization ('any sheep')
+      4: {option_type: false_interference, cue_match: exact}        # swapped species (Cheshire foil)
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QFB02:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: true, cue_match: paraphrase}
+      3: {option_type: false_interference, cue_match: paraphrase}   # Calosse construction (tabby)
+      4: {option_type: false_plain, cue_match: paraphrase}          # contradicts no-stitching
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QFB03:
+      1: {option_type: true, cue_match: exact}                      # 'double-weft interlock weaving'
+      2: {option_type: false_plain, cue_match: exact}               # invented weave term
+      3: {option_type: false_plain, cue_match: exact}               # invented weave term
+      4: {option_type: false_plain, cue_match: exact}               # invented weave term
+      5: {option_type: false_plain, cue_match: paraphrase}
+    QFB04:
+      1: {option_type: false_interference, cue_match: paraphrase}   # Calosse use (wall hangings)
+      2: {option_type: false_interference, cue_match: paraphrase}   # Calosse use (summer)
+      3: {option_type: false_interference, cue_match: paraphrase}   # Calosse class (plant)
+      4: {option_type: false_interference, cue_match: paraphrase}   # full Calosse profile
+      5: {option_type: true, cue_match: paraphrase}                 # NOTA IS the answer
+    QFB05:
+      1: {option_type: true, cue_match: paraphrase}
+      2: {option_type: false_interference, cue_match: paraphrase}   # Calosse color range
+      3: {option_type: true, cue_match: paraphrase}
+      4: {option_type: false_interference, cue_match: paraphrase}   # Calosse uses
+      5: {option_type: false_plain, cue_match: paraphrase}
+    AT_fabrics:
+      1: {option_type: true, cue_match: exact, attention_check: true}
+      2: {option_type: false_interference, cue_match: exact, attention_check: true}  # Calosse (other entity)
+      3: {option_type: false_plain, cue_match: exact, attention_check: true}
+      4: {option_type: false_plain, cue_match: exact, attention_check: true}
+      5: {option_type: false_plain, cue_match: paraphrase, attention_check: true}
+uncertain:
+  - {topic: astronomy, q_id: QA01, option: 2, reason: "distance fact: verbatim numeric lift vs paraphrase undecidable; called exact"}
+  - {topic: fruits, q_id: QF_V2_05, option: 3, reason: "'climacteric, continues ripening' is an inversion of Mirelon's own trait but climacteric is specifically Thornweld's trait; interference vs plain borderline"}
+  - {topic: fabrics, q_id: QFB01, option: 3, reason: "'any type of sheep' reads as over-generalization (plain) but notes intended a Calosse raw-material foil; option text no longer matches notes"}
+  - {topic: fabrics, q_id: QFB01, option: 4, reason: "'Cheshire mountain sheep' swapped-species foil; cross-entity (interference) vs invented (plain) borderline; notes ordering stale"}
+  - {topic: fabrics, q_id: QFB03, option: 3, reason: "'cross-thread basket weaving' — notes field empty; basket weave could echo Calosse plain-weave (interference) but treated as invented distractor (plain)"}

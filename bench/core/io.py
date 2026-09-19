@@ -97,6 +97,8 @@ _PROMPT_FILES = [
     "rationales/prompting.py",
     "rationales/prompts/fewshot_forward.txt",
     "rationales/prompts/fewshot_reverse.txt",
+    "rationales/listening/prompting.py",
+    "rationales/prompts/fewshot_listening.txt",
 ]
 
 

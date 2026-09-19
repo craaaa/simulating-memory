@@ -1,6 +1,6 @@
 """Shared helper for WM-agent tasks that follow the encode-material → answer-MCQs pattern."""
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from ..core.llm import LLM
 from ..core.wm_agent import SummarizerAgent, WorkingMemoryAgent
@@ -36,14 +36,21 @@ def run_wm_mcq_trial(
     condition_id: str,
     temperature: float,
     debug: bool,
-    encode_content: str,
+    encode_content: Union[str, List[str]],
     questions_text: str,
     recall_preamble: str,
     format_rules: str,
     system_prompt_override: str | None = None,
     recall_max_tokens: int = 512,
+    trial_tool_call_cap: int = 12,
+    per_segment_tool_call_cap: int = 4,
 ) -> Dict[str, Any]:
     """Run one WM-agent trial: encode material, then answer MCQs from memory.
+
+    ``encode_content`` as a str is presented in one shot (agent.encode());
+    a list of str is treated as ordered segments and dispatched to the
+    streaming, no-lookback encoder (agent.encode_streaming()). The tool-call
+    cap params only apply to the streaming path.
 
     Returns
     -------
@@ -57,7 +64,14 @@ def run_wm_mcq_trial(
         system_prompt_override=system_prompt_override,
     )
 
-    encoding_log = agent.encode(encode_content)
+    if isinstance(encode_content, list):
+        encoding_log = agent.encode_streaming(
+            encode_content,
+            trial_tool_call_cap=trial_tool_call_cap,
+            per_segment_tool_call_cap=per_segment_tool_call_cap,
+        )
+    else:
+        encoding_log = agent.encode(encode_content)
 
     # Build recall prompt — the template uses {{ }} for the wm_contents placeholder
     # so we first format everything else, then the result has {wm_contents} for agent.recall()
@@ -75,7 +89,11 @@ def run_wm_mcq_trial(
         "encoding_log": encoding_log,
         "recall_raw": recall_raw,
         "final_kv": final_kv,
-        "slot_utilization": len(final_kv) / MAX_KEYS,
+        "slot_utilization": (
+            agent.wm.slot_utilization
+            if hasattr(agent.wm, "slot_utilization")
+            else len([v for v in final_kv.values() if v != ""]) / MAX_KEYS
+        ),
     }
 
 

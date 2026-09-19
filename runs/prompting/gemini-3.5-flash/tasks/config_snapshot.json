@@ -1,0 +1,32 @@
+{
+  "task": "application_listening_qa",
+  "model": "gemini-3.5-flash",
+  "backend": "openai",
+  "conditions": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "temperature": 0.0,
+  "max_tokens": 2048,
+  "top_p": 1.0,
+  "n_repeats_per_cell": 5,
+  "documents_dir": "application/listening_qa/data",
+  "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+  "extra_body": null,
+  "dry_run": false,
+  "git_provenance": {
+    "commit": "582f1d1ca29de8cfc04170961ba6ee8f1e142c48",
+    "branch": "application-compactor",
+    "tags": [],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": null,
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": null,
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null
+    }
+  }
+}

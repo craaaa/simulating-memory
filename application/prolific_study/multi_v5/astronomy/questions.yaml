@@ -1,0 +1,108 @@
+# Multi-select question bank for the astronomy topic
+# Concept: Pictor Nebula (single tested concept)
+#
+# Tested features → questions:
+#   - Object description: gas cloud + distance + lit by young stars      → QA01 (3 correct)
+#   - Observation method: optical telescope + red light                  → QA02 (2 correct)
+#   - Scientific value: gas collapses + ignites into new stars           → QA03 (2 correct)
+#   - Combination: object type × study purpose (2×2)                    → QA04 (1 correct)
+#   - Object type trick: all options mislabeled, none correct            → QA05 (answer=[5])
+#   - Attention check (content-independent)                              → AT_astronomy
+#
+# Foils drawn from: Aquila Pulsar (dropped concept), Pyxis Cluster, W Microscopii
+#
+# answer: list of correct option numbers (1-indexed, matching Qualtrics choice order)
+# type: content | attention_check
+
+title: Astronomy — Pictor Nebula
+answer_type: multi_select
+scoring: per_statement
+
+questions:
+  - q_id: QA01
+    question: "Which of the following correctly describe the Pictor Nebula? Select all that apply."
+    options:
+      1: "It is a cloud of gas"
+      2: "It is located about four thousand light-years from Earth"
+      3: "It is lit from within by young stars"
+      4: "It is a dense ball of old stars"
+      5: "None of the above"
+    answer: [1, 2, 3]
+    metadata:
+      type: content
+      feature: [object_type, location, mechanism]
+      concepts: [pictor_nebula]
+      notes: "Option 1 paraphrases 'emission nebula — a cloud of gas'. Option 2 is the distance. Option 3 paraphrases 'young stars inside it pour radiation into the surrounding gas'. Option 4 is the Pyxis Cluster foil."
+
+  - q_id: QA02
+    question: "How do scientists observe the Pictor Nebula? Select all that apply."
+    options:
+      1: "With an optical telescope"
+      2: "By picking up red light emitted by the nebula"
+      3: "Using radio equipment that picks up regular pulses"
+      4: "By measuring how its mass varies over time"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: observation_method
+      concepts: [pictor_nebula]
+      notes: "Options 1 and 2 are two sub-parts of 'optical telescope, tuned to red light'. Option 3 is Aquila Pulsar method. Option 4 is W Microscopii method."
+
+  - q_id: QA03
+    question: "What do astronomers study the Pictor Nebula to learn? Select all that apply."
+    options:
+      1: "How gravity pulls pockets of gas together"
+      2: "How gas clouds ignite into new stars"
+      3: "How gravitational waves ripple through a region of space"
+      4: "How black hole emissions change"
+      5: "None of the above"
+    answer: [1, 2]
+    metadata:
+      type: content
+      feature: scientific_value
+      concepts: [pictor_nebula]
+      notes: "Options 1 and 2 split the star-formation sentence: 'gas slowly pull together under gravity and ignite into new stars'. Options 3 and 4 are Aquila Pulsar and Pyxis Cluster foils."
+
+  - q_id: QA04
+    question: "Which of the following correctly describes the Pictor Nebula? Select all that apply."
+    options:
+      1: "A gas cloud lit by embedded young stars that is studied to understand how new stars form"
+      2: "A gas cloud lit by embedded young stars that is studied to understand gravitational waves"
+      3: "The remains of a dying star that is studied to understand how new stars form"
+      4: "The remains of a dying star that is studied to understand gravitational waves"
+      5: "None of the above"
+    answer: [1]
+    metadata:
+      type: content
+      feature: [object_type, scientific_value]
+      concepts: [pictor_nebula]
+      notes: "2×2: correct/wrong object type × correct/wrong study purpose. Option 1 = right type, right purpose. Option 2 = right type, wrong purpose (Aquila). Option 3 = wrong type (Aquila pulsar), right purpose. Option 4 = both wrong."
+
+  - q_id: QA05
+    question: "Which of the following correctly identifies what the Pictor Nebula is? Select all that apply."
+    options:
+      1: "An emission nebula — a dense ball of old stars gravitationally bound together"
+      2: "A globular pulsar — a cloud of gas lit by its own embedded young stars"
+      3: "A globular pulsar — the collapsed core of an exploded massive star"
+      4: "An emission nebula — two stars in a close gravitational orbit"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: content
+      feature: object_type
+      concepts: [pictor_nebula]
+      notes: "All options 1-4 pair a label with a mismatched description. None are correct. Answer = [5] None of the above — tests whether participants recognize that all listed definitions are wrong."
+
+  - q_id: AT_astronomy
+    question: "This is an attention check. Please select 'None of the above' for this question, regardless of the other options."
+    options:
+      1: "A telescope tuned to a narrow band of light"
+      2: "A cluster of stars near the galactic edge"
+      3: "A faint object first catalogued in the 1800s"
+      4: "A nebula visible only through long exposure"
+      5: "None of the above"
+    answer: [5]
+    metadata:
+      type: attention_check
+      notes: "Instructed-response design: the correct answer is stated directly in the question text, testing whether participants read the question itself rather than pattern-matching options. All 4 real-looking options are plausible passage-adjacent traps. Pass = exactly option 5 selected, no others."

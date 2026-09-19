@@ -1,0 +1,128 @@
+{
+  "task": "wm_application_listening_qa",
+  "model": "gpt-4.1-mini",
+  "condition_id": "C2-stream",
+  "n_repeats_per_cell": 5,
+  "n_cells": 16,
+  "n_total_trials": 80,
+  "llm_usage": {
+    "request_count": 840,
+    "prompt_tokens": 570239,
+    "completion_tokens": 42730,
+    "total_tokens": 612969,
+    "estimated_cost_usd": 0.29646360000000005
+  },
+  "git_provenance": {
+    "commit": "62f43a18ebcd10a4854c25e3b2a2bd97fe3298af",
+    "branch": "application-compactor",
+    "tags": [
+      "exp/compactor-v3"
+    ],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": "diff --git a/bench/tasks/wm_prompt_parts.py b/bench/tasks/wm_prompt_parts.py\nindex 3c97ac3..677192f 100644\n--- a/bench/tasks/wm_prompt_parts.py\n+++ b/bench/tasks/wm_prompt_parts.py\n@@ -42,6 +42,30 @@ NEVER pack a long run of items into one slot. Once your slots are filled, accept\n that the rest will be lost. Compress realistically, and behave as a real human would:\n imperfect and sensitive to what seems important.\"\"\"\n \n+    if condition_id == \"C2-stream\":\n+        return f\"\"\"\\\n+You are simulating a human participant in a psychology experiment on working memory.\n+You have a key-value memory store with at most {MAX_KEYS} slots, reflecting the ~4-chunk\n+limit of human short-term memory (Cowan, 2001).\n+\n+Original human-task instructions:\n+{human_task_prompt.strip()}\n+\n+The material will NOT be shown to you all at once. It arrives as a sequence of ordered\n+segments, one at a time — as in listening once, with no replay. You will NOT see a\n+segment again after you move on from it.\n+\n+On each turn you will see the current contents of your {MAX_KEYS}-slot memory store and\n+the new segment. Use write_memory and delete_key to maintain the key-value store while\n+doing the original task, deciding now what's worth keeping since you cannot revisit this\n+segment later. Each slot should hold ONE chunk — a small bundle of information a person\n+would bind together because it feels meaningfully connected (a name with its role, a group\n+of related items or numbers, one gist).\n+\n+NEVER pack a long run of items into one slot. Once your slots are filled, accept\n+that the rest will be lost. Compress realistically, and behave as a real human would:\n+imperfect and sensitive to what seems important at the time you encounter it.\"\"\"\n+\n     raise KeyError(f\"Unknown condition_id: {condition_id}\")",
+      "bench/tasks/wm_mcq_common.py": "diff --git a/bench/tasks/wm_mcq_common.py b/bench/tasks/wm_mcq_common.py\nindex 26a8831..44b3f34 100644\n--- a/bench/tasks/wm_mcq_common.py\n+++ b/bench/tasks/wm_mcq_common.py\n@@ -1,6 +1,6 @@\n \"\"\"Shared helper for WM-agent tasks that follow the encode-material → answer-MCQs pattern.\"\"\"\n from __future__ import annotations\n-from typing import Any, Dict\n+from typing import Any, Dict, List, Union\n \n from ..core.llm import LLM\n from ..core.wm_agent import SummarizerAgent, WorkingMemoryAgent\n@@ -36,7 +36,7 @@ def run_wm_mcq_trial(\n     condition_id: str,\n     temperature: float,\n     debug: bool,\n-    encode_content: str,\n+    encode_content: Union[str, List[str]],\n     questions_text: str,\n     recall_preamble: str,\n     format_rules: str,\n@@ -45,6 +45,10 @@ def run_wm_mcq_trial(\n ) -> Dict[str, Any]:\n     \"\"\"Run one WM-agent trial: encode material, then answer MCQs from memory.\n \n+    ``encode_content`` as a str is presented in one shot (agent.encode());\n+    a list of str is treated as ordered segments and dispatched to the\n+    streaming, no-lookback encoder (agent.encode_streaming()).\n+\n     Returns\n     -------\n     dict with keys: ``agent``, ``encoding_log``, ``recall_raw``, ``final_kv``.\n@@ -57,7 +61,10 @@ def run_wm_mcq_trial(\n         system_prompt_override=system_prompt_override,\n     )\n \n-    encoding_log = agent.encode(encode_content)\n+    if isinstance(encode_content, list):\n+        encoding_log = agent.encode_streaming(encode_content)\n+    else:\n+        encoding_log = agent.encode(encode_content)\n \n     # Build recall prompt — the template uses {{ }} for the wm_contents placeholder\n     # so we first format everything else, then the result has {wm_contents} for agent.recall()",
+      "bench/core/wm_agent.py": "diff --git a/bench/core/wm_agent.py b/bench/core/wm_agent.py\nindex 1b4bd6a..b8648ae 100644\n--- a/bench/core/wm_agent.py\n+++ b/bench/core/wm_agent.py\n@@ -105,8 +105,35 @@ Your task:\n Behave as a real human would: strategic, imperfect, and sensitive to what seems most important.\n You will later recall ONLY from these key-value pairs.\"\"\"\n \n+SYSTEM_PROMPT_HUMAN_STREAMING = \"\"\"\\\n+You are simulating a human participant in a psychology experiment on working memory.\n+You have a key-value memory store with at most {max_keys} slots — reflecting the ~4-chunk\n+limit of human short-term memory (Cowan, 2001).\n+\n+The material will NOT be shown to you all at once. Instead it arrives as a sequence of\n+ordered segments, one at a time, as in listening to something once — you will NOT see a\n+segment again after you move on from it.\n+\n+On each turn you will see:\n+  - The current contents of your {max_keys}-slot memory store.\n+  - The new segment to attend to.\n+\n+Your task on each turn:\n+  1. Read the new segment.\n+  2. Decide, given what is already in memory and the {max_keys}-slot limit, whether to\n+     write a new chunk (write_memory), overwrite/update an existing one, or delete a\n+     less useful one to make room (delete_key). Decide now — you cannot revisit this\n+     segment later.\n+  3. Compress realistically: keep gist, not verbatim detail. Fewer than {max_keys}\n+     keys is fine if the material so far is simple.\n+\n+Behave as a real human would: strategic, imperfect, and sensitive to what seems most\n+important at the time you encounter it. You will later recall ONLY from these\n+key-value pairs.\"\"\"\n+\n CONDITION_PROMPTS = {\n     \"C2\": SYSTEM_PROMPT_HUMAN,\n+    \"C2-stream\": SYSTEM_PROMPT_HUMAN_STREAMING,\n }\n \n RECALL_PROMPT = \"\"\"\\\n@@ -367,6 +394,194 @@ class WorkingMemoryAgent:\n \n         return encoding_log\n \n+    # ------------------------------------------------------------------\n+    # encode_streaming() — segment-by-segment encode, no lookback\n+    # ------------------------------------------------------------------\n+\n+    def _run_segment_tool_loop(\n+        self, messages: List[Dict[str, Any]], max_tokens: int, budget: int\n+    ) -> Dict[str, Any]:\n+        \"\"\"Tool-dispatch loop for one encode_streaming() segment.\n+\n+        Not shared with step(): step() also has an allow_tools=False mode where\n+        tools stay off regardless of budget, which doesn't apply here (every\n+        segment turn allows tools), so a separate small loop is clearer than a\n+        parameterized common one.\n+        \"\"\"\n+        tool_calls_log: List[Dict[str, Any]] = []\n+        collected_text = \"\"\n+        used = 0\n+        cap_hit = False\n+\n+        while True:\n+            remaining = budget - used\n+            tools_available = remaining > 0\n+            resp = self.llm.generate_with_tools(\n+                messages=messages,\n+                tools=TOOLS,\n+                tool_choice=\"auto\" if tools_available else \"none\",\n+                temperature=self.temperature,\n+                max_tokens=max_tokens,\n+            )\n+            if not tools_available and resp.tool_calls:\n+                cap_hit = True\n+\n+            assistant_msg: Dict[str, Any] = {\"role\": \"assistant\"}\n+            tool_calls = resp.tool_calls or []\n+            if tool_calls and len(tool_calls) > remaining:\n+                cap_hit = True\n+                tool_calls = tool_calls[:remaining]\n+            if resp.content:\n+                assistant_msg[\"content\"] = resp.content\n+                collected_text += resp.content\n+            if tool_calls:\n+                assistant_msg[\"tool_calls\"] = tool_calls\n+            else:\n+                assistant_msg.setdefault(\"content\", \"\")\n+            messages.append(assistant_msg)\n+\n+            if not tool_calls:\n+                break\n+\n+            for tc in tool_calls:\n+                fn_name = tc[\"function\"][\"name\"]\n+                fn_args = tc[\"function\"][\"arguments\"]\n+                result = _dispatch_tool(self.wm, fn_name, fn_args)\n+                used += 1\n+                tool_calls_log.append(\n+                    {\n+                        \"tool_call_id\": tc[\"id\"],\n+                        \"name\": fn_name,\n+                        \"arguments\": fn_args,\n+                        \"result\": result,\n+                    }\n+                )\n+                messages.append(\n+                    {\n+                        \"role\": \"tool\",\n+                        \"tool_call_id\": tc[\"id\"],\n+                        \"content\": result,\n+                    }\n+                )\n+\n+        return {\n+            \"tool_calls\": tool_calls_log,\n+            \"text\": collected_text,\n+            \"used\": used,\n+            \"cap_hit\": cap_hit,\n+        }\n+\n+    def encode_streaming(\n+        self,\n+        segments: List[str],\n+        *,\n+        max_tokens: int = 1024,\n+        per_segment_tool_call_cap: int = 4,\n+        trial_tool_call_cap: int = 12,\n+    ) -> Dict[str, Any]:\n+        \"\"\"Present material as ordered segments, one turn per segment, no lookback.\n+\n+        Each segment's turn builds a FRESH messages list from ``self.wm.snapshot()``\n+        plus the new segment only — raw text of earlier segments is never resent,\n+        so the agent must commit to what's worth keeping (via write_memory /\n+        delete_key) before moving on, rather than planning all writes with\n+        hindsight of the whole passage (that's what encode() does, and it's the\n+        gap this method is meant to close).\n+\n+        Parameters\n+        ----------\n+        segments : list of str\n+            Ordered segments (e.g. paragraphs) presented one at a time.\n+        max_tokens : int\n+            Max completion tokens per LLM call within a segment turn.\n+        per_segment_tool_call_cap : int\n+            Tool-call budget allotted to a single segment turn.\n+        trial_tool_call_cap : int\n+            Tool-call budget shared across the whole trial (all segments\n+            combined) — MAX_KEYS * 2 by default, enough for every slot to be\n+            filled once and overwritten once. The effective per-segment\n+            budget is ``min(per_segment_tool_call_cap, remaining trial\n+            budget)``, so a segment can't exceed its own cap even when trial\n+            budget remains, and the trial can't exceed its cap even when\n+            per-segment budget remains — this also stops the agent hoarding\n+            writes for the final segment by only running out at the end.\n+\n+        Returns\n+        -------\n+        dict\n+            Encoding log with keys: ``content``, ``tool_calls``, ``final_kv``,\n+            plus ``segments_log`` — a list of per-segment dicts with\n+            ``segment_index``, ``segment_text``, ``tool_calls``, ``kv_snapshot``.\n+        \"\"\"\n+        n_segments = len(segments)\n+        segments_log: List[Dict[str, Any]] = []\n+        all_tool_calls: List[Dict[str, Any]] = []\n+        trial_calls_used = 0\n+\n+        for idx, segment_text in enumerate(segments, start=1):\n+            turn_prompt = (\n+                f\"Segment {idx} of {n_segments}.\\n\\n\"\n+                f\"Current memory contents:\\n{self.wm.to_recall_text()}\\n\\n\"\n+                f\"New segment:\\n{segment_text}\"\n+            )\n+            messages = [\n+                {\"role\": \"system\", \"content\": self._build_system()},\n+                {\"role\": \"user\", \"content\": turn_prompt},\n+            ]\n+\n+            segment_budget = min(\n+                per_segment_tool_call_cap, trial_tool_call_cap - trial_calls_used\n+            )\n+            result = self._run_segment_tool_loop(\n+                messages, max_tokens=max_tokens, budget=segment_budget\n+            )\n+            trial_calls_used += result[\"used\"]\n+\n+            segment_entry = {\n+                \"segment_index\": idx,\n+                \"segment_text\": segment_text,\n+                \"tool_calls\": result[\"tool_calls\"],\n+                \"kv_snapshot\": self.wm.store,\n+            }\n+            segments_log.append(segment_entry)\n+            all_tool_calls.extend(result[\"tool_calls\"])\n+\n+            if self.debug:\n+                print(f\"  === ENCODE_STREAMING segment {idx}/{n_segments} ===\")\n+                for tc in result[\"tool_calls\"]:\n+                    try:\n+                        args = (\n+                            json.loads(tc[\"arguments\"])\n+                            if isinstance(tc[\"arguments\"], str)\n+                            else tc[\"arguments\"]\n+                        )\n+                    except json.JSONDecodeError:\n+                        print(f\"    {tc['name']}(<malformed args>)\")\n+                        continue\n+                    if tc[\"name\"] == \"write_memory\":\n+                        print(f\"    write_memory({args['key']!r}, {args['value']!r})\")\n+                    elif tc[\"name\"] == \"delete_key\":\n+                        print(f\"    delete_key({args['key']!r})\")\n+                if result[\"cap_hit\"]:\n+                    print(\n+                        f\"    tool_call_cap_hit (segment {result['used']}/{segment_budget}, \"\n+                        f\"trial {trial_calls_used}/{trial_tool_call_cap})\"\n+                    )\n+                print(f\"  Memory:\\n{self.wm.snapshot()}\")\n+\n+        encoding_log: Dict[str, Any] = {\n+            \"content\": segments,\n+            \"tool_calls\": all_tool_calls,\n+            \"final_kv\": self.wm.store,\n+            \"segments_log\": segments_log,\n+        }\n+        self._encoding_log = encoding_log\n+\n+        if self.debug:\n+            print()\n+\n+        return encoding_log\n+\n     # ------------------------------------------------------------------\n     # recall() — answer from KV contents only\n     # ------------------------------------------------------------------",
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null
+    }
+  },
+  "cells": {
+    "astronomy:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.7200000000000001,
+      "per_statement_mean": 0.9119999999999999,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8400000000000001,
+      "per_statement_mean": 0.9359999999999999,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.76,
+      "per_statement_mean": 0.8719999999999999,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.6,
+      "per_statement_mean": 0.792,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.56,
+      "per_statement_mean": 0.9040000000000001,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.48,
+      "per_statement_mean": 0.8879999999999999,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.4,
+      "per_statement_mean": 0.8240000000000001,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.48,
+      "per_statement_mean": 0.8960000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.76,
+      "per_statement_mean": 0.8960000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.6,
+      "per_statement_mean": 0.8320000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.72,
+      "per_statement_mean": 0.8720000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.8400000000000001,
+      "per_statement_mean": 0.968,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.64,
+      "per_statement_mean": 0.8400000000000001,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.56,
+      "per_statement_mean": 0.8160000000000001,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.52,
+      "per_statement_mean": 0.8320000000000001,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C2-stream": {
+      "n": 5,
+      "exact_match_mean": 0.68,
+      "per_statement_mean": 0.8799999999999999,
+      "parse_error_count": 0
+    }
+  }
+}

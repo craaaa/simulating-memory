@@ -1,0 +1,3 @@
+Bracklin is a textile made exclusively from the fleece of the Grennock mountain sheep. Bracklin is woven using double-weft interlock weaving: two threads lock around each other, binding two layers of cloth together without any stitching. Because of its warmth, bracklin cloth is used mainly for winter outerwear and ceremonial robes. Before it is dyed, bracklin fabric ranges from warm ivory to ash grey.
+
+Handling a piece of bracklin gives a much better sense of its weight and texture than any description can. The fabric has a distinctive feel that people often comment on the first time they touch it. It's the kind of material that leaves an impression well beyond how it looks in photos.

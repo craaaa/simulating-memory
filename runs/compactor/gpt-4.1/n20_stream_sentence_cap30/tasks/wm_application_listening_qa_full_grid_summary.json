@@ -1,0 +1,127 @@
+{
+  "task": "wm_application_listening_qa",
+  "model": "gpt-4.1",
+  "condition_id": "C2-stream",
+  "segment_unit": "sentence",
+  "n_repeats_per_cell": 20,
+  "n_cells": 16,
+  "n_total_trials": 320,
+  "llm_usage": {
+    "request_count": 10201,
+    "prompt_tokens": 11558346,
+    "completion_tokens": 396716,
+    "total_tokens": 11955062,
+    "estimated_cost_usd": 26.29042
+  },
+  "git_provenance": {
+    "commit": "d8762a4db5a6ebc94d0fde0f9299c0935359fe12",
+    "branch": "application-compactor",
+    "tags": [],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": null,
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": null,
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null
+    }
+  },
+  "cells": {
+    "astronomy:control:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.5599999999999998,
+      "per_statement_mean": 0.826,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.8000000000000002,
+      "per_statement_mean": 0.9520000000000002,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.7000000000000002,
+      "per_statement_mean": 0.9119999999999999,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.20000000000000004,
+      "per_statement_mean": 0.5199999999999998,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.6499999999999999,
+      "per_statement_mean": 0.9099999999999999,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.7600000000000002,
+      "per_statement_mean": 0.9520000000000002,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.5599999999999998,
+      "per_statement_mean": 0.9000000000000001,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.29000000000000015,
+      "per_statement_mean": 0.6180000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:control:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.7900000000000003,
+      "per_statement_mean": 0.9160000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.7300000000000002,
+      "per_statement_mean": 0.89,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.7100000000000002,
+      "per_statement_mean": 0.8780000000000001,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.41000000000000014,
+      "per_statement_mean": 0.7120000000000001,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.4699999999999999,
+      "per_statement_mean": 0.764,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.9099999999999999,
+      "per_statement_mean": 0.9559999999999998,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.6199999999999999,
+      "per_statement_mean": 0.78,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C2-stream": {
+      "n": 20,
+      "exact_match_mean": 0.28,
+      "per_statement_mean": 0.652,
+      "parse_error_count": 0
+    }
+  }
+}

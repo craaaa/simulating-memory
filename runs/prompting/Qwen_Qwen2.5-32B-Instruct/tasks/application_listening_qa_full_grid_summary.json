@@ -1,0 +1,414 @@
+{
+  "task": "application_listening_qa",
+  "model": "Qwen/Qwen2.5-32B-Instruct",
+  "conditions": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "n_repeats_per_cell": 5,
+  "n_cells": 64,
+  "n_total_trials": 320,
+  "documents_dir": "application/listening_qa/data",
+  "dry_run": false,
+  "git_provenance": {
+    "commit": "5e0036422dfdd7005c953d48451a674f060e8204",
+    "branch": "application-compactor",
+    "tags": [],
+    "dirty": true,
+    "prompt_diffs": {
+      "bench/tasks/wm_prompt_parts.py": null,
+      "bench/tasks/wm_mcq_common.py": null,
+      "bench/core/wm_agent.py": null,
+      "application/listening_qa/prompting.py": null,
+      "application/reading_qa/prompting.py": null
+    }
+  },
+  "cells": {
+    "astronomy:control:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:control:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:control:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:control:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:control:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C1": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C2": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C3": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C4": {
+      "n": 5,
+      "exact_match_mean": 1.0,
+      "per_statement_mean": 1.0,
+      "parse_error_count": 0
+    }
+  }
+}

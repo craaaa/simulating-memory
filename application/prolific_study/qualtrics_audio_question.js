@@ -17,9 +17,10 @@
 //     This is the recommended approach — fully native, no JS required.
 
 Qualtrics.SurveyEngine.addOnload(function () {
-    if (window._audioQuestionLoaded) return;
-    window._audioQuestionLoaded = true;
     var qthis = this;
+    var _guardKey = '_audioLoaded_' + this.questionId;
+    if (window[_guardKey]) return;
+    window[_guardKey] = true;
 
     var STIMULI = {
         "birds":             { "url": "https://craaaa.github.io/simulating-memory/birds_texts/20260617_birds.wav" },
@@ -33,6 +34,7 @@ Qualtrics.SurveyEngine.addOnload(function () {
     var doc = STIMULI[docId];
 
     if (!doc || !doc.url) {
+        qthis.hideNextButton();
         qthis.getQuestionContainer().innerHTML =
             "<p>Configuration error: missing audio for condition=" + docId +
             ". Please return this study on Prolific.</p>";
@@ -57,11 +59,9 @@ Qualtrics.SurveyEngine.addOnload(function () {
 
     audio.addEventListener("contextmenu", function (e) { e.preventDefault(); });
 
-    var startTime = null;
     var progressIv = null;
 
     function beginPlayback() {
-        startTime = Date.now();
         startWrap.innerHTML = "";
         statusEl.textContent = "Audio is playing. Please listen carefully.";
 
@@ -87,10 +87,11 @@ Qualtrics.SurveyEngine.addOnload(function () {
 
     audio.addEventListener("ended", function () {
         if (progressIv) { clearInterval(progressIv); }
-        var rt = startTime ? (Date.now() - startTime) : null;
-        Qualtrics.SurveyEngine.setEmbeddedData("listening_rt", rt);
-        Qualtrics.SurveyEngine.setEmbeddedData("listening_completed", "true");
-        statusEl.textContent  = "Audio complete. Click Next to continue.";
+        var newCount = parseInt(localStorage.getItem('passage_count') || '0', 10) + 1;
+        localStorage.setItem('passage_count', newCount);
+        Qualtrics.SurveyEngine.setEmbeddedData("passage_count", newCount);
+        Qualtrics.SurveyEngine.setEmbeddedData("listening_completed_" + newCount, "true");
+        statusEl.textContent  = "You have finished passage " + newCount + " of 4. Click Next to continue.";
         progressEl.textContent = "";
         qthis.showNextButton();
         // Audio is finished and not looped — no replay possible without page reload.

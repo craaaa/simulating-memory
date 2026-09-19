@@ -1,0 +1,399 @@
+{
+  "task": "application_listening_qa",
+  "model": "meta-llama/llama-3.1-8b-instruct",
+  "conditions": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "n_repeats_per_cell": 30,
+  "n_cells": 64,
+  "n_total_trials": 1920,
+  "cells": {
+    "astronomy:control:C1": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:control:C3": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 1
+    },
+    "astronomy:control:C4": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C1": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C3": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:distractor:C4": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C1": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C3": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_long:C4": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 1
+    },
+    "astronomy:repeat_short:C1": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C3": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "astronomy:repeat_short:C4": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C1": {
+      "n": 30,
+      "exact_match_mean": 0.7266666666666667,
+      "per_statement_mean": 0.8906666666666667,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C2": {
+      "n": 30,
+      "exact_match_mean": 0.6866666666666666,
+      "per_statement_mean": 0.8786666666666667,
+      "parse_error_count": 3
+    },
+    "fabrics:control:C3": {
+      "n": 30,
+      "exact_match_mean": 0.7866666666666667,
+      "per_statement_mean": 0.9146666666666667,
+      "parse_error_count": 0
+    },
+    "fabrics:control:C4": {
+      "n": 30,
+      "exact_match_mean": 0.7733333333333333,
+      "per_statement_mean": 0.9093333333333333,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C1": {
+      "n": 30,
+      "exact_match_mean": 0.6,
+      "per_statement_mean": 0.84,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C2": {
+      "n": 30,
+      "exact_match_mean": 0.6066666666666667,
+      "per_statement_mean": 0.8453333333333333,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C3": {
+      "n": 30,
+      "exact_match_mean": 0.6,
+      "per_statement_mean": 0.84,
+      "parse_error_count": 0
+    },
+    "fabrics:distractor:C4": {
+      "n": 30,
+      "exact_match_mean": 0.6,
+      "per_statement_mean": 0.84,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C1": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8200000000000001,
+      "per_statement_mean": 0.928,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C3": {
+      "n": 30,
+      "exact_match_mean": 0.8666666666666667,
+      "per_statement_mean": 0.9466666666666667,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_long:C4": {
+      "n": 30,
+      "exact_match_mean": 0.86,
+      "per_statement_mean": 0.9453333333333334,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C1": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.92,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8333333333333334,
+      "per_statement_mean": 0.9333333333333333,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C3": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.9213333333333333,
+      "parse_error_count": 0
+    },
+    "fabrics:repeat_short:C4": {
+      "n": 30,
+      "exact_match_mean": 0.8200000000000001,
+      "per_statement_mean": 0.928,
+      "parse_error_count": 0
+    },
+    "fruits:control:C1": {
+      "n": 30,
+      "exact_match_mean": 0.5866666666666667,
+      "per_statement_mean": 0.8666666666666667,
+      "parse_error_count": 0
+    },
+    "fruits:control:C2": {
+      "n": 30,
+      "exact_match_mean": 0.66,
+      "per_statement_mean": 0.888,
+      "parse_error_count": 0
+    },
+    "fruits:control:C3": {
+      "n": 30,
+      "exact_match_mean": 0.6,
+      "per_statement_mean": 0.88,
+      "parse_error_count": 3
+    },
+    "fruits:control:C4": {
+      "n": 30,
+      "exact_match_mean": 0.6066666666666667,
+      "per_statement_mean": 0.8813333333333333,
+      "parse_error_count": 2
+    },
+    "fruits:distractor:C1": {
+      "n": 30,
+      "exact_match_mean": 0.6,
+      "per_statement_mean": 0.8733333333333333,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C2": {
+      "n": 30,
+      "exact_match_mean": 0.5733333333333334,
+      "per_statement_mean": 0.8653333333333333,
+      "parse_error_count": 0
+    },
+    "fruits:distractor:C3": {
+      "n": 30,
+      "exact_match_mean": 0.58,
+      "per_statement_mean": 0.8666666666666667,
+      "parse_error_count": 2
+    },
+    "fruits:distractor:C4": {
+      "n": 30,
+      "exact_match_mean": 0.5933333333333333,
+      "per_statement_mean": 0.8626666666666667,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C1": {
+      "n": 30,
+      "exact_match_mean": 0.5666666666666667,
+      "per_statement_mean": 0.8733333333333333,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C2": {
+      "n": 30,
+      "exact_match_mean": 0.54,
+      "per_statement_mean": 0.868,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C3": {
+      "n": 30,
+      "exact_match_mean": 0.54,
+      "per_statement_mean": 0.868,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_long:C4": {
+      "n": 30,
+      "exact_match_mean": 0.5466666666666666,
+      "per_statement_mean": 0.8693333333333333,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C1": {
+      "n": 30,
+      "exact_match_mean": 0.44666666666666666,
+      "per_statement_mean": 0.832,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C2": {
+      "n": 30,
+      "exact_match_mean": 0.44666666666666666,
+      "per_statement_mean": 0.8253333333333334,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C3": {
+      "n": 30,
+      "exact_match_mean": 0.47333333333333333,
+      "per_statement_mean": 0.852,
+      "parse_error_count": 0
+    },
+    "fruits:repeat_short:C4": {
+      "n": 30,
+      "exact_match_mean": 0.44666666666666666,
+      "per_statement_mean": 0.8466666666666667,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C1": {
+      "n": 30,
+      "exact_match_mean": 0.58,
+      "per_statement_mean": 0.9093333333333333,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C2": {
+      "n": 30,
+      "exact_match_mean": 0.5933333333333333,
+      "per_statement_mean": 0.912,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C3": {
+      "n": 30,
+      "exact_match_mean": 0.6666666666666666,
+      "per_statement_mean": 0.9333333333333333,
+      "parse_error_count": 0
+    },
+    "martial_arts:control:C4": {
+      "n": 30,
+      "exact_match_mean": 0.64,
+      "per_statement_mean": 0.928,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C1": {
+      "n": 30,
+      "exact_match_mean": 0.5466666666666666,
+      "per_statement_mean": 0.8813333333333333,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C2": {
+      "n": 30,
+      "exact_match_mean": 0.5866666666666667,
+      "per_statement_mean": 0.8733333333333333,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C3": {
+      "n": 30,
+      "exact_match_mean": 0.5599999999999999,
+      "per_statement_mean": 0.8826666666666667,
+      "parse_error_count": 0
+    },
+    "martial_arts:distractor:C4": {
+      "n": 30,
+      "exact_match_mean": 0.5599999999999999,
+      "per_statement_mean": 0.8813333333333333,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C1": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.96,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8533333333333334,
+      "per_statement_mean": 0.9706666666666667,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C3": {
+      "n": 30,
+      "exact_match_mean": 0.8200000000000001,
+      "per_statement_mean": 0.964,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_long:C4": {
+      "n": 30,
+      "exact_match_mean": 0.8266666666666667,
+      "per_statement_mean": 0.964,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C1": {
+      "n": 30,
+      "exact_match_mean": 0.7,
+      "per_statement_mean": 0.94,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C2": {
+      "n": 30,
+      "exact_match_mean": 0.8866666666666667,
+      "per_statement_mean": 0.9773333333333333,
+      "parse_error_count": 0
+    },
+    "martial_arts:repeat_short:C3": {
+      "n": 30,
+      "exact_match_mean": 0.7933333333333333,
+      "per_statement_mean": 0.9573333333333333,
+      "parse_error_count": 2
+    },
+    "martial_arts:repeat_short:C4": {
+      "n": 30,
+      "exact_match_mean": 0.8,
+      "per_statement_mean": 0.96,
+      "parse_error_count": 0
+    }
+  }
+}

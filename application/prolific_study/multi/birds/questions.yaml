@@ -64,9 +64,9 @@ questions:
   - q_id: QB04
     question: "Which of the following correctly matches the bird to its Latin name? Select all that apply."
     options:
-      1: "Ashen skreel -- Fringilla rufa"
+      1: "Ashen skreel -- Loxica torquata"
       2: "Copperhook finch -- Plumbea rufa"
-      3: "Copperhook finch -- Fringilla vorax"
+      3: "Copperhook finch -- Fringilla murina"
       4: "Ashen skreel -- Plumbea rufa"
       5: "None of the above"
     answer: [5]
@@ -83,18 +83,18 @@ questions:
     question: "Which of the following accurately describes the Copperhook finch's plumage? Select all that apply."
     options:
       1: "A rust-orange body"
-      2: "Dark tips to the wings"
+      2: "White wingtips"
       3: "A bright yellow crest"
       4: "Bluish bars across the tail"
       5: "None of the above"
-    answer: [1, 2]
+    answer: [1]
     metadata:
       type: content
       feature: plumage
       concepts: [copperhook_finch]
 
   - q_id: AT_birds
-    question: "Which of the following describes the two birds? This is an attention check question. Select only the option that mentions two colors."
+    question: "Which of the following mentions two colors? This is an attention check question."
     options:
       1: "Residency versus migration"
       2: "Solitary defence versus gregarious flocking"

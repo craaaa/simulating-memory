@@ -1,0 +1,8 @@
+# generated — reproduced by `make all`
+data/processed/
+data/interim/
+outputs/figures/
+outputs/tables/
+outputs/logs/
+.reconcile.ok
+__pycache__/

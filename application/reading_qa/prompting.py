@@ -3,19 +3,22 @@ from __future__ import annotations
 import re
 from typing import Dict, List, Optional
 
-from bench.tasks.human_simulation_prefixes import HUMAN_SIM_INTRO_C2, HUMAN_SIM_INTRO_C3_C4_BEFORE_HUMAN
-from bench.tasks.stimulus_prompt_shell import DIGIT_SPAN_SEP_BEFORE_RULES, wrap_stimulus_prompt
+from bench.tasks.human_simulation_prefixes import (
+    HUMAN_SIM_INTRO_C2,
+    HUMAN_SIM_INTRO_C3_C4_BEFORE_HUMAN,
+)
+from bench.tasks.stimulus_prompt_shell import (
+    DIGIT_SPAN_SEP_BEFORE_RULES,
+    wrap_stimulus_prompt,
+)
 
 from .data import Question
-
 
 ANSWER_RE = re.compile(r"^question\s+(\d+):\s*([A-Da-d])\s*$", re.IGNORECASE)
 DIFF_RE = re.compile(r"^difficulty:\s*([0-9]{1,2})\s*$", re.IGNORECASE)
 
 TASK_DESC = "Read a passage, answer all multiple-choice questions, then rate reading difficulty."
-HUMAN_PROMPT = (
-    "The human will have three minutes to read a passage, after which the text will disappear. The human will then be asked to answer ten questions about the text based on their memory and rate reading difficulty."
-)
+HUMAN_PROMPT = "The human will have three minutes to read a passage, after which the text will disappear. The human will then be asked to answer ten questions about the text based on their memory and rate reading difficulty."
 
 FORMAT_RULES = """Output ONLY lines in this exact format:
 Question 1: A
@@ -45,7 +48,9 @@ CONDITIONS: Dict[str, Dict[str, str]] = {
 }
 
 
-def build_prompt(condition_id: str, reading_text: str, questions: List[Question]) -> str:
+def build_prompt(
+    condition_id: str, reading_text: str, questions: List[Question]
+) -> str:
     lines: List[str] = []
     lines.append("Passage:")
     lines.append(reading_text)
