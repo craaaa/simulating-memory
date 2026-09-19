@@ -18,23 +18,55 @@ from bench.core.parallel import map_participants, resolve_worker_count
 from . import errors as err
 from .config import StarConfig
 from .data import HumanTrial
-from .prompting import build_sample_prompt, parse_rationale
 from .resume import AppendSink
 
-TASK_NAMES = {"forward": "digit_span_forward", "reverse": "digit_span_reverse"}
+# (A TASK_NAMES dict used to sit here mapping direction -> bench task name. Nothing ever
+# read it, and it read like a task registry without being one. The registry is now
+# rationales/task.py.)
 
 
 def _mean(xs: Sequence[float]) -> Optional[float]:
     return (sum(xs) / len(xs)) if xs else None
 
 
+def digit_span_eval_row(
+    t: HumanTrial,
+    reasoning: Optional[str],
+    digits: List[int],
+    raw: str,
+    parse_errors: List[str],
+) -> Dict[str, Any]:
+    """One scored digit-span trial. Lifted verbatim out of ``run_eval`` so the
+    digit-span task adapter can supply it through the task seam."""
+    return {
+        "trial_id": t.trial_id,
+        "direction": t.direction,
+        "length": t.length,
+        "human_correct": t.correct,
+        "digits_presented": t.digits,
+        "expected_digits": t.expected_digits,
+        "human_digits": t.user_digits,
+        "pred_digits": digits,
+        "reasoning": reasoning,
+        "raw": raw,
+        "parse_errors": parse_errors,
+        "human_match": digits == t.user_digits,
+        "ground_truth_correct": digits == t.expected_digits,
+        "error_type_model": err.classify_error(t.expected_digits, digits),
+        "error_type_human": err.classify_error(t.expected_digits, t.user_digits),
+        "features_model": err.error_features(t.expected_digits, digits),
+        "features_human": err.error_features(t.expected_digits, t.user_digits),
+    }
+
+
 def run_eval(
     cfg: StarConfig,
-    trials: Sequence[HumanTrial],
+    trials: Sequence[Any],
     *,
     generate: Callable[[str, int], List[str]],
     label: str,
     rows_path: Optional[Path] = None,
+    task: Any = None,
 ) -> Dict[str, Any]:
     """Sample once per eval trial with the zero-shot training-time prompt.
 
@@ -45,37 +77,24 @@ def run_eval(
     trials already present are skipped -- so a paused run resumes mid-eval instead of
     re-scoring (and re-paying for) what it already has.
     """
+    if task is None:
+        from .task import default_task
+
+        task = default_task()
+
     sink = AppendSink(rows_path) if rows_path is not None else None
     done_rows = sink.rows() if sink else []
     done_ids = {r["trial_id"] for r in done_rows}
-    pending = [t for t in trials if t.trial_id not in done_ids]
+    pending = [t for t in trials if task.item_id(t) not in done_ids]
     workers = resolve_worker_count(max(len(pending), 1), max_parallel=cfg.max_workers)
 
     def _one(idx: int) -> Dict[str, Any]:
         t = pending[idx]
-        prompt = build_sample_prompt(t, fewshot=False)
+        prompt = task.build_sample_prompt(t, fewshot=False)
         raws = generate(prompt, 1)
         raw = raws[0] if raws else ""
-        reasoning, digits, parse_errors = parse_rationale(raw)
-        return {
-            "trial_id": t.trial_id,
-            "direction": t.direction,
-            "length": t.length,
-            "human_correct": t.correct,
-            "digits_presented": t.digits,
-            "expected_digits": t.expected_digits,
-            "human_digits": t.user_digits,
-            "pred_digits": digits,
-            "reasoning": reasoning,
-            "raw": raw,
-            "parse_errors": parse_errors,
-            "human_match": digits == t.user_digits,
-            "ground_truth_correct": digits == t.expected_digits,
-            "error_type_model": err.classify_error(t.expected_digits, digits),
-            "error_type_human": err.classify_error(t.expected_digits, t.user_digits),
-            "features_model": err.error_features(t.expected_digits, digits),
-            "features_human": err.error_features(t.expected_digits, t.user_digits),
-        }
+        reasoning, answer, parse_errors = task.parse(raw)
+        return task.eval_row(t, reasoning, answer, raw, parse_errors)
 
     def _scored(idx: int) -> Dict[str, Any]:
         row = _one(idx)
@@ -92,7 +111,7 @@ def run_eval(
         "label": label,
         "rows": rows,
         "n_resumed": len(done_rows),
-        "metrics": summarize(rows),
+        "metrics": task.summarize(rows),
     }
 
 

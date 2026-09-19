@@ -19,15 +19,8 @@ from bench.core.io import JsonlSink
 from bench.core.parallel import map_participants, resolve_worker_count
 
 from .config import StarConfig
-from .data import HumanTrial
-from .prompting import (
-    build_completion,
-    build_rationalize_prompt,
-    build_sample_prompt,
-    fewshot_has_placeholders,
-    parse_rationale,
-)
 from .resume import AppendSink, completed_trial_ids, read_jsonl
+from .task import default_task
 
 GENERATION = "generation"
 RATIONALIZATION = "rationalization"
@@ -35,65 +28,71 @@ RATIONALIZATION = "rationalization"
 
 @dataclass
 class SampleRow:
-    trial: HumanTrial
+    """One decoded sample.
+
+    ``trial`` is the task's item and ``digits`` the parsed answer -- both named for
+    digit span, which is the only task that existed when this was written. They are
+    opaque to this module: a listening item and a set of option numbers ride in the
+    same two slots. The field order is positional in the tests, so it is left alone;
+    ``item`` and ``answer`` are readable aliases for new code.
+    """
+
+    trial: Any
     via: str
     sample_index: int
     prompt: str
     raw: str
     reasoning: Optional[str]
-    digits: List[int]
+    digits: Any
     accepted: bool
     parse_errors: List[str]
 
-    def to_json(self) -> Dict[str, Any]:
-        t = self.trial
+    @property
+    def item(self) -> Any:
+        return self.trial
+
+    @property
+    def answer(self) -> Any:
+        return self.digits
+
+    def to_json(self, task: Any = None) -> Dict[str, Any]:
+        task = task or default_task()
         return {
-            "trial_id": t.trial_id,
-            "direction": t.direction,
-            "participant_id": t.participant_id,
-            "length": t.length,
-            "sequence_index": t.sequence_index,
-            "human_correct": t.correct,
-            "digits_presented": t.digits,
-            "expected_digits": t.expected_digits,
-            "target_digits": t.user_digits,   # y_i: the human's own response
+            "trial_id": task.item_id(self.trial),
+            **task.item_fields(self.trial),
             "via": self.via,
             "sample_index": self.sample_index,
             "prompt": self.prompt,
             "raw": self.raw,
             "reasoning": self.reasoning,
-            "pred_digits": self.digits,
+            **task.answer_fields(self.digits),
             "accepted": self.accepted,
             "parse_errors": self.parse_errors,
         }
 
 
-def check_fewshot_ready(cfg: StarConfig) -> None:
-    if not cfg.use_fewshot:
-        return
-    unready = [d for d in cfg.directions if fewshot_has_placeholders(d)]
-    if unready:
-        raise RuntimeError(
-            "few-shot rationale demos still contain PLACEHOLDER text for: "
-            f"{', '.join(unready)}. Write them (rationales/prompts/fewshot_*.txt) "
-            "or pass --no-fewshot."
-        )
+def check_fewshot_ready(cfg: StarConfig, task: Any = None) -> None:
+    (task or default_task()).check_ready(cfg)
 
 
 def _attempt(
-    trial: HumanTrial,
+    trial: Any,
     prompt: str,
     via: str,
     raws: Sequence[str],
+    task: Any = None,
 ) -> List[SampleRow]:
-    """Parse every raw sample for one prompt; accept the first digit-exact match."""
+    """Parse every raw sample for one prompt; accept the first exact match to y_i."""
+    task = task or default_task()
     rows: List[SampleRow] = []
     accepted_any = False
     for i, raw in enumerate(raws):
-        reasoning, digits, errs = parse_rationale(raw)
-        # y_i comparison is int-list vs int-list. Comparing against the raw response
-        # string would be silently always False and would empty the generation path.
-        ok = (not accepted_any) and reasoning is not None and digits == trial.user_digits
+        reasoning, answer, errs = task.parse(raw)
+        # The STaR filter. Note what it compares against: the human's own response,
+        # not the correct answer. Type discipline matters here -- digit span compares
+        # int list to int list, and comparing a parsed answer against a raw response
+        # *string* would be silently always False, emptying the generation path.
+        ok = (not accepted_any) and reasoning is not None and task.accepts(trial, answer)
         if ok:
             accepted_any = True
         rows.append(
@@ -104,7 +103,7 @@ def _attempt(
                 prompt=prompt,
                 raw=raw,
                 reasoning=reasoning,
-                digits=digits,
+                digits=answer,
                 accepted=ok,
                 parse_errors=errs,
             )
@@ -114,11 +113,12 @@ def _attempt(
 
 def sample_round(
     cfg: StarConfig,
-    trials: Sequence[HumanTrial],
+    trials: Sequence[Any],
     *,
     generate: Callable[[str, int], List[str]],
     pool_path: Path,
     resume: bool = False,
+    task: Any = None,
 ) -> Dict[str, Any]:
     """Run lines 3-4 over the whole train split and write every sample to pool_path.
 
@@ -131,7 +131,8 @@ def sample_round(
     which is what a fresh round wants, since STaR regenerates the whole split each
     round.
     """
-    check_fewshot_ready(cfg)
+    task = task or default_task()
+    check_fewshot_ready(cfg, task)
 
     already: set = set()
     if resume:
@@ -141,7 +142,7 @@ def sample_round(
     else:
         sink = JsonlSink(pool_path)
 
-    pending = [t for t in trials if t.trial_id not in already]
+    pending = [t for t in trials if task.item_id(t) not in already]
     skipped = len(trials) - len(pending)
     trials = pending
     workers = resolve_worker_count(max(len(trials), 1), max_parallel=cfg.max_workers)
@@ -149,25 +150,25 @@ def sample_round(
     def _one(idx: int) -> List[SampleRow]:
         trial = trials[idx]
         # Line 3: rationale generation.
-        gen_prompt = build_sample_prompt(trial, fewshot=cfg.use_fewshot)
-        rows = _attempt(trial, gen_prompt, GENERATION, generate(gen_prompt, cfg.k))
+        gen_prompt = task.build_sample_prompt(trial, fewshot=cfg.use_fewshot)
+        rows = _attempt(trial, gen_prompt, GENERATION, generate(gen_prompt, cfg.k), task)
         # Flushed per attempt, not per trial: if the run pauses between the generation
         # and rationalization calls, the generation result is still on disk (and the
         # trial correctly reads as not-yet-exhausted, so it is retried rather than
         # silently dropped).
         for r in rows:
-            sink.append(r.to_json())
+            sink.append(r.to_json(task))
 
         if not any(r.accepted for r in rows):
             # Line 4: rationalization, only for problems line 3 failed. Line 4 runs
             # for all i in the paper, but line 6 keeps only failures, so restricting
             # it here is equivalent and cheaper.
-            rat_prompt = build_rationalize_prompt(trial, fewshot=cfg.use_fewshot)
+            rat_prompt = task.build_rationalize_prompt(trial, fewshot=cfg.use_fewshot)
             rat_rows = _attempt(
-                trial, rat_prompt, RATIONALIZATION, generate(rat_prompt, cfg.k)
+                trial, rat_prompt, RATIONALIZATION, generate(rat_prompt, cfg.k), task
             )
             for r in rat_rows:
-                sink.append(r.to_json())
+                sink.append(r.to_json(task))
             rows += rat_rows
         return rows
 
@@ -185,12 +186,13 @@ def sample_round(
         "pool_path": str(pool_path),
         # Stats come from the full pool on disk, not just this invocation, so a resumed
         # round reports the same numbers an uninterrupted one would.
-        "stats": pool_stats(pool_path),
+        "stats": pool_stats(pool_path, task),
     }
 
 
-def pool_stats(pool_path: Path) -> Dict[str, Any]:
+def pool_stats(pool_path: Path, task: Any = None) -> Dict[str, Any]:
     """Accept counts over every row written to the pool, across pauses."""
+    task = task or default_task()
     rows = read_jsonl(pool_path)
     by_trial: Dict[str, str] = {}
     meta: Dict[str, Dict[str, Any]] = {}
@@ -201,7 +203,7 @@ def pool_stats(pool_path: Path) -> Dict[str, Any]:
 
     cells: Dict[str, Dict[str, int]] = {}
     for tid, r in meta.items():
-        key = f"{r['direction']}:{'success' if r['human_correct'] else 'fail'}"
+        key = task.pool_cell_key(r)
         cell = cells.setdefault(key, {"n": 0, "accepted": 0, GENERATION: 0, RATIONALIZATION: 0})
         cell["n"] += 1
         via = by_trial.get(tid)
@@ -221,22 +223,23 @@ def pool_stats(pool_path: Path) -> Dict[str, Any]:
     }
 
 
-def path_stats(rows: Sequence[SampleRow]) -> Dict[str, Any]:
-    """Accept counts split by path and by (direction, human_correct).
+def path_stats(rows: Sequence[SampleRow], task: Any = None) -> Dict[str, Any]:
+    """Accept counts split by path and by human-success/human-fail cell.
 
     fail_side_generation_yield is the bootstrap signal: if fail trials only ever
     accept via the hint path, round over round, STaR is not bootstrapping and the fix
     is not more rounds.
     """
+    task = task or default_task()
     by_trial: Dict[str, str] = {}
     for r in rows:
         if r.accepted:
-            by_trial[r.trial.trial_id] = r.via
+            by_trial[task.item_id(r.trial)] = r.via
 
-    trials = {r.trial.trial_id: r.trial for r in rows}
+    trials = {task.item_id(r.trial): r.trial for r in rows}
     cells: Dict[str, Dict[str, int]] = {}
     for tid, trial in trials.items():
-        key = f"{trial.direction}:{'success' if trial.correct else 'fail'}"
+        key = task.pool_cell_key(task.item_fields(trial))
         cell = cells.setdefault(
             key, {"n": 0, "accepted": 0, GENERATION: 0, RATIONALIZATION: 0}
         )
@@ -259,27 +262,27 @@ def path_stats(rows: Sequence[SampleRow]) -> Dict[str, Any]:
     }
 
 
-def training_pairs(rows: Sequence[SampleRow], cfg: StarConfig) -> List[Dict[str, Any]]:
+def training_pairs(
+    rows: Sequence[SampleRow], cfg: StarConfig, task: Any = None
+) -> List[Dict[str, Any]]:
     """Accepted rows -> (training prompt, completion) pairs.
 
     The training prompt is always zero-shot and hint-free, whichever path produced the
-    rationale.
+    rationale -- "as if the model had come up with the rationale without the hint".
     """
+    task = task or default_task()
     out: List[Dict[str, Any]] = []
     for r in rows:
         if not r.accepted or r.reasoning is None:
             continue
         out.append(
             {
-                "trial_id": r.trial.trial_id,
-                "direction": r.trial.direction,
-                "length": r.trial.length,
-                "human_correct": r.trial.correct,
+                "trial_id": task.item_id(r.trial),
+                **task.pair_fields(r.trial, r.digits),
                 "via": r.via,
-                "prompt": build_sample_prompt(r.trial, fewshot=False),
-                "completion": build_completion(r.reasoning, r.digits),
+                "prompt": task.build_sample_prompt(r.trial, fewshot=False),
+                "completion": task.build_completion(r.reasoning, r.digits),
                 "reasoning": r.reasoning,
-                "target_digits": r.trial.user_digits,
             }
         )
     return out

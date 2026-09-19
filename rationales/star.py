@@ -13,30 +13,32 @@ from typing import Any, Callable, Dict, List, Optional
 from bench.core.io import ensure_dir, git_provenance, run_timestamp, write_json
 
 from . import evaluate as ev
-from . import prompting
 from .config import StarConfig, out_root
-from .data import load_all
 from .filter import build_corpus
 from .sample import sample_round, training_pairs, SampleRow, GENERATION, RATIONALIZATION
-from .select import Selection, restore, select
+from .select import Selection
 from .resume import RunState
+from .task import default_task
 from .tinker_client import BudgetExceeded, CostTracker, TinkerSession
 from .train import estimate_train_tokens, read_checkpoint, train_round
 
 
-def prepare_run(cfg: StarConfig, *, timestamp: Optional[str] = None) -> tuple[Path, Selection]:
+def prepare_run(
+    cfg: StarConfig, *, timestamp: Optional[str] = None, task: Any = None
+) -> tuple[Path, Selection]:
     """Create the run dir, load + select D once, and stamp provenance."""
+    task = task or default_task()
     ts = timestamp or run_timestamp()
     root = ensure_dir(out_root(cfg, ts))
 
-    trials, reports = load_all(cfg.directions)
+    trials, reports = task.load(cfg)
     sel_path = root / "selection.json"
     if sel_path.is_file():
         import json
 
-        sel = restore(trials, json.loads(sel_path.read_text(encoding="utf-8")))
+        sel = task.restore(trials, json.loads(sel_path.read_text(encoding="utf-8")))
     else:
-        sel = select(trials, seed=cfg.seed, eval_frac=cfg.eval_frac)
+        sel = task.select(trials, seed=cfg.seed, eval_frac=cfg.eval_frac)
         write_json(sel_path, sel.report)
 
     write_json(
@@ -45,8 +47,9 @@ def prepare_run(cfg: StarConfig, *, timestamp: Optional[str] = None) -> tuple[Pa
             "config": cfg.to_dict(),
             "git_provenance": git_provenance(),
             "timestamp": ts,
+            "task": task.name,
             "human_data_reports": reports,
-            "prompt_additions": prompting.prompt_additions(),
+            "prompt_additions": task.prompt_additions(),
             "sampler_backend": "tinker",
             "star_reference": "Zelikman et al. 2022, arXiv:2203.14465, Algorithm 1",
         },
@@ -54,10 +57,13 @@ def prepare_run(cfg: StarConfig, *, timestamp: Optional[str] = None) -> tuple[Pa
     return root, sel
 
 
-def _reload_pool(path: Path, trials_by_id: Dict[str, Any]) -> List[SampleRow]:
+def _reload_pool(
+    path: Path, trials_by_id: Dict[str, Any], task: Any = None
+) -> List[SampleRow]:
     """Rebuild SampleRow objects from a written sample_pool.jsonl."""
     import json
 
+    task = task or default_task()
     rows: List[SampleRow] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -74,7 +80,7 @@ def _reload_pool(path: Path, trials_by_id: Dict[str, Any]) -> List[SampleRow]:
                 prompt=d["prompt"],
                 raw=d["raw"],
                 reasoning=d.get("reasoning"),
-                digits=d.get("pred_digits") or [],
+                digits=task.answer_from_row(d),
                 accepted=bool(d.get("accepted")),
                 parse_errors=d.get("parse_errors") or [],
             )
@@ -92,7 +98,9 @@ def run_round(
     sampler_path: Optional[str],
     state: Optional[RunState] = None,
     state_path: Optional[Path] = None,
+    task: Any = None,
 ) -> Dict[str, Any]:
+    task = task or default_task()
     round_dir = ensure_dir(root / "rounds" / f"round_{round_n}")
     state = state or RunState(round=round_n)
 
@@ -118,7 +126,7 @@ def run_round(
         # resume=True keeps rationales a paused run already paid for.
         sample_report = sample_round(
             cfg, sel.train, generate=generate, pool_path=pool_path,
-            resume=pool_path.is_file(),
+            resume=pool_path.is_file(), task=task,
         )
         write_json(round_dir / "sample_report.json", sample_report)
         checkpoint_state("filter")
@@ -126,10 +134,10 @@ def run_round(
         sample_report = _read_json(round_dir / "sample_report.json")
 
     # --- lines 5-6: D_n u D^rat_n -----------------------------------------
-    trials_by_id = {t.trial_id: t for t in sel.train}
-    rows = _reload_pool(pool_path, trials_by_id)
-    pairs = training_pairs(rows, cfg)
-    corpus, filter_stats = build_corpus(pairs, cfg, out_dir=round_dir)
+    trials_by_id = {task.item_id(t): t for t in sel.train}
+    rows = _reload_pool(pool_path, trials_by_id, task)
+    pairs = training_pairs(rows, cfg, task)
+    corpus, filter_stats = build_corpus(pairs, cfg, out_dir=round_dir, task=task)
     checkpoint_state("train")
 
     # --- line 7: train from the ORIGINAL base model ------------------------
@@ -169,12 +177,12 @@ def run_round(
     # re-scoring what has already been paid for.
     base_eval = ev.run_eval(
         cfg, sel.eval, generate=_gen(base_client), label="base",
-        rows_path=round_dir / "eval_rows_base.jsonl",
+        rows_path=round_dir / "eval_rows_base.jsonl", task=task,
     )
     checkpoint_state("eval_tuned")
     tuned_eval = ev.run_eval(
         cfg, sel.eval, generate=_gen(tuned_client), label=f"round{round_n}",
-        rows_path=round_dir / "eval_rows_tuned.jsonl",
+        rows_path=round_dir / "eval_rows_tuned.jsonl", task=task,
     )
 
     payload = {
@@ -191,10 +199,8 @@ def run_round(
         "usage": session.tracker.summary(),
     }
     try:
-        from . import plotting
-
         payload["figures"] = [
-            str(p) for p in plotting.plot_round(payload, ensure_dir(root / "figures"), round_n=round_n)
+            str(p) for p in task.plot_round(payload, ensure_dir(root / "figures"), round_n=round_n)
         ]
     except Exception as exc:  # plotting must never lose a completed round
         payload["figures_error"] = repr(exc)
@@ -226,9 +232,11 @@ def run_star(
     max_usd: Optional[float] = None,
     resume: bool = False,
     run_dir: Optional[Path] = None,
+    task: Any = None,
 ) -> Dict[str, Any]:
+    task = task or default_task()
     ts = timestamp or (Path(run_dir).name if run_dir else run_timestamp())
-    root, sel = prepare_run(cfg, timestamp=ts)
+    root, sel = prepare_run(cfg, timestamp=ts, task=task)
 
     # Live cost ledger: one row per API call, with the running USD total. Tail it from
     # another terminal while the round runs -- Tinker has no live spend endpoint.
@@ -281,6 +289,7 @@ def run_star(
             report = run_round(
                 cfg, session, root, sel,
                 round_n=n, sampler_path=sampler_path, state=state, state_path=state_path,
+                task=task,
             )
         except BudgetExceeded as exc:
             # A pause, not a crash: every phase has already flushed its work, and
@@ -332,7 +341,7 @@ def run_star(
     return summary
 
 
-def dry_run(cfg: StarConfig, *, round_n: int = 1) -> Dict[str, Any]:
+def dry_run(cfg: StarConfig, *, round_n: int = 1, task: Any = None) -> Dict[str, Any]:
     """Plan a round without touching the API: request counts, token and cost estimate.
 
     Token counts here come from a crude ~4-chars-per-token heuristic (no tokenizer
@@ -340,6 +349,8 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1) -> Dict[str, Any]:
     """
     from .config import COMPLETION_TOKENS, SUCCESS_MISS_RATE, tinker_cost_usd
     from .tinker_client import offline_token_estimate
+
+    task = task or default_task()
 
     # Prefer the model's real tokenizer (local, no API call, no spend) over the
     # chars/token heuristic -- and render through the chat template, since that is what
@@ -354,12 +365,17 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1) -> Dict[str, Any]:
     except Exception:
         pass
 
-    trials, _ = load_all(cfg.directions)
-    sel = select(trials, seed=cfg.seed, eval_frac=cfg.eval_frac)
+    trials, _ = task.load(cfg)
+    sel = task.select(trials, seed=cfg.seed, eval_frac=cfg.eval_frac)
 
-    gen_prompts = [prompting.build_sample_prompt(t, fewshot=cfg.use_fewshot) for t in sel.train]
-    fails = [t for t in sel.train if not t.correct]
-    successes = [t for t in sel.train if t.correct]
+    gen_prompts = [task.build_sample_prompt(t, fewshot=cfg.use_fewshot) for t in sel.train]
+    # "fail" means the human got it wrong, not the model -- those are the items that
+    # carry the memory signal, and the ones assumed to need rationalization.
+    human_correct = {
+        task.item_id(t): bool(task.item_fields(t)["human_correct"]) for t in sel.train
+    }
+    fails = [t for t in sel.train if not human_correct[task.item_id(t)]]
+    successes = [t for t in sel.train if human_correct[task.item_id(t)]]
 
     # Every fail trial is assumed to need rationalization, plus the share of success
     # trials the model misses unhinted -- probing showed that is not zero (the few-shot
@@ -367,9 +383,9 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1) -> Dict[str, Any]:
     n_success_missed = int(round(len(successes) * SUCCESS_MISS_RATE))
     rat_trials = fails + successes[:n_success_missed]
     rat_prompts = [
-        prompting.build_rationalize_prompt(t, fewshot=cfg.use_fewshot) for t in rat_trials
+        task.build_rationalize_prompt(t, fewshot=cfg.use_fewshot) for t in rat_trials
     ]
-    eval_prompts = [prompting.build_sample_prompt(t, fewshot=False) for t in sel.eval]
+    eval_prompts = [task.build_sample_prompt(t, fewshot=False) for t in sel.eval]
 
     prefill = cfg.k * sum(est(p) for p in gen_prompts)
     prefill += cfg.k * sum(est(p) for p in rat_prompts)
@@ -381,7 +397,7 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1) -> Dict[str, Any]:
     # Training sees the zero-shot prompt plus a completion at the brevity cap.
     approx_corpus = [
         {
-            "prompt": prompting.build_sample_prompt(t, fewshot=False),
+            "prompt": task.build_sample_prompt(t, fewshot=False),
             "completion": "x" * int(COMPLETION_TOKENS * 3.72),
         }
         for t in sel.train
@@ -396,6 +412,7 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1) -> Dict[str, Any]:
     )
     return {
         "base_model": cfg.base_model,
+        "task": task.name,
         "n_train_trials": len(sel.train),
         "n_fail_trials": len(fails),
         "n_eval_trials": len(sel.eval),
@@ -415,6 +432,6 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1) -> Dict[str, Any]:
         "example_generation_prompt": gen_prompts[0] if gen_prompts else None,
         "example_rationalize_prompt": rat_prompts[0] if rat_prompts else None,
         "example_training_prompt": (
-            prompting.build_sample_prompt(sel.train[0], fewshot=False) if sel.train else None
+            task.build_sample_prompt(sel.train[0], fewshot=False) if sel.train else None
         ),
     }

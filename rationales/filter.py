@@ -18,8 +18,8 @@ from typing import Any, Dict, List, Sequence, Tuple
 from bench.core.io import write_json, write_jsonl
 
 from .config import StarConfig
-from .prompting import hint_leak
 from .sample import GENERATION, RATIONALIZATION
+from .task import default_task
 
 
 def build_corpus(
@@ -27,16 +27,18 @@ def build_corpus(
     cfg: StarConfig,
     *,
     out_dir: Path,
+    task: Any = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Partition into D_n / D^rat_n, drop leaked rationales, write accepted.jsonl.
 
     Returns (corpus, stats) where corpus is exactly what line 7 trains on.
     """
+    task = task or default_task()
     kept: List[Dict[str, Any]] = []
     leaked: List[Dict[str, Any]] = []
 
     for p in pairs:
-        leak = hint_leak(p["reasoning"]) if cfg.leak_filter else None
+        leak = task.hint_leak(p["reasoning"]) if cfg.leak_filter else None
         if leak:
             leaked.append({"trial_id": p["trial_id"], "via": p["via"], "matched": leak})
             continue
@@ -50,7 +52,7 @@ def build_corpus(
     def _cells(rows: Sequence[Dict[str, Any]]) -> Dict[str, int]:
         out: Dict[str, int] = {}
         for r in rows:
-            key = f"{r['direction']}:{r['length']}:{'success' if r['human_correct'] else 'fail'}"
+            key = task.cell_key(r)
             out[key] = out.get(key, 0) + 1
         return dict(sorted(out.items()))
 

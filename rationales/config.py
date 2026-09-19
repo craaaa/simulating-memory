@@ -70,6 +70,11 @@ def tinker_cost_usd(
 class StarConfig:
     """Everything that defines a STaR run. Serialized into run_config.json."""
 
+    # --- task --------------------------------------------------------------
+    # Which RationaleTask the loop is pointed at (see rationales/task.py). Everything
+    # below is task-independent except `directions`, which only digit span reads.
+    task: str = "digit_span"
+
     # --- model / API -------------------------------------------------------
     # PLACEHOLDER: confirm against Tinker's supported-model list. Note Qwen3-8B is
     # cheaper per token than Qwen3.5-4B (see TINKER_PRICING_PER_MILLION).
