@@ -1,0 +1,66 @@
+{
+  "n_trials_sampled": 3340,
+  "n_trials_skipped_already_done": 0,
+  "n_samples": 6680,
+  "workers": 3340,
+  "resumed": false,
+  "pool_path": "/Users/cl5625/simulating-memory/rationales/out/Qwen_Qwen3-8B/20260920T223000Z/rounds/round_1/sample_pool.jsonl",
+  "stats": {
+    "cells": {
+      "control:fail": {
+        "n": 477,
+        "accepted": 257,
+        "generation": 15,
+        "rationalization": 242
+      },
+      "control:success": {
+        "n": 358,
+        "accepted": 330,
+        "generation": 200,
+        "rationalization": 130
+      },
+      "distractor:fail": {
+        "n": 533,
+        "accepted": 287,
+        "generation": 10,
+        "rationalization": 277
+      },
+      "distractor:success": {
+        "n": 302,
+        "accepted": 259,
+        "generation": 163,
+        "rationalization": 96
+      },
+      "repeat_long:fail": {
+        "n": 382,
+        "accepted": 207,
+        "generation": 4,
+        "rationalization": 203
+      },
+      "repeat_long:success": {
+        "n": 453,
+        "accepted": 425,
+        "generation": 275,
+        "rationalization": 150
+      },
+      "repeat_short:fail": {
+        "n": 393,
+        "accepted": 190,
+        "generation": 3,
+        "rationalization": 187
+      },
+      "repeat_short:success": {
+        "n": 442,
+        "accepted": 369,
+        "generation": 227,
+        "rationalization": 142
+      }
+    },
+    "n_trials_in_pool": 3340,
+    "n_accepted": 2324,
+    "n_accepted_generation": 897,
+    "n_accepted_rationalization": 1427,
+    "fail_side_generation_yield": 0.017927170868347338
+  },
+  "reparsed": true
+}

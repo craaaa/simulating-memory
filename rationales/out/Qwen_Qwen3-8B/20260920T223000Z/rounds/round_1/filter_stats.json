@@ -1,0 +1,10 @@
+{
+  "n_accepted_total": 0,
+  "size_D_n": 0,
+  "size_D_rat_n": 0,
+  "leak_filter_enabled": true,
+  "n_dropped_hint_leak": 0,
+  "dropped_hint_leak": [],
+  "by_cell": {},
+  "fail_share": null
+}

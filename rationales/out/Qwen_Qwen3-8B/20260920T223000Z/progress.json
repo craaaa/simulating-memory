@@ -1,0 +1,12 @@
+{
+  "round": 1,
+  "phase": "train",
+  "train_step": 0,
+  "train_state_path": null,
+  "sampler_path": null,
+  "checkpoint": null,
+  "completed_rounds": [],
+  "paused": false,
+  "pause_reason": null,
+  "spend_usd_at_pause": null
+}

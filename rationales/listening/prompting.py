@@ -80,6 +80,14 @@ ANSWER_RE = re.compile(
 )
 ANSWER_ANY_RE = re.compile(r"^\s*answer:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 
+# Chat-template control tokens arrive INSIDE the completion text from Tinker, with no
+# separating newline: "Answer: 1,3<|im_end|>". The answer pattern is anchored to end of
+# line, so an unstripped control token turns a perfectly good answer into a parse
+# failure. This cost a full round of sampling before it was caught -- OpenRouter strips
+# these server-side, so the probe could not see it, which is exactly the off-policy
+# caveat the probe carries.
+SPECIAL_TOKEN_RE = re.compile(r"<\|[^|>]*\|>")
+
 # The listening task's own prompt never says the model is answering one question; with
 # the sibling block present, an unstated unit is genuinely ambiguous.
 TASK_LINE = (
@@ -265,6 +273,7 @@ def parse_rationale(text: str) -> Tuple[Optional[str], List[int], List[str]]:
     if text is None:
         return None, [], ["empty_response"]
 
+    text = SPECIAL_TOKEN_RE.sub("", text)
     if REASONING_CLOSE not in text:
         return None, [], ["no_reasoning_block"]
 

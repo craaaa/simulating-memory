@@ -206,6 +206,34 @@ def test_out_of_range_options_are_dropped_and_flagged():
     assert "option_out_of_range" in errors
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        # Exactly what Tinker returned, verbatim from a live sample_pool.jsonl.
+        "<reasoning>\nthey kept the gist.\n</reasoning>\nAnswer: 1,3<|im_end|>",
+        "<reasoning>\nthey kept the gist.\n</reasoning>\nAnswer: 1,3<|endoftext|>",
+        "<reasoning>\nthey kept the gist.\n</reasoning>\nAnswer: 1,3<|im_end|>\n",
+    ],
+)
+def test_chat_template_control_tokens_do_not_break_the_answer_line(raw):
+    """Regression for a full round of wasted sampling. Tinker returns control tokens
+    inside the completion with no separating newline, and the answer pattern is anchored
+    to end of line, so "Answer: 1,3<|im_end|>" parsed as answer_not_numeric -- 6680
+    well-formed completions, zero accepted. OpenRouter strips these server-side, so the
+    probe could not have caught it."""
+    reasoning, options, errors = lp.parse_rationale(raw)
+    assert reasoning == "they kept the gist."
+    assert options == [1, 3]
+    assert errors == []
+
+
+def test_control_tokens_are_stripped_from_the_reasoning_too():
+    raw = "<reasoning>\nthey kept the gist.<|im_end|>\n</reasoning>\nAnswer: 1"
+    reasoning, options, _ = lp.parse_rationale(raw)
+    assert "<|" not in reasoning
+    assert options == [1]
+
+
 def test_empty_response_is_not_a_parse_success():
     assert lp.parse_rationale("")[2] == ["no_reasoning_block"]
     assert lp.parse_rationale(None)[2] == ["empty_response"]
