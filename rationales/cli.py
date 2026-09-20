@@ -53,8 +53,27 @@ def _cfg(**overrides) -> StarConfig:
         defaults = dict(getattr(resolve(name), "defaults", {}) or {})
     except ValueError:
         defaults = {}
+
+    # A task default only survives if the flag's own default is None -- typer passes a
+    # non-None default on every invocation, which looks identical to the user typing
+    # it. Any StarConfig field a task overrides must therefore be declared
+    # `Optional[...] = typer.Option(None)` on the command. Round 1 of listening_qa
+    # trained 60 steps instead of 200 because steps_1 was not.
+    shadowed = [k for k in defaults if k in clean and k not in _EXPLICIT_FLAGS]
+    if shadowed:  # pragma: no cover - defensive; the test below pins the real case
+        raise RuntimeError(
+            f"task {name!r} sets defaults for {shadowed}, but the CLI passed its own "
+            "value, so the task default was ignored. Declare those flags as "
+            "Optional[...] = typer.Option(None)."
+        )
     defaults.update(clean)
     return StarConfig(**defaults)
+
+
+# Flags the user genuinely typed are tracked by typer as non-None; we cannot tell them
+# apart from defaults, so this set records which ones are allowed to shadow a task
+# default because they are declared Optional and therefore only arrive when typed.
+_EXPLICIT_FLAGS = {"steps_1", "max_seq_length", "sibling_context"}
 
 
 def _task_for(cfg) -> "object":
@@ -228,7 +247,11 @@ def star_cmd(
     temperature: float = typer.Option(0.0),
     lora_rank: int = typer.Option(16),
     learning_rate: float = typer.Option(1e-4),
-    steps_1: int = typer.Option(60),
+    steps_1: Optional[int] = typer.Option(
+        None,
+        help="Training steps at round 1. Defaults per task (digit span 60, "
+        "listening_qa 200) -- see each task's `defaults`.",
+    ),
     batch_size: int = typer.Option(8),
     seed: int = typer.Option(42),
     fewshot: bool = typer.Option(True),

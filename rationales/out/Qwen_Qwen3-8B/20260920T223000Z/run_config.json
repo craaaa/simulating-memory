@@ -33,12 +33,10 @@
     "tinker_pricing_verified_on": "2026-09-10"
   },
   "git_provenance": {
-    "commit": "1fbf0d9b6699b683c2882867cf1055ef5aafd484",
+    "commit": "ad211be975a96e8e878f3a4858dfb5300ed6b760",
     "branch": "feat-rationales",
-    "tags": [
-      "exp/listening-star-v1"
-    ],
-    "dirty": true,
+    "tags": [],
+    "dirty": false,
     "prompt_diffs": {
       "bench/tasks/wm_prompt_parts.py": null,
       "bench/tasks/wm_mcq_common.py": null,

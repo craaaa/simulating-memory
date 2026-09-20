@@ -198,6 +198,40 @@ def test_dry_run_picks_up_the_per_task_cost_constants():
     assert f"{cfg_mod.LISTENING_QA_SUCCESS_MISS_RATE:.0%}" in plan["estimate_basis"]
 
 
+def test_a_task_default_survives_the_cli_path():
+    """typer passes a non-None default on every invocation, which is indistinguishable
+    from the user typing the flag, so a task default is silently discarded unless the
+    flag is declared Optional(None). Round 1 of listening_qa trained 60 steps instead
+    of 200 for exactly this reason."""
+    from rationales.cli import _cfg
+
+    for field, expected in LISTENING.defaults.items():
+        assert getattr(_cfg(task="listening_qa"), field) == expected, (
+            f"{field}: the task default did not reach StarConfig through _cfg"
+        )
+    # An explicit value still wins.
+    assert _cfg(task="listening_qa", steps_1=40).steps_1 == 40
+    # And digit span keeps StarConfig's own defaults.
+    assert _cfg(task="digit_span").steps_1 == StarConfig().steps_1
+
+
+def test_every_cli_flag_a_task_overrides_is_declared_optional():
+    """The structural guard. If a task adds a default for a field whose flag has a
+    non-None typer default, the default is dead on arrival."""
+    import inspect
+
+    from rationales import cli
+
+    sig = inspect.signature(cli.star_cmd)
+    for task in ALL_TASKS:
+        for field in getattr(task, "defaults", {}):
+            if field in sig.parameters:
+                assert sig.parameters[field].default.default is None, (
+                    f"--{field.replace('_','-')} has a non-None typer default, so "
+                    f"{task.name}'s default for it can never apply"
+                )
+
+
 def test_listening_declares_the_config_defaults_digit_span_would_get_wrong():
     """max_seq_length above all: build_datum truncates from the right, so a too-small
     budget silently removes the answer line the loss covers."""
