@@ -65,9 +65,15 @@ class SiblingAnswer:
     question: str
     options: Dict[int, str]
     endorsed: List[int]
+    gold: List[int] = field(default_factory=list)
 
     def endorsed_text(self) -> List[str]:
         return [self.options[n] for n in self.endorsed if n in self.options]
+
+    @property
+    def correct(self) -> bool:
+        """Exact set match, the same definition ListeningItem.correct uses."""
+        return set(self.endorsed) == set(self.gold)
 
 
 @dataclass(frozen=True)
@@ -217,6 +223,7 @@ def load_items(
                     question=other["question"].question,
                     options=dict(other["question"].options),
                     endorsed=list(other["endorsed"]),
+                    gold=list(other["question"].answer),
                 )
                 for other_id, other in sorted(by_q.items())
                 if other_id != q_id

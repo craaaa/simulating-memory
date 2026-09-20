@@ -10,18 +10,18 @@ Handling a piece of bracklin gives a much better sense of its weight and texture
 
 The same human answered these other questions about the same passage:
 - Which of the following are true of Bracklin? Select all that apply.
-  They selected: It can be made out of the wool of Grennock mountain sheep
+  They selected: It can be made out of the wool of Grennock mountain sheep  [wrong]
 - Which of the following are true of how Bracklin is woven? Select all that apply.
-  They selected: Two threads lock around each other during weaving
+  They selected: Two threads lock around each other during weaving  [wrong]
 - Which of the following correctly describes Bracklin?
-  They selected: An animal-based fiber used for winter carpets and ceremonial wall tapestries
+  They selected: An animal-based fiber used for winter carpets and ceremonial wall tapestries  [wrong]
 - Which of the following correctly describes a feature of bracklin? Select all that apply.
-  They selected: It is produced mainly for summer clothing and decorative hangings
+  They selected: It is produced mainly for summer clothing and decorative hangings  [wrong]
 
 Question to predict:
 How is bracklin made? Select all that apply. 1) Double-weft interlock weaving 2) Double-warp chain weaving 3) Cross-thread basket weaving 4) Single-strand satin weaving 5) None of the above
 <reasoning>
-PLACEHOLDER — this person held the fibre and the weave mechanism but drifted on what bracklin is USED for, twice. Say why the weaving question survived that.
+PLACEHOLDER — every other question on this passage came out wrong, and two of them only because this person selected ONE true option where several applied. They under-select rather than misremember. Say why that habit costs nothing on a question with a single correct answer.
 </reasoning>
 Answer: 1
 Outcome: Correct
@@ -33,18 +33,18 @@ A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off 
 
 The same human answered these other questions about the same passage:
 - Which of the following correctly describe the Pictor Nebula? Select all that apply.
-  They selected: It is located about four thousand light-years from Earth; It is lit from within by young stars
+  They selected: It is located about four thousand light-years from Earth; It is lit from within by young stars  [wrong]
 - How do scientists observe the Pictor Nebula? Select all that apply.
-  They selected: With an optical telescope; By picking up red light emitted by the nebula
+  They selected: With an optical telescope; By picking up red light emitted by the nebula  [correct]
 - Which of the following correctly describes the Pictor Nebula? Select all that apply.
-  They selected: The remains of a dying star that is studied to understand how new stars form
+  They selected: The remains of a dying star that is studied to understand how new stars form  [wrong]
 - Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.
-  They selected: An emission nebula — a dense ball of old stars gravitationally bound together
+  They selected: An emission nebula — a dense ball of old stars gravitationally bound together  [wrong]
 
 Question to predict:
 What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-PLACEHOLDER — the sibling answers show this listener kept the surface facts intact (distance, young stars, optical telescope, red light) but let the OBJECT ITSELF drift toward the dying-star description from the second passage. Explain how a person in that state answers the study-purpose question by reaching for exotic-sounding physics rather than the star formation they had already half-recalled elsewhere.
+PLACEHOLDER — the one thing this listener got right is the observation method, and every question that asked WHAT the object is went wrong, twice by importing the dying-star description from the second passage. Explain how someone holding the method firmly but the object loosely answers a question about study purpose.
 </reasoning>
 Answer: 3,4
 Outcome: Wrong — two options were endorsed that appeared nowhere in the passage
@@ -56,18 +56,18 @@ A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off 
 
 The same human answered these other questions about the same passage:
 - Which of the following correctly describe the Pictor Nebula? Select all that apply.
-  They selected: It is located about four thousand light-years from Earth
+  They selected: It is located about four thousand light-years from Earth  [wrong]
 - How do scientists observe the Pictor Nebula? Select all that apply.
-  They selected: Using radio equipment that picks up regular pulses
+  They selected: Using radio equipment that picks up regular pulses  [wrong]
 - Which of the following correctly describes the Pictor Nebula? Select all that apply.
-  They selected: A gas cloud lit by embedded young stars that is studied to understand how new stars form
+  They selected: A gas cloud lit by embedded young stars that is studied to understand how new stars form  [correct]
 - Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.
-  They selected: An emission nebula — a dense ball of old stars gravitationally bound together
+  They selected: An emission nebula — a dense ball of old stars gravitationally bound together  [wrong]
 
 Question to predict:
 What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-PLACEHOLDER — same passage and same question as the block above, and a different person. Their siblings show the mirror-image profile: the observation method is gone entirely (they took a radio-pulse foil) but the study purpose came back CORRECTLY on the combination question. Explain why someone who had just recalled star formation declines to select it here.
+PLACEHOLDER — same passage and same question as the block above, and a different person. This one is the mirror image: the observation method is gone entirely, taken over by a radio-pulse foil, but the study purpose came back CORRECTLY on the combination question. Explain why someone who had just recalled star formation declines to select it when asked directly.
 </reasoning>
 Answer: 5
 Outcome: Wrong — the correct options (1 and 2) were both in the passage
@@ -79,18 +79,18 @@ Watching a match in person gives a much better sense of the rhythm than reading 
 
 The same human answered these other questions about the same passage:
 - Which of the following accurately describe the style of velthrak? Select all that apply.
-  They selected: Velthrak allows limited strikes during competition
+  They selected: Velthrak allows limited strikes during competition  [wrong]
 - Which of the following accurately describe the sornek? Select all that apply.
-  They selected: It is the signature technique of velthrak; It involves a hip throw
+  They selected: It is the signature technique of velthrak; It involves a hip throw  [correct]
 - Which of the following correctly describes the governing body of velthrak? Select all that apply.
-  They selected: The Dalviri Federation of Combat Arts governs velthrak certification
+  They selected: The Dalviri Federation of Combat Arts governs velthrak certification  [wrong]
 - Which of the following correctly describes velthrak? Select all that apply.
-  They selected: Practitioners must practice for two years before engaging in full-resistance sparring
+  They selected: Practitioners must practice for two years before engaging in full-resistance sparring  [correct]
 
 Question to predict:
 Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above
 <reasoning>
-PLACEHOLDER — the siblings make this one legible: this person had already asserted that velthrak ALLOWS limited strikes, and had the sparring rule firmly. Explain why the no-striking option is unavailable to them here given what they think they remember, and why the sparring restriction is not.
+PLACEHOLDER — this person had the sparring rule exactly right elsewhere, and had already asserted that velthrak ALLOWS limited strikes. Explain why the no-striking option is unavailable to them here, given what they believe they remember, while the sparring restriction is retrieved without difficulty.
 </reasoning>
 Answer: 2
 Outcome: Wrong — a correct option (1) was missed

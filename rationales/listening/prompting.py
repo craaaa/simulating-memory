@@ -167,14 +167,24 @@ def _prefix(*, fewshot: bool) -> str:
 
 
 def _sibling_block(siblings: Sequence[SiblingAnswer]) -> str:
+    """The participant's answers to the passage's other questions, each marked correct
+    or wrong.
+
+    The verdict is part of what individuates a listener: "kept the method but lost the
+    object" and "lost the method but kept the object" are different people, and without
+    the marks the model has to work out which sibling answers were right from the
+    transcript before it can use them. It reveals nothing about the target question --
+    that answer is what is being predicted, and its correctness is never stated.
+    """
     lines: List[str] = [_SIBLING_HEADER.rstrip("\n")]
     for s in siblings:
         lines.append(f"- {s.question}")
         selected = s.endorsed_text()
+        verdict = "correct" if s.correct else "wrong"
         if selected:
-            lines.append("  They selected: " + "; ".join(selected))
+            lines.append("  They selected: " + "; ".join(selected) + f"  [{verdict}]")
         else:
-            lines.append("  They selected: (nothing)")
+            lines.append(f"  They selected: (nothing)  [{verdict}]")
     return "\n".join(lines)
 
 

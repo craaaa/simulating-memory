@@ -81,12 +81,16 @@ then the target question — because few-shot transfer works by shape, and becau
 sibling answers are the only thing that makes one participant distinguishable from
 another.
 
-| # | topic / level | gold | they chose | what the siblings show, and what the rationale must account for |
-|---|---|---|---|---|
-| 1 | fabrics, control | `[1]` | `[1]` | held the fibre and the weave mechanism, drifted twice on what bracklin is *used for*. Why did the weaving question survive that? |
-| 2 | astronomy, distractor | `[1,2]` | `[3,4]` | surface facts intact (distance, young stars, optical, red light), but the object itself drifted toward the dying-star description from the second passage. Why does that state produce exotic physics here? |
-| 3 | astronomy, distractor | `[1,2]` | `[5]` | mirror image of #2: observation method gone (took a radio-pulse foil), but the study purpose came back *correctly* on the combination question. Why decline something they had just recalled? |
-| 4 | martial arts, control | `[1,2]` | `[2]` | had already asserted velthrak *allows* limited strikes, and had the sparring rule firmly. Why is the no-striking option unavailable to them? |
+Each sibling answer is marked `[correct]` or `[wrong]` (exact set match, the same
+definition `ListeningItem.correct` uses). The target's own correctness is never stated —
+that is most of `y_i`, and on a single-answer question it is all of it.
+
+| # | topic / level | siblings right | gold | they chose | what the siblings show, and what the rationale must account for |
+|---|---|---|---|---|---|
+| 1 | fabrics, control | 0/4 | `[1]` | `[1]` | an under-selector: two siblings are wrong only because they picked one true option where several applied. Why does that habit cost nothing on a single-answer question? |
+| 2 | astronomy, distractor | 1/4 | `[1,2]` | `[3,4]` | holds the observation method firmly; every question asking *what the object is* went wrong, twice by importing the dying-star description from the second passage. |
+| 3 | astronomy, distractor | 1/4 | `[1,2]` | `[5]` | mirror image of #2: method gone to a radio-pulse foil, but study purpose recalled *correctly* on the combination question. Why decline it when asked directly? |
+| 4 | martial arts, control | 2/4 | `[1,2]` | `[2]` | had the sparring rule exactly right, and had already asserted velthrak *allows* limited strikes. Why is no-striking unavailable to them? |
 
 **#2 and #3 are the same passage and the same question, answered by two different
 people.** Their sibling blocks are the *only* difference in the input. Write that pair
