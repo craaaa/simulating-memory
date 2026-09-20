@@ -81,16 +81,24 @@ then the target question — because few-shot transfer works by shape, and becau
 sibling answers are the only thing that makes one participant distinguishable from
 another.
 
-Each sibling answer is marked `[correct]` or `[wrong]` (exact set match, the same
-definition `ListeningItem.correct` uses). The target's own correctness is never stated —
-that is most of `y_i`, and on a single-answer question it is all of it.
+Each sibling answer carries a verdict code: `ok` for an exact set match, `-n` for *n*
+true options missed, `+n` for *n* false options taken, `-n+m` for both. "Wrong" alone
+would collapse omission and commission, which are different memory failures identifying
+different listeners. The codes cost about what they save: the `Select all that apply.`
+boilerplate is trimmed from sibling questions (it is an instruction to the participant,
+identical everywhere, and it renders four times per prompt), which brings the net to
+**+5 tokens** over the unmarked version. The *target* question keeps it verbatim, and
+the target's own verdict is never stated — that is most of `y_i`.
 
-| # | topic / level | siblings right | gold | they chose | what the siblings show, and what the rationale must account for |
+| # | topic / level | sibling codes | gold | they chose | what the siblings show, and what the rationale must account for |
 |---|---|---|---|---|---|
-| 1 | fabrics, control | 0/4 | `[1]` | `[1]` | an under-selector: two siblings are wrong only because they picked one true option where several applied. Why does that habit cost nothing on a single-answer question? |
-| 2 | astronomy, distractor | 1/4 | `[1,2]` | `[3,4]` | holds the observation method firmly; every question asking *what the object is* went wrong, twice by importing the dying-star description from the second passage. |
-| 3 | astronomy, distractor | 1/4 | `[1,2]` | `[5]` | mirror image of #2: method gone to a radio-pulse foil, but study purpose recalled *correctly* on the combination question. Why decline it when asked directly? |
-| 4 | martial arts, control | 2/4 | `[1,2]` | `[2]` | had the sparring rule exactly right, and had already asserted velthrak *allows* limited strikes. Why is no-striking unavailable to them? |
+| 1 | fabrics, control | `-1 -1 -1+1 -2+1` | `[1]` | `[1]` | an under-selector: every sibling missed a true option, two of them taking nothing false at all. Why does that habit cost nothing on a single-answer question? |
+| 2 | astronomy, distractor | `-1 ok -1+1 -1+1` | `[1,2]` | `[3,4]` | holds the observation method exactly; every question asking *what the object is* went wrong, twice by importing the dying-star description from the second passage. |
+| 3 | astronomy, distractor | `-2 -2+1 ok -1+1` | `[1,2]` | `[5]` | mirror image of #2: the method went to a radio-pulse foil, but the study purpose came back *exactly right* on the combination question. Why decline it when asked directly? |
+| 4 | martial arts, control | `-1+1 ok -1+1 ok` | `[1,2]` | `[2]` | had the sparring rule exactly right, and had already asserted velthrak *allows* limited strikes. Why is no-striking unavailable to them? |
+
+Demos 2 and 3 are both 1/4 on a bare correct/wrong count, but the codes show they are
+opposite listeners — and *which* sibling each got right is the thing that separates them.
 
 **#2 and #3 are the same passage and the same question, answered by two different
 people.** Their sibling blocks are the *only* difference in the input. Write that pair

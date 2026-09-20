@@ -75,6 +75,39 @@ class SiblingAnswer:
         """Exact set match, the same definition ListeningItem.correct uses."""
         return set(self.endorsed) == set(self.gold)
 
+    @property
+    def missed(self) -> List[int]:
+        """True options they did not select."""
+        return sorted(set(self.gold) - set(self.endorsed))
+
+    @property
+    def false_positives(self) -> List[int]:
+        """Options they selected that are not true."""
+        return sorted(set(self.endorsed) - set(self.gold))
+
+    @property
+    def verdict(self) -> str:
+        """How the answer was wrong, not just that it was, in as few tokens as possible.
+
+        Omission and commission are different memory failures and they identify
+        different listeners: someone who consistently under-selects is not the same
+        person as someone who reaches for interference foils. Collapsing both to
+        "wrong" hides exactly the signal the sibling block exists to carry.
+
+        Encoded as -n / +n rather than spelled out, because this renders four times per
+        prompt over 4020 items and prose would cost more than the legend that explains
+        it. "-2" is two true options missed, "+1" one false option taken, "-2+1" both,
+        "ok" exact.
+        """
+        if self.correct:
+            return "ok"
+        out = ""
+        if self.missed:
+            out += f"-{len(self.missed)}"
+        if self.false_positives:
+            out += f"+{len(self.false_positives)}"
+        return out
+
 
 @dataclass(frozen=True)
 class ListeningItem:

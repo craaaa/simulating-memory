@@ -111,7 +111,8 @@ Explain in {open_tag}...{close_tag} why a human who had heard this passage once 
 """
 
 _SIBLING_HEADER = (
-    "The same human answered these other questions about the same passage:\n"
+    "The same human answered these other questions about the same passage "
+    "(ok = exactly right, -n = missed n true options, +n = took n false ones):\n"
 )
 _TARGET_HEADER = "Question to predict:\n"
 
@@ -178,14 +179,23 @@ def _sibling_block(siblings: Sequence[SiblingAnswer]) -> str:
     """
     lines: List[str] = [_SIBLING_HEADER.rstrip("\n")]
     for s in siblings:
-        lines.append(f"- {s.question}")
+        lines.append(f"- {_trim_boilerplate(s.question)}")
         selected = s.endorsed_text()
-        verdict = "correct" if s.correct else "wrong"
-        if selected:
-            lines.append("  They selected: " + "; ".join(selected) + f"  [{verdict}]")
-        else:
-            lines.append(f"  They selected: (nothing)  [{verdict}]")
+        body = "; ".join(selected) if selected else "(nothing)"
+        lines.append(f"  [{s.verdict}] {body}")
     return "\n".join(lines)
+
+
+# "Select all that apply." is an instruction to the participant, identical on nearly
+# every question, and it renders four times per prompt in the sibling block. Dropping it
+# THERE pays for the -n/+n verdicts, which carry information about the listener that it
+# does not. The target question keeps it verbatim -- that one is the question being
+# answered, not a summary of one already answered.
+_BOILERPLATE = " Select all that apply."
+
+
+def _trim_boilerplate(question: str) -> str:
+    return question[: -len(_BOILERPLATE)] if question.endswith(_BOILERPLATE) else question
 
 
 def build_stimulus(

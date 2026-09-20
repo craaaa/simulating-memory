@@ -8,15 +8,15 @@ Bracklin is a textile made exclusively from the fleece of the Grennock mountain 
 
 Handling a piece of bracklin gives a much better sense of its weight and texture than any description can. The fabric has a distinctive feel that people often comment on the first time they touch it. It's the kind of material that leaves an impression well beyond how it looks in photos.
 
-The same human answered these other questions about the same passage:
-- Which of the following are true of Bracklin? Select all that apply.
-  They selected: It can be made out of the wool of Grennock mountain sheep  [wrong]
-- Which of the following are true of how Bracklin is woven? Select all that apply.
-  They selected: Two threads lock around each other during weaving  [wrong]
+The same human answered these other questions about the same passage (ok = exactly right, -n = missed n true options, +n = took n false ones):
+- Which of the following are true of Bracklin?
+  [-1] It can be made out of the wool of Grennock mountain sheep
+- Which of the following are true of how Bracklin is woven?
+  [-1] Two threads lock around each other during weaving
 - Which of the following correctly describes Bracklin?
-  They selected: An animal-based fiber used for winter carpets and ceremonial wall tapestries  [wrong]
-- Which of the following correctly describes a feature of bracklin? Select all that apply.
-  They selected: It is produced mainly for summer clothing and decorative hangings  [wrong]
+  [-1+1] An animal-based fiber used for winter carpets and ceremonial wall tapestries
+- Which of the following correctly describes a feature of bracklin?
+  [-2+1] It is produced mainly for summer clothing and decorative hangings
 
 Question to predict:
 How is bracklin made? Select all that apply. 1) Double-weft interlock weaving 2) Double-warp chain weaving 3) Cross-thread basket weaving 4) Single-strand satin weaving 5) None of the above
@@ -31,15 +31,15 @@ About four thousand light-years away from Earth sits the Pictor Nebula. The Pict
 
 A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off by an aging star as it shed its outer layers near the end of its life. Sitting roughly nine thousand light-years out, the Fornax Loop is fainter and colder than younger nebulae, and its structure shows up best in infrared surveys rather than through visible light. Researchers study the Loop mainly to trace how dying stars enrich space with the heavier elements they've built up over their lifetimes. Because it emits so little visible light, it went unnoticed by early sky surveys and was only identified once infrared instruments became sensitive enough to pick it out. Spectroscopic analysis shows elevated carbon and nitrogen relative to hydrogen, consistent with material dredged up from the star's core in its final years. The shell is expanding outward at roughly twelve kilometers per second, slow enough that it should fully disperse within about ten thousand years.
 
-The same human answered these other questions about the same passage:
-- Which of the following correctly describe the Pictor Nebula? Select all that apply.
-  They selected: It is located about four thousand light-years from Earth; It is lit from within by young stars  [wrong]
-- How do scientists observe the Pictor Nebula? Select all that apply.
-  They selected: With an optical telescope; By picking up red light emitted by the nebula  [correct]
-- Which of the following correctly describes the Pictor Nebula? Select all that apply.
-  They selected: The remains of a dying star that is studied to understand how new stars form  [wrong]
-- Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.
-  They selected: An emission nebula — a dense ball of old stars gravitationally bound together  [wrong]
+The same human answered these other questions about the same passage (ok = exactly right, -n = missed n true options, +n = took n false ones):
+- Which of the following correctly describe the Pictor Nebula?
+  [-1] It is located about four thousand light-years from Earth; It is lit from within by young stars
+- How do scientists observe the Pictor Nebula?
+  [ok] With an optical telescope; By picking up red light emitted by the nebula
+- Which of the following correctly describes the Pictor Nebula?
+  [-1+1] The remains of a dying star that is studied to understand how new stars form
+- Which of the following correctly identifies what the Pictor Nebula is?
+  [-1+1] An emission nebula — a dense ball of old stars gravitationally bound together
 
 Question to predict:
 What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
@@ -54,15 +54,15 @@ About four thousand light-years away from Earth sits the Pictor Nebula. The Pict
 
 A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off by an aging star as it shed its outer layers near the end of its life. Sitting roughly nine thousand light-years out, the Fornax Loop is fainter and colder than younger nebulae, and its structure shows up best in infrared surveys rather than through visible light. Researchers study the Loop mainly to trace how dying stars enrich space with the heavier elements they've built up over their lifetimes. Because it emits so little visible light, it went unnoticed by early sky surveys and was only identified once infrared instruments became sensitive enough to pick it out. Spectroscopic analysis shows elevated carbon and nitrogen relative to hydrogen, consistent with material dredged up from the star's core in its final years. The shell is expanding outward at roughly twelve kilometers per second, slow enough that it should fully disperse within about ten thousand years.
 
-The same human answered these other questions about the same passage:
-- Which of the following correctly describe the Pictor Nebula? Select all that apply.
-  They selected: It is located about four thousand light-years from Earth  [wrong]
-- How do scientists observe the Pictor Nebula? Select all that apply.
-  They selected: Using radio equipment that picks up regular pulses  [wrong]
-- Which of the following correctly describes the Pictor Nebula? Select all that apply.
-  They selected: A gas cloud lit by embedded young stars that is studied to understand how new stars form  [correct]
-- Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.
-  They selected: An emission nebula — a dense ball of old stars gravitationally bound together  [wrong]
+The same human answered these other questions about the same passage (ok = exactly right, -n = missed n true options, +n = took n false ones):
+- Which of the following correctly describe the Pictor Nebula?
+  [-2] It is located about four thousand light-years from Earth
+- How do scientists observe the Pictor Nebula?
+  [-2+1] Using radio equipment that picks up regular pulses
+- Which of the following correctly describes the Pictor Nebula?
+  [ok] A gas cloud lit by embedded young stars that is studied to understand how new stars form
+- Which of the following correctly identifies what the Pictor Nebula is?
+  [-1+1] An emission nebula — a dense ball of old stars gravitationally bound together
 
 Question to predict:
 What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
@@ -77,15 +77,15 @@ Velthrak is a grappling art where striking of any kind is not permitted. Its sig
 
 Watching a match in person gives a much better sense of the rhythm than reading about it ever could. The holds and reversals happen quickly, and spectators often find themselves leaning forward without quite realizing it. It has the kind of quiet intensity that keeps people coming back to watch, even if they never step onto the mat themselves. Even seasoned fans tend to describe it as more absorbing in person than any clip or photo manages to capture, and gyms that host open practice sessions often draw a small crowd of onlookers just for that reason.
 
-The same human answered these other questions about the same passage:
-- Which of the following accurately describe the style of velthrak? Select all that apply.
-  They selected: Velthrak allows limited strikes during competition  [wrong]
-- Which of the following accurately describe the sornek? Select all that apply.
-  They selected: It is the signature technique of velthrak; It involves a hip throw  [correct]
-- Which of the following correctly describes the governing body of velthrak? Select all that apply.
-  They selected: The Dalviri Federation of Combat Arts governs velthrak certification  [wrong]
-- Which of the following correctly describes velthrak? Select all that apply.
-  They selected: Practitioners must practice for two years before engaging in full-resistance sparring  [correct]
+The same human answered these other questions about the same passage (ok = exactly right, -n = missed n true options, +n = took n false ones):
+- Which of the following accurately describe the style of velthrak?
+  [-2+1] Velthrak allows limited strikes during competition
+- Which of the following accurately describe the sornek?
+  [ok] It is the signature technique of velthrak; It involves a hip throw
+- Which of the following correctly describes the governing body of velthrak?
+  [-2+1] The Dalviri Federation of Combat Arts governs velthrak certification
+- Which of the following correctly describes velthrak?
+  [ok] Practitioners must practice for two years before engaging in full-resistance sparring
 
 Question to predict:
 Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above

@@ -7,6 +7,8 @@ the model is never asked at inference.
 """
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from application.listening_qa.prompting import CONDITIONS
@@ -66,39 +68,66 @@ def test_task_line_names_the_single_question_unit(item):
     assert "do not answer them again" in prompt
 
 
-def test_sibling_answers_are_marked_correct_or_wrong(item):
-    """Whether each sibling was right is part of what individuates a listener -- "kept
-    the method, lost the object" and its mirror image are different people. Without the
-    marks the model would have to re-derive each verdict from the transcript before it
-    could use any of them."""
+def _sib(endorsed, gold):
     from rationales.listening.data import SiblingAnswer
 
-    right = SiblingAnswer("QV02", "q", {1: "a", 2: "b"}, endorsed=[1], gold=[1])
-    wrong = SiblingAnswer("QV03", "q", {1: "a", 2: "b"}, endorsed=[1], gold=[1, 2])
-    block = lp._sibling_block([right, wrong])
-    assert "a  [correct]" in block
-    assert "a  [wrong]" in block
+    return SiblingAnswer(
+        "QV02", "q", {1: "a", 2: "b", 3: "c"}, endorsed=list(endorsed), gold=list(gold)
+    )
 
 
-def test_sibling_correctness_is_exact_set_match(item):
+def test_verdict_separates_missing_a_true_option_from_taking_a_false_one():
+    """"wrong" collapses two different memory failures. Someone who consistently
+    under-selects is not the same listener as someone who reaches for foils, and
+    telling them apart is the whole job of the sibling block."""
+    assert _sib([1], [1]).verdict == "ok"
+    assert _sib([1], [1, 2]).verdict == "-1"          # omission only
+    assert _sib([1, 2], [1]).verdict == "+1"          # commission only
+    assert _sib([1, 3], [1, 2]).verdict == "-1+1"     # both
+    assert _sib([], [1, 2]).verdict == "-2"
+    assert _sib([3], [1, 2]).verdict == "-2+1"
+
+
+def test_verdict_counts_are_the_actual_option_sets():
+    s = _sib([1, 3], [1, 2])
+    assert s.missed == [2] and s.false_positives == [3]
+    assert not s.correct
+
+
+def test_sibling_correctness_is_exact_set_match():
     """Same definition as ListeningItem.correct, so the two readings of "wrong" cannot
     drift apart. Selecting one of two true options is wrong, not partially right."""
-    from rationales.listening.data import SiblingAnswer
-
-    assert SiblingAnswer("q", "q", {1: "a"}, endorsed=[1], gold=[1]).correct
-    assert not SiblingAnswer("q", "q", {1: "a", 2: "b"}, endorsed=[1], gold=[1, 2]).correct
+    assert _sib([1], [1]).correct
+    assert not _sib([1], [1, 2]).correct
 
 
-def test_the_targets_own_correctness_is_never_stated(item):
-    """The marks cover the siblings only. Saying whether the target answer was right
-    would hand over most of y_i -- on a question with one true option it hands over all
-    of it."""
+def test_the_legend_explaining_the_codes_is_in_the_prompt(item):
+    prompt = lp.build_sample_prompt(item, fewshot=False)
+    assert "-n = missed n true options" in prompt
+    assert "+n = took n false ones" in prompt
+
+
+def test_sibling_questions_drop_the_boilerplate_but_the_target_keeps_it(item):
+    """The trim is what pays for the verdict codes. It applies only to the summary of
+    questions already answered -- the question actually being asked stays verbatim."""
+    prompt = lp.build_sample_prompt(item, fewshot=False)
+    head, _, target = prompt.partition(lp._TARGET_HEADER.rstrip("\n"))
+    assert "Select all that apply." not in head.split(lp._SIBLING_HEADER.rstrip("\n"))[1]
+    assert "Select all that apply." in target
+    assert lp._trim_boilerplate("Which are true? Select all that apply.") == "Which are true?"
+    assert lp._trim_boilerplate("Which describes it?") == "Which describes it?"
+
+
+def test_the_targets_own_verdict_is_never_stated(item):
+    """The codes cover the siblings only. Saying how the target answer scored would
+    hand over most of y_i -- "-0+0" on a single-answer question hands over all of it."""
     for prompt in (
         lp.build_sample_prompt(item, fewshot=False),
         lp.build_rationalize_prompt(item, fewshot=False),
     ):
         target = prompt.split(lp._TARGET_HEADER.rstrip("\n"))[1]
-        assert "[correct]" not in target and "[wrong]" not in target
+        assert "[ok]" not in target
+        assert not re.search(r"\[-\d|\[\+\d", target)
 
 
 def test_sibling_answers_appear_as_context_in_every_variant(item):
