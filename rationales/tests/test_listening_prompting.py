@@ -264,6 +264,35 @@ def test_every_fewshot_demo_item_is_in_the_train_split():
 
 
 @needs_real_data
+def test_fewshot_demo_passages_are_verbatim_what_those_humans_heard():
+    """Each topic has four passages, one per encoding level, and the level is the
+    manipulation the whole study turns on. A demo that paraphrases or abridges the
+    passage is demonstrating recall from a stimulus nobody was given -- and the
+    abridgement bites hardest exactly where the demo matters most, since shortening a
+    distractor passage removes the interference the rationale is appealing to.
+    """
+    items, _ = load_items()
+    index = {it.item_id: it for it in items}
+    demos = lp.load_fewshot()
+    for item_id in lp.FEWSHOT_SOURCE_ITEMS:
+        item = index[item_id]
+        assert item.passage in demos, (
+            f"{item_id}: the demo passage is not the verbatim {item.level} passage"
+        )
+
+
+@needs_real_data
+def test_fewshot_demo_questions_and_options_are_verbatim_too():
+    items, _ = load_items()
+    index = {it.item_id: it for it in items}
+    demos = lp.load_fewshot()
+    for item_id in lp.FEWSHOT_SOURCE_ITEMS:
+        item = index[item_id]
+        assert item.question in demos, f"{item_id}: question text altered"
+        assert lp.render_options(item.options) in demos, f"{item_id}: options altered"
+
+
+@needs_real_data
 def test_fewshot_demo_answers_match_what_those_humans_actually_selected():
     """Guards against the demos drifting into invented behavior during an edit."""
     items, _ = load_items()
