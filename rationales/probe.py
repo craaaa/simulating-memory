@@ -18,6 +18,7 @@ probe writes a single timestamped JSON report under `out/probe/`.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -242,4 +243,42 @@ def write_report(report: Dict[str, Any], *, timestamp: Optional[str] = None) -> 
     # would rename the reports already written under out/probe/.
     path = PKG_DIR / "out" / "probe" / f"{ts}_{slug}.json"
     write_json(path, report)
+    log_probe_spend(report, timestamp=ts)
     return path
+
+
+def probe_ledger_row(report: Dict[str, Any], *, timestamp: str) -> Optional[Dict[str, Any]]:
+    """One lifetime-ledger row for a probe, or None if the run was stubbed.
+
+    Probes are the one thing in this package that spends outside Tinker, and the cost
+    is real money that was otherwise recorded nowhere but inside the report file. The
+    row carries `provider` so it can never be mistaken for Tinker usage in the tally.
+    """
+    usage = report.get("llm_usage")
+    if not usage:
+        return None
+    return {
+        "model": report["model"],
+        "run": f"probe/{timestamp}",
+        "kind": "probe",
+        "provider": report.get("backend", "openrouter"),
+        "task": report.get("task"),
+        "requests": usage.get("request_count"),
+        "prefill_tokens": usage.get("prompt_tokens", 0),
+        "sample_tokens": usage.get("completion_tokens", 0),
+        "train_tokens": 0,
+        # OpenRouter reports what it actually billed, so this is not an estimate.
+        "cost_usd": usage.get("actual_cost_usd") or usage.get("estimated_cost_usd"),
+    }
+
+
+def log_probe_spend(report: Dict[str, Any], *, timestamp: str) -> Optional[Dict[str, Any]]:
+    from .config import GLOBAL_LEDGER
+
+    row = probe_ledger_row(report, timestamp=timestamp)
+    if row is None:
+        return None
+    GLOBAL_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    with GLOBAL_LEDGER.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(row) + "\n")
+    return row

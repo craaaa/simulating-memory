@@ -4594,3 +4594,5 @@
 {"model": "Qwen/Qwen3-8B", "run": "20260911T064029Z", "kind": "sample", "prefill_tokens": 357, "sample_tokens": 118, "train_tokens": 0, "cost_usd": 0.00014041500000000002}
 {"model": "Qwen/Qwen3-8B", "run": "20260911T064029Z", "kind": "sample", "prefill_tokens": 357, "sample_tokens": 118, "train_tokens": 0, "cost_usd": 0.00014041500000000002}
 {"model": "Qwen/Qwen3-8B", "run": "20260911T064029Z", "kind": "sample", "prefill_tokens": 351, "sample_tokens": 120, "train_tokens": 0, "cost_usd": 0.000140445}
+{"model": "qwen/qwen3.8-flash", "run": "probe/20260920T215242Z", "kind": "probe", "provider": "openrouter", "task": "listening_qa", "requests": 160, "prefill_tokens": 536541, "sample_tokens": 28735, "train_tokens": 0, "cost_usd": 0.03189636}
+{"model": "qwen/qwen3.8-flash", "run": "probe/20260920T220350Z", "kind": "probe", "provider": "openrouter", "task": "listening_qa", "requests": 160, "prefill_tokens": 508585, "sample_tokens": 26423, "train_tokens": 0, "cost_usd": 0.026925056000000003}

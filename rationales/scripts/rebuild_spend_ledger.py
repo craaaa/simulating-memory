@@ -48,6 +48,18 @@ def main() -> None:
                 }
             )
 
+    # Probe spend goes through OpenRouter, not Tinker, so it has no per-run
+    # cost_ledger.jsonl. Its source of truth is the probe report, which records what
+    # OpenRouter actually billed. Rebuilt from there rather than carried over, so a
+    # rebuild neither drops it nor double-counts it.
+    from rationales.probe import probe_ledger_row
+
+    for report_path in sorted(PKG_DIR.glob("out/probe/*.json")):
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        row = probe_ledger_row(report, timestamp=report_path.stem.split("_")[0])
+        if row is not None:
+            rebuilt.append(row)
+
     old_rows = []
     if GLOBAL_LEDGER.is_file():
         old_rows = [json.loads(l) for l in GLOBAL_LEDGER.read_text().splitlines() if l.strip()]

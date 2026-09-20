@@ -12,6 +12,49 @@ def _rows(path):
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
 
 
+def test_probe_spend_reaches_the_lifetime_ledger(tmp_path, monkeypatch):
+    """Probes are the one thing in this package that spends outside Tinker. Their cost
+    used to live only inside the report file, so the lifetime tally under-reported real
+    money. The row carries `provider` so it cannot be read as Tinker usage."""
+    from rationales import config as cfg_mod
+    from rationales import probe as pr
+
+    ledger = tmp_path / "spend_ledger.jsonl"
+    monkeypatch.setattr(cfg_mod, "GLOBAL_LEDGER", ledger)
+    pr.log_probe_spend(
+        {
+            "model": "qwen/qwen3.8-flash",
+            "backend": "openrouter",
+            "task": "listening_qa",
+            "llm_usage": {
+                "request_count": 160,
+                "prompt_tokens": 536541,
+                "completion_tokens": 28735,
+                "actual_cost_usd": 0.0319,
+            },
+        },
+        timestamp="20260920T215242Z",
+    )
+    rows = _rows(ledger)
+    assert len(rows) == 1
+    assert rows[0]["provider"] == "openrouter"
+    assert rows[0]["kind"] == "probe"
+    assert rows[0]["cost_usd"] == 0.0319
+    assert rows[0]["train_tokens"] == 0
+
+
+def test_a_stubbed_probe_logs_no_spend(tmp_path, monkeypatch):
+    """Tests and dry runs inject `generate`, so nothing was billed. Writing a row would
+    inflate the tally the way synthetic test calls once did."""
+    from rationales import config as cfg_mod
+    from rationales import probe as pr
+
+    ledger = tmp_path / "spend_ledger.jsonl"
+    monkeypatch.setattr(cfg_mod, "GLOBAL_LEDGER", ledger)
+    assert pr.log_probe_spend({"model": "stub/model"}, timestamp="x") is None
+    assert not ledger.exists()
+
+
 def test_ledger_row_per_call_with_running_total(tmp_path):
     t = CostTracker("Qwen/Qwen3-8B", ledger_path=tmp_path / "cost.jsonl", show_progress=False)
     t.record("sample", prefill=1_000_000, sample=0)
