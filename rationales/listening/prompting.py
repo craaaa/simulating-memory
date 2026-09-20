@@ -95,7 +95,7 @@ _REASONING_PREAMBLE = f"""First think about what this particular human would sti
 {REASONING_OPEN}
 ... your reasoning about what they would remember, what would blur, and which options that makes tempting ...
 {REASONING_CLOSE}
-Keep the reasoning to at most three sentences. Do not work through the options one by one, and do not second-guess yourself -- state what this human would retain and what would slip, then stop.
+Keep the reasoning to at most four sentences. Do not work through the options one by one, and do not second-guess yourself -- state what this human would retain and what would slip, then stop.
 Then, on the line after {REASONING_CLOSE}:
 """
 

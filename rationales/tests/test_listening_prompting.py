@@ -255,23 +255,50 @@ def test_hint_leak_passes_an_honest_rationale():
     )
 
 
-def test_shipped_fewshot_demos_still_need_their_reasoning_written():
-    """The demos ship with real items and real answers but PLACEHOLDER reasoning,
-    deliberately. The `<reasoning>` text is a claim about why a specific person forgot
-    a specific thing, which nobody recorded, so it is written by the researcher rather
-    than reconstructed here. Until it is, sampling must refuse to run.
-
-    Flip this assertion when the reasonings are written.
-    """
-    assert lp.fewshot_has_placeholders()
+def test_shipped_fewshot_demos_are_written():
+    """The reasoning is the one hand-written part of these demos. It was left as
+    PLACEHOLDER until the researcher wrote it, because it is a claim about why a
+    specific person forgot a specific thing and nobody recorded that."""
+    assert not lp.fewshot_has_placeholders()
 
 
-def test_the_placeholder_gate_actually_blocks_a_run():
+def test_the_placeholder_gate_blocks_a_run_when_reasoning_is_missing(tmp_path, monkeypatch):
+    """The gate that held until the demos were written. Kept live against a temp file
+    so it still guards the next task's demos."""
     from rationales.config import StarConfig
     from rationales.tasks.listening_qa import ListeningQATask
 
+    path = tmp_path / "fewshot_listening.txt"
+    path.write_text(lp.load_fewshot().replace("they", "PLACEHOLDER", 1), encoding="utf-8")
+    monkeypatch.setattr(lp, "FEWSHOT_PATH", path)
     with pytest.raises(RuntimeError, match="PLACEHOLDER"):
         ListeningQATask().check_ready(StarConfig(task="listening_qa", use_fewshot=True))
+
+
+def test_written_demos_clear_the_gate():
+    from rationales.config import StarConfig
+    from rationales.tasks.listening_qa import ListeningQATask
+
+    ListeningQATask().check_ready(StarConfig(task="listening_qa", use_fewshot=True))
+
+
+def test_demo_reasoning_obeys_the_sentence_cap_it_sits_next_to():
+    """Models imitate the demos over the instruction when the two disagree, so a demo
+    that runs longer than the stated cap silently raises it."""
+    cap = 4
+    assert f"at most {['one','two','three','four','five'][cap-1]} sentences" in lp.format_rules()
+    for n, block in enumerate(_reasoning_blocks(), start=1):
+        sentences = [s for s in re.split(r"(?<=[.!?]) +", block.strip()) if s]
+        assert len(sentences) <= cap, f"demo {n} runs to {len(sentences)} sentences"
+
+
+def test_demo_reasoning_never_leaks_being_handed_the_answer():
+    for n, block in enumerate(_reasoning_blocks(), start=1):
+        assert lp.hint_leak(block) is None, f"demo {n} matches a leak pattern"
+
+
+def _reasoning_blocks():
+    return re.findall(r"<reasoning>\n(.*?)\n</reasoning>", lp.load_fewshot(), re.S)
 
 
 def test_the_gate_is_skipped_when_fewshot_is_off():

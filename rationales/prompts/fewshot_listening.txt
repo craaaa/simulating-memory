@@ -21,7 +21,7 @@ The same human answered these other questions about the same passage (ok = exact
 Question to predict:
 How is bracklin made? Select all that apply. 1) Double-weft interlock weaving 2) Double-warp chain weaving 3) Cross-thread basket weaving 4) Single-strand satin weaving 5) None of the above
 <reasoning>
-PLACEHOLDER — every other question on this passage came out wrong, and two of them only because this person selected ONE true option where several applied. They under-select rather than misremember. Say why that habit costs nothing on a question with a single correct answer.
+Correct option is (1). Participant seems to err on the side of under-selecting rather than misremembering, but since this question only has one correct option, they probably chose that option. Additionally, the passage did not contain a lot of competing detail, so the participant may have been able to recognize the correct option produced verbatim.
 </reasoning>
 Answer: 1
 Outcome: Correct
@@ -44,7 +44,7 @@ The same human answered these other questions about the same passage (ok = exact
 Question to predict:
 What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-PLACEHOLDER — the one thing this listener got right is the observation method, and every question that asked WHAT the object is went wrong, twice by importing the dying-star description from the second passage. Explain how someone holding the method firmly but the object loosely answers a question about study purpose.
+The correct options are (1) and (2). The passage contains a competing paragraph about the fornax loop, so the participant may not have a clear memory of the first paragraph about the pictor nebula. The participant also incorrectly answered many questions by failing to select a correct option, and selecting an incorrect option, suggesting that their memory of the passage is vague and that they tend to misremember.
 </reasoning>
 Answer: 3,4
 Outcome: Wrong — two options were endorsed that appeared nowhere in the passage
@@ -67,7 +67,7 @@ The same human answered these other questions about the same passage (ok = exact
 Question to predict:
 What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-PLACEHOLDER — same passage and same question as the block above, and a different person. This one is the mirror image: the observation method is gone entirely, taken over by a radio-pulse foil, but the study purpose came back CORRECTLY on the combination question. Explain why someone who had just recalled star formation declines to select it when asked directly.
+Correct options are (1) and (2). The passage contains a competing paragraph about the fornax loop, so the participant may not have a clear memory of the first paragraph about the pictor nebula. They successfully answered the question describing the pictor nebula as "studied to understand how new stars form", suggesting that they are able to recognize the scientific value of studying the pictor nebula. However, the other question tested a gist concept, whereas the two correct options here are slight paraphrases of the text, which the participant may not have immediately recognized, leading them to select (5) None of the above.
 </reasoning>
 Answer: 5
 Outcome: Wrong — the correct options (1 and 2) were both in the passage
@@ -90,7 +90,7 @@ The same human answered these other questions about the same passage (ok = exact
 Question to predict:
 Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above
 <reasoning>
-PLACEHOLDER — this person had the sparring rule exactly right elsewhere, and had already asserted that velthrak ALLOWS limited strikes. Explain why the no-striking option is unavailable to them here, given what they believe they remember, while the sparring restriction is retrieved without difficulty.
+(1) and (2) are the answers supported by the passage. The passage does not contain a competing concept and is relatively concise, so the participant is unlikely to consider (3) and (4), which were not mentioned in the passage. Participant incorrectly asserted in another question that limited strikes are possible in velthrak, so is unlikely to choose (1). However, they correctly answered that practitioners must practice for two years before engaging in full-resistance sparring, so is likely to choose (2).
 </reasoning>
 Answer: 2
 Outcome: Wrong — a correct option (1) was missed

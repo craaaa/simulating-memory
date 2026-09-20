@@ -59,22 +59,28 @@ selected**, with only the `<reasoning>` written by hand. The four items are list
 `rationales/listening/prompting.py:FEWSHOT_SOURCE_ITEMS` and recorded in every run's
 `prompt_additions`.
 
-### Status: the four `<reasoning>` blocks are unwritten
+### Status: written
 
-The items, the passages, the questions and the `Answer:` lines are real and in place.
-Only the `<reasoning>` text is `PLACEHOLDER`, and it is left that way on purpose: it is
-a claim about why a specific person forgot a specific thing, and nobody recorded that.
-It is the researcher's to write, not something to reconstruct plausibly.
+All four `<reasoning>` blocks are written, and the gate is clear — `star`, `sample` and
+`probe` will run with `--fewshot`. The gate itself stays live against a temp file, so it
+still guards the next task's demos.
 
-Until it is written, `star`, `sample` and `probe` all refuse to run with `--fewshot`
-(`test_the_placeholder_gate_actually_blocks_a_run`). `select-data` and `show-prompt`
-still work, so you can render the scaffold and see where the text goes:
+The reasonings run three to four sentences each (68–127 tokens), so the stated cap was
+raised from three sentences to four to match them: models imitate the demos over the
+instruction when the two disagree, and a demo that overruns the cap silently raises it.
+`test_demo_reasoning_obeys_the_sentence_cap_it_sits_next_to` keeps the two in step.
+
+They share a structure worth preserving in any future demo — state what the correct
+answer is, then explain why *this* listener departs from it (or doesn't), citing the
+sibling codes as evidence about the person. That is the shape the fine-tune will learn.
+
+Render the assembled prompt with:
 
 ```bash
 python -m rationales.cli show-prompt --task listening_qa --kind sample
 ```
 
-Each `PLACEHOLDER` line names what that demo has to explain. What the four are:
+What the four demos are:
 
 Each demo is laid out **exactly like a real prompt** — transcript, the sibling block,
 then the target question — because few-shot transfer works by shape, and because the
@@ -111,10 +117,8 @@ Cross-passage participant identity is deliberately not represented. Two of these
 happen to come from the same respondent and nothing is made of it — each demo stands as
 one listener on one passage.
 
-When the four are written, flip
-`test_shipped_fewshot_demos_still_need_their_reasoning_written` to assert the gate is
-clear. An earlier draft of these reasonings (model-written, since replaced) is in git
-history at commit `cd3de9d` if it is useful as a foil to write against.
+An earlier model-written draft of these reasonings, since replaced, is in git history at
+commit `cd3de9d`.
 
 ### Rules
 

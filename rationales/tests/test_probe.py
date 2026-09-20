@@ -88,12 +88,16 @@ def test_probe_reports_hint_leaks():
     assert all(r["hint_leak"] is None for r in report["rows"] if r["kind"] == "sample")
 
 
-def test_probe_refuses_to_run_on_unwritten_fewshot_demos():
+def test_probe_refuses_to_run_on_unwritten_fewshot_demos(tmp_path, monkeypatch):
     """The probe spends real money rendering the real generation prompt, so it is
-    gated exactly as sampling is. Listening's demos ship with PLACEHOLDER reasoning,
-    and without this the probe would report a format verdict for a prompt nobody
-    intends to run."""
+    gated exactly as sampling is -- without this it would report a format verdict for
+    a prompt nobody intends to run."""
+    from rationales.listening import prompting as lp
     from rationales.tasks.listening_qa import ListeningQATask
+
+    path = tmp_path / "fewshot_listening.txt"
+    path.write_text(lp.load_fewshot().replace("they", "PLACEHOLDER", 1), encoding="utf-8")
+    monkeypatch.setattr(lp, "FEWSHOT_PATH", path)
 
     with pytest.raises(RuntimeError, match="PLACEHOLDER"):
         pr.probe(
