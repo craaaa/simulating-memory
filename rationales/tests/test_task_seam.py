@@ -174,6 +174,30 @@ def test_disabling_sibling_context_is_recorded_as_a_deviation():
     assert "sibling_context" in off.deviations
 
 
+def test_dry_run_picks_up_the_per_task_cost_constants():
+    """The override is looked up by f"{task.name.upper()}_*", so a constant named for
+    the wrong key silently falls back to the digit-span number and the estimate is
+    quietly wrong. That happened once."""
+    from rationales import config as cfg_mod
+    from rationales.star import dry_run
+
+    for task in ALL_TASKS:
+        for suffix in ("COMPLETION_TOKENS", "SUCCESS_MISS_RATE"):
+            name = f"{task.name.upper()}_{suffix}"
+            if hasattr(cfg_mod, name):
+                assert getattr(cfg_mod, name) != getattr(cfg_mod, suffix), (
+                    f"{name} duplicates the default; either it is wrong or it is pointless"
+                )
+
+    # listening_qa declares both, so its estimate must differ from the digit-span one.
+    assert cfg_mod.LISTENING_QA_COMPLETION_TOKENS != cfg_mod.COMPLETION_TOKENS
+    plan = dry_run(
+        StarConfig(task="listening_qa", steps_1=10), round_n=1, task=LISTENING
+    )
+    assert f"{cfg_mod.LISTENING_QA_COMPLETION_TOKENS} completion tokens" in plan["estimate_basis"]
+    assert f"{cfg_mod.LISTENING_QA_SUCCESS_MISS_RATE:.0%}" in plan["estimate_basis"]
+
+
 def test_listening_declares_the_config_defaults_digit_span_would_get_wrong():
     """max_seq_length above all: build_datum truncates from the right, so a too-small
     budget silently removes the answer line the loss covers."""

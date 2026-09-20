@@ -347,10 +347,20 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1, task: Any = None) -> Dict[str,
     Token counts here come from a crude ~4-chars-per-token heuristic (no tokenizer
     available offline), so they are labelled as estimates everywhere they appear.
     """
+    from . import config as cfg_mod
     from .config import COMPLETION_TOKENS, SUCCESS_MISS_RATE, tinker_cost_usd
     from .tinker_client import offline_token_estimate
 
     task = task or default_task()
+    # Per-task overrides where the digit-span measurements do not carry, e.g. a task
+    # whose rationales are longer. Named LISTENING_* rather than keyed off cfg so the
+    # provenance of each number stays attached to the task it was measured on.
+    completion_tokens = getattr(
+        cfg_mod, f"{task.name.upper()}_COMPLETION_TOKENS", COMPLETION_TOKENS
+    )
+    success_miss_rate = getattr(
+        cfg_mod, f"{task.name.upper()}_SUCCESS_MISS_RATE", SUCCESS_MISS_RATE
+    )
 
     # Prefer the model's real tokenizer (local, no API call, no spend) over the
     # chars/token heuristic -- and render through the chat template, since that is what
@@ -380,7 +390,7 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1, task: Any = None) -> Dict[str,
     # Every fail trial is assumed to need rationalization, plus the share of success
     # trials the model misses unhinted -- probing showed that is not zero (the few-shot
     # demos induce errors, which is the point, but it costs a second call).
-    n_success_missed = int(round(len(successes) * SUCCESS_MISS_RATE))
+    n_success_missed = int(round(len(successes) * success_miss_rate))
     rat_trials = fails + successes[:n_success_missed]
     rat_prompts = [
         task.build_rationalize_prompt(t, fewshot=cfg.use_fewshot) for t in rat_trials
@@ -392,13 +402,13 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1, task: Any = None) -> Dict[str,
     prefill += 2 * sum(est(p) for p in eval_prompts)  # base + tuned
 
     n_gens = cfg.k * (len(gen_prompts) + len(rat_prompts)) + 2 * len(eval_prompts)
-    sample_tokens = n_gens * COMPLETION_TOKENS
+    sample_tokens = n_gens * completion_tokens
 
     # Training sees the zero-shot prompt plus a completion at the brevity cap.
     approx_corpus = [
         {
             "prompt": task.build_sample_prompt(t, fewshot=False),
-            "completion": "x" * int(COMPLETION_TOKENS * 3.72),
+            "completion": "x" * int(completion_tokens * 3.72),
         }
         for t in sel.train
     ]
@@ -424,10 +434,11 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1, task: Any = None) -> Dict[str,
         "estimated_cost_usd": cost,
         "n_rationalize_calls": len(rat_prompts),
         "estimate_basis": (
-            f"prompt tokens: {basis}; {COMPLETION_TOKENS} completion tokens/generation "
-            f"(observed 68-168 live); rationalization assumed for every fail trial plus "
-            f"{SUCCESS_MISS_RATE:.0%} of success trials; Tinker list prices verified "
-            f"2026-09-10"
+            f"prompt tokens: {basis}; {completion_tokens} completion tokens/generation "
+            f"and a {success_miss_rate:.0%} unhinted miss rate on human-success items, "
+            f"both measured live for {task.name} (see rationales/config.py); "
+            f"rationalization assumed for every fail item plus that share of success "
+            f"items; Tinker list prices verified 2026-09-10"
         ),
         "example_generation_prompt": gen_prompts[0] if gen_prompts else None,
         "example_rationalize_prompt": rat_prompts[0] if rat_prompts else None,

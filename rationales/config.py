@@ -42,6 +42,16 @@ COMPLETION_TOKENS = 114
 # sending them to rationalization too. Probed at 1/4; the success half is not free.
 SUCCESS_MISS_RATE = 0.25
 
+# Both constants above were measured on digit-span prompts and are wrong for listening
+# QA, whose rationales are longer (a four-sentence cap, and demos that run to it).
+# Measured 2026-09-20 over 320 live OpenRouter calls on qwen/qwen3.8-flash:
+#   completion tokens per call   180 with sibling context, 165 without
+#   unhinted miss rate on human-SUCCESS items   0.32 (n=40)
+# The miss rate is the share of success items that still need a rationalization call.
+# Names must be f"{task.name.upper()}_*" -- see star.dry_run.
+LISTENING_QA_COMPLETION_TOKENS = 180
+LISTENING_QA_SUCCESS_MISS_RATE = 0.32
+
 
 def tinker_cost_usd(
     base_model: str,
