@@ -76,28 +76,28 @@ python -m rationales.cli show-prompt --task listening_qa --kind sample
 
 Each `PLACEHOLDER` line names what that demo has to explain. What the four are:
 
-**Three people, four demos.** In file order:
+Each demo is laid out **exactly like a real prompt** — transcript, the sibling block,
+then the target question — because few-shot transfer works by shape, and because the
+sibling answers are the only thing that makes one participant distinguishable from
+another.
 
-| # | label | topic / level | gold | they chose | what the rationale must account for |
-|---|---|---|---|---|---|
-| 1 | Participant 1 | fabrics, control | `[1]` | `[1]` | why the weave name stuck and the three foils pulled at nothing |
-| 2 | Participant 2 | astronomy, distractor | `[1,2]` | `[3,4]` | why they endorsed content that is nowhere in the passage |
-| 3 | Participant 3 | astronomy, distractor | `[1,2]` | `[5]` | same passage and question as #2 — why this person declined instead of reaching |
-| 4 | Participant 2 again | martial arts, control | `[1,2]` | `[2]` | both facts were stated; why only one came back when asked for *restrictions* |
+| # | topic / level | gold | they chose | what the siblings show, and what the rationale must account for |
+|---|---|---|---|---|
+| 1 | fabrics, control | `[1]` | `[1]` | held the fibre and the weave mechanism, drifted twice on what bracklin is *used for*. Why did the weaving question survive that? |
+| 2 | astronomy, distractor | `[1,2]` | `[3,4]` | surface facts intact (distance, young stars, optical, red light), but the object itself drifted toward the dying-star description from the second passage. Why does that state produce exotic physics here? |
+| 3 | astronomy, distractor | `[1,2]` | `[5]` | mirror image of #2: observation method gone (took a radio-pulse foil), but the study purpose came back *correctly* on the combination question. Why decline something they had just recalled? |
+| 4 | martial arts, control | `[1,2]` | `[2]` | had already asserted velthrak *allows* limited strikes, and had the sparring rule firmly. Why is the no-striking option unavailable to them? |
 
-Two contrasts are doing the work, and they pull in different directions:
+**#2 and #3 are the same passage and the same question, answered by two different
+people.** Their sibling blocks are the *only* difference in the input. Write that pair
+together and make the two rationales turn on that difference — if they don't, the demo
+says the answer is random rather than person-dependent, which is the opposite of the
+objective. `test_the_two_demos_that_share_a_question_are_told_apart_by_their_siblings`
+holds the setup in place; only the reasoning can undo it.
 
-* **#2 vs #3** — one passage, two *different* people, two different failures. This is
-  the demo that teaches the model the answer depends on *who* is being simulated.
-* **#2 vs #4** — one *person* across two passages, distractor then control. These two
-  rationales should be consistent about what kind of listener this is. Write them
-  together.
-
-Participant 2 heard astronomy at position 2 of their session and velthrak at position 3,
-which is why the velthrak block is introduced as "a later passage". Labels are checked
-against the data by `test_fewshot_participant_labels_match_the_real_people`, so a
-relabelling cannot quietly split one person in two or merge two into one — either would
-break the #2-vs-#3 contrast the pair exists for.
+Cross-passage participant identity is deliberately not represented. Two of these cases
+happen to come from the same respondent and nothing is made of it — each demo stands as
+one listener on one passage.
 
 When the four are written, flip
 `test_shipped_fewshot_demos_still_need_their_reasoning_written` to assert the gate is

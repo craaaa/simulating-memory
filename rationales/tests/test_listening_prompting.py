@@ -293,23 +293,40 @@ def test_fewshot_demo_questions_and_options_are_verbatim_too():
 
 
 @needs_real_data
-def test_fewshot_participant_labels_match_the_real_people():
-    """Three people supply four demos. Labelling one person as two would misrepresent
-    the astronomy pair, whose whole point is that two DIFFERENT people produced two
-    different failures on one passage -- and it would teach the model that a single
-    listener is inconsistent with themselves."""
+def test_every_demo_shows_that_participants_sibling_answers():
+    """The sibling block is not decoration, it is the only thing that individuates a
+    participant. Two demos share a passage and a question and differ only in their
+    siblings; strip those and the pair becomes one input with two different outputs,
+    which teaches the model that the answer is random rather than person-dependent."""
     items, _ = load_items()
     index = {it.item_id: it for it in items}
-    respondents = {index[i].respondent_id for i in lp.FEWSHOT_SOURCE_ITEMS}
-
-    labels = lp.FEWSHOT_PARTICIPANT_LABELS
-    # One label per distinct person, and no person wearing two labels.
-    assert set(labels.values()) == respondents
-    assert len(set(labels.values())) == len(labels)
-
     demos = lp.load_fewshot()
-    for label in labels:
-        assert f"Human {label}" in demos, f"{label} is declared but never appears"
+    for item_id in lp.FEWSHOT_SOURCE_ITEMS:
+        item = index[item_id]
+        assert len(item.other_answers) == 4
+        block = lp._sibling_block(item.other_answers)
+        assert block in demos, f"{item_id}: sibling answers missing or altered"
+
+
+@needs_real_data
+def test_the_two_demos_that_share_a_question_are_told_apart_by_their_siblings():
+    items, _ = load_items()
+    index = {it.item_id: it for it in items}
+    a, b = (index[i] for i in lp.FEWSHOT_SOURCE_ITEMS[1:3])
+    assert a.respondent_id != b.respondent_id
+    assert (a.topic, a.level, a.question_id) == (b.topic, b.level, b.question_id)
+    assert a.endorsed != b.endorsed
+    # The inputs are identical except for the sibling block, so it has to differ.
+    assert lp._sibling_block(a.other_answers) != lp._sibling_block(b.other_answers)
+
+
+def test_demos_are_laid_out_like_a_real_prompt():
+    """Few-shot transfer works by shape. A demo that omits the sibling block or the
+    target header is showing the model a different task than it is about to be given."""
+    demos = lp.load_fewshot()
+    assert demos.count("Transcript:") == len(lp.FEWSHOT_SOURCE_ITEMS)
+    assert demos.count(lp._TARGET_HEADER.rstrip("\n")) == len(lp.FEWSHOT_SOURCE_ITEMS)
+    assert demos.count(lp._SIBLING_HEADER.rstrip("\n")) == len(lp.FEWSHOT_SOURCE_ITEMS)
 
 
 @needs_real_data

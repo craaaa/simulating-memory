@@ -1,53 +1,98 @@
 Here are results from previous human participants on this listening comprehension task,
 including the reasoning behind what they remembered. Each participant heard their passage
-once, as audio, and could not replay it. Every response below is one a real person gave.
-Participant 2 appears twice, on two different passages.
+once, as audio, and could not replay it. Every response below is one a real person gave,
+and each block is laid out exactly as the case you will be asked about.
 
-Passage heard by Participant 1:
+Transcript:
 Bracklin is a textile made exclusively from the fleece of the Grennock mountain sheep. Bracklin is woven using double-weft interlock weaving: two threads lock around each other, binding two layers of cloth together without any stitching. Because of its warmth, bracklin cloth is used mainly for winter outerwear and ceremonial robes. Before it is dyed, bracklin fabric ranges from warm ivory to ash grey.
 
 Handling a piece of bracklin gives a much better sense of its weight and texture than any description can. The fabric has a distinctive feel that people often comment on the first time they touch it. It's the kind of material that leaves an impression well beyond how it looks in photos.
 
-Human Participant 1
-Question: How is bracklin made? Select all that apply. 1) Double-weft interlock weaving 2) Double-warp chain weaving 3) Cross-thread basket weaving 4) Single-strand satin weaving 5) None of the above
+The same human answered these other questions about the same passage:
+- Which of the following are true of Bracklin? Select all that apply.
+  They selected: It can be made out of the wool of Grennock mountain sheep
+- Which of the following are true of how Bracklin is woven? Select all that apply.
+  They selected: Two threads lock around each other during weaving
+- Which of the following correctly describes Bracklin?
+  They selected: An animal-based fiber used for winter carpets and ceremonial wall tapestries
+- Which of the following correctly describes a feature of bracklin? Select all that apply.
+  They selected: It is produced mainly for summer clothing and decorative hangings
+
+Question to predict:
+How is bracklin made? Select all that apply. 1) Double-weft interlock weaving 2) Double-warp chain weaving 3) Cross-thread basket weaving 4) Single-strand satin weaving 5) None of the above
 <reasoning>
-PLACEHOLDER — why this person retained the weave name. They got it right; say what made it stick and why the three foils pulled at nothing.
+PLACEHOLDER — this person held the fibre and the weave mechanism but drifted on what bracklin is USED for, twice. Say why the weaving question survived that.
 </reasoning>
 Answer: 1
 Outcome: Correct
 
-Passage heard by Participants 2 and 3:
+Transcript:
 About four thousand light-years away from Earth sits the Pictor Nebula. The Pictor nebula is an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.
 
 A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off by an aging star as it shed its outer layers near the end of its life. Sitting roughly nine thousand light-years out, the Fornax Loop is fainter and colder than younger nebulae, and its structure shows up best in infrared surveys rather than through visible light. Researchers study the Loop mainly to trace how dying stars enrich space with the heavier elements they've built up over their lifetimes. Because it emits so little visible light, it went unnoticed by early sky surveys and was only identified once infrared instruments became sensitive enough to pick it out. Spectroscopic analysis shows elevated carbon and nitrogen relative to hydrogen, consistent with material dredged up from the star's core in its final years. The shell is expanding outward at roughly twelve kilometers per second, slow enough that it should fully disperse within about ten thousand years.
 
-Human Participant 2
-Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
+The same human answered these other questions about the same passage:
+- Which of the following correctly describe the Pictor Nebula? Select all that apply.
+  They selected: It is located about four thousand light-years from Earth; It is lit from within by young stars
+- How do scientists observe the Pictor Nebula? Select all that apply.
+  They selected: With an optical telescope; By picking up red light emitted by the nebula
+- Which of the following correctly describes the Pictor Nebula? Select all that apply.
+  They selected: The remains of a dying star that is studied to understand how new stars form
+- Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.
+  They selected: An emission nebula — a dense ball of old stars gravitationally bound together
+
+Question to predict:
+What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-PLACEHOLDER — why this person endorsed two options whose content is nowhere in the passage. The study purpose was stated early, then a long second passage about a different object followed.
+PLACEHOLDER — the sibling answers show this listener kept the surface facts intact (distance, young stars, optical telescope, red light) but let the OBJECT ITSELF drift toward the dying-star description from the second passage. Explain how a person in that state answers the study-purpose question by reaching for exotic-sounding physics rather than the star formation they had already half-recalled elsewhere.
 </reasoning>
 Answer: 3,4
 Outcome: Wrong — two options were endorsed that appeared nowhere in the passage
 
-Human Participant 3
-Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
+Transcript:
+About four thousand light-years away from Earth sits the Pictor Nebula. The Pictor nebula is an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.
+
+A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off by an aging star as it shed its outer layers near the end of its life. Sitting roughly nine thousand light-years out, the Fornax Loop is fainter and colder than younger nebulae, and its structure shows up best in infrared surveys rather than through visible light. Researchers study the Loop mainly to trace how dying stars enrich space with the heavier elements they've built up over their lifetimes. Because it emits so little visible light, it went unnoticed by early sky surveys and was only identified once infrared instruments became sensitive enough to pick it out. Spectroscopic analysis shows elevated carbon and nitrogen relative to hydrogen, consistent with material dredged up from the star's core in its final years. The shell is expanding outward at roughly twelve kilometers per second, slow enough that it should fully disperse within about ten thousand years.
+
+The same human answered these other questions about the same passage:
+- Which of the following correctly describe the Pictor Nebula? Select all that apply.
+  They selected: It is located about four thousand light-years from Earth
+- How do scientists observe the Pictor Nebula? Select all that apply.
+  They selected: Using radio equipment that picks up regular pulses
+- Which of the following correctly describes the Pictor Nebula? Select all that apply.
+  They selected: A gas cloud lit by embedded young stars that is studied to understand how new stars form
+- Which of the following correctly identifies what the Pictor Nebula is? Select all that apply.
+  They selected: An emission nebula — a dense ball of old stars gravitationally bound together
+
+Question to predict:
+What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
 <reasoning>
-PLACEHOLDER — same passage, same question, and a different failure from Participant 2. Why did this person decline instead of reaching? This pair is the demo that teaches the model the answer depends on WHO is being simulated.
+PLACEHOLDER — same passage and same question as the block above, and a different person. Their siblings show the mirror-image profile: the observation method is gone entirely (they took a radio-pulse foil) but the study purpose came back CORRECTLY on the combination question. Explain why someone who had just recalled star formation declines to select it here.
 </reasoning>
 Answer: 5
 Outcome: Wrong — the correct options (1 and 2) were both in the passage
 
-A later passage, heard by Participant 2:
+Transcript:
 Velthrak is a grappling art where striking of any kind is not permitted. Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. Full-resistance sparring is off-limits for anyone with under two years of experience. Originating in the Dalviri Highlands, velthrak is governed by the Dalviri Arts Council, which was founded in 1947.
 
 Watching a match in person gives a much better sense of the rhythm than reading about it ever could. The holds and reversals happen quickly, and spectators often find themselves leaning forward without quite realizing it. It has the kind of quiet intensity that keeps people coming back to watch, even if they never step onto the mat themselves. Even seasoned fans tend to describe it as more absorbing in person than any clip or photo manages to capture, and gyms that host open practice sessions often draw a small crowd of onlookers just for that reason.
 
-Human Participant 2
-Question: Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above
+The same human answered these other questions about the same passage:
+- Which of the following accurately describe the style of velthrak? Select all that apply.
+  They selected: Velthrak allows limited strikes during competition
+- Which of the following accurately describe the sornek? Select all that apply.
+  They selected: It is the signature technique of velthrak; It involves a hip throw
+- Which of the following correctly describes the governing body of velthrak? Select all that apply.
+  They selected: The Dalviri Federation of Combat Arts governs velthrak certification
+- Which of the following correctly describes velthrak? Select all that apply.
+  They selected: Practitioners must practice for two years before engaging in full-resistance sparring
+
+Question to predict:
+Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above
 <reasoning>
-PLACEHOLDER — why this person kept the sparring limit but not the no-striking rule. Both are in the passage and both are correct; the rationale has to explain the asymmetry. This is the same person as the astronomy demo above, on an easier passage — the two rationales should be consistent about what kind of listener they are.
+PLACEHOLDER — the siblings make this one legible: this person had already asserted that velthrak ALLOWS limited strikes, and had the sparring rule firmly. Explain why the no-striking option is unavailable to them here given what they think they remember, and why the sparring restriction is not.
 </reasoning>
 Answer: 2
 Outcome: Wrong — a correct option (1) was missed
 
-Those are the examples. Now do the same for the participant below.
+Those are the examples. Now do the same for the case below.
