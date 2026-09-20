@@ -71,3 +71,7 @@ rationales/out/spend_ledger.jsonl.bak
 # merge_repeat_batch pre-merge backups
 *.bak_n5
 tasks_bak_n5/
+
+# Pre-reparse pool backups: same ~100MB as the pool itself, and the pool is
+# already ignored. reparse_pool writes these next to it.
+rationales/out/**/sample_pool.jsonl.bak
