@@ -293,6 +293,26 @@ def test_fewshot_demo_questions_and_options_are_verbatim_too():
 
 
 @needs_real_data
+def test_fewshot_participant_labels_match_the_real_people():
+    """Three people supply four demos. Labelling one person as two would misrepresent
+    the astronomy pair, whose whole point is that two DIFFERENT people produced two
+    different failures on one passage -- and it would teach the model that a single
+    listener is inconsistent with themselves."""
+    items, _ = load_items()
+    index = {it.item_id: it for it in items}
+    respondents = {index[i].respondent_id for i in lp.FEWSHOT_SOURCE_ITEMS}
+
+    labels = lp.FEWSHOT_PARTICIPANT_LABELS
+    # One label per distinct person, and no person wearing two labels.
+    assert set(labels.values()) == respondents
+    assert len(set(labels.values())) == len(labels)
+
+    demos = lp.load_fewshot()
+    for label in labels:
+        assert f"Human {label}" in demos, f"{label} is declared but never appears"
+
+
+@needs_real_data
 def test_fewshot_demo_answers_match_what_those_humans_actually_selected():
     """Guards against the demos drifting into invented behavior during an edit."""
     items, _ = load_items()

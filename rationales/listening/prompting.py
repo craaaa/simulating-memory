@@ -49,12 +49,27 @@ PLACEHOLDER_MARKER = "PLACEHOLDER"
 # it covers. That is a property of the dataset, not of the demos: no choice of demo item
 # avoids it. It is why the eval to read is human_match, which the demos cannot give away
 # for an unseen person, rather than ground-truth accuracy.
+# Listed in the order they appear in the file. Note that three people supply four
+# demos: 55acf681... is both astronomy demos' "Participant 2" and the velthrak one,
+# heard at positions 2 and 3 of their session. The file says so, because labelling one
+# person as two would misrepresent the contrast the astronomy pair exists to make --
+# that pair is two DIFFERENT people on one passage, and the velthrak demo is one of
+# them again on another.
 FEWSHOT_SOURCE_ITEMS = (
     "586ad3a6da731b0001049cad:fabrics:QFB03",
-    "55acf681fdf99b3d5b2ab68c:martial_arts:QMA05",
     "55acf681fdf99b3d5b2ab68c:astronomy:QA03",
     "589f4b4b4d580c0001e0a155:astronomy:QA03",
+    "55acf681fdf99b3d5b2ab68c:martial_arts:QMA05",
 )
+
+# Demo label -> the respondent it stands for, as the file presents them. Tested against
+# the data so a relabelling cannot silently split one person into two or merge two into
+# one.
+FEWSHOT_PARTICIPANT_LABELS = {
+    "Participant 1": "586ad3a6da731b0001049cad",
+    "Participant 2": "55acf681fdf99b3d5b2ab68c",
+    "Participant 3": "589f4b4b4d580c0001e0a155",
+}
 
 CONDITION_ID = "C3"
 

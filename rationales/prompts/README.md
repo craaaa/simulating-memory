@@ -76,16 +76,28 @@ python -m rationales.cli show-prompt --task listening_qa --kind sample
 
 Each `PLACEHOLDER` line names what that demo has to explain. What the four are:
 
-| # | topic / level | gold | they chose | what the rationale must account for |
-|---|---|---|---|---|
-| 1 | fabrics, control | `[1]` | `[1]` | why the weave name stuck and the three foils pulled at nothing |
-| 2 | martial arts, control | `[1,2]` | `[2]` | both facts were stated; why only one came back when asked for *restrictions* |
-| 3 | astronomy, distractor | `[1,2]` | `[3,4]` | why they endorsed content that is nowhere in the passage |
-| 4 | astronomy, distractor | `[1,2]` | `[5]` | same passage, same question, same level as #3 — why this person declined instead of reaching |
+**Three people, four demos.** In file order:
 
-3 and 4 are the pair that matters most: identical stimulus, two different people, two
-different failures. That is the demo teaching the model that the answer depends on *who*
-is being simulated, which is the whole objective.
+| # | label | topic / level | gold | they chose | what the rationale must account for |
+|---|---|---|---|---|---|
+| 1 | Participant 1 | fabrics, control | `[1]` | `[1]` | why the weave name stuck and the three foils pulled at nothing |
+| 2 | Participant 2 | astronomy, distractor | `[1,2]` | `[3,4]` | why they endorsed content that is nowhere in the passage |
+| 3 | Participant 3 | astronomy, distractor | `[1,2]` | `[5]` | same passage and question as #2 — why this person declined instead of reaching |
+| 4 | Participant 2 again | martial arts, control | `[1,2]` | `[2]` | both facts were stated; why only one came back when asked for *restrictions* |
+
+Two contrasts are doing the work, and they pull in different directions:
+
+* **#2 vs #3** — one passage, two *different* people, two different failures. This is
+  the demo that teaches the model the answer depends on *who* is being simulated.
+* **#2 vs #4** — one *person* across two passages, distractor then control. These two
+  rationales should be consistent about what kind of listener this is. Write them
+  together.
+
+Participant 2 heard astronomy at position 2 of their session and velthrak at position 3,
+which is why the velthrak block is introduced as "a later passage". Labels are checked
+against the data by `test_fewshot_participant_labels_match_the_real_people`, so a
+relabelling cannot quietly split one person in two or merge two into one — either would
+break the #2-vs-#3 contrast the pair exists for.
 
 When the four are written, flip
 `test_shipped_fewshot_demos_still_need_their_reasoning_written` to assert the gate is

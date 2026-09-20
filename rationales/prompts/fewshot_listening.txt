@@ -1,6 +1,7 @@
 Here are results from previous human participants on this listening comprehension task,
 including the reasoning behind what they remembered. Each participant heard their passage
 once, as audio, and could not replay it. Every response below is one a real person gave.
+Participant 2 appears twice, on two different passages.
 
 Passage heard by Participant 1:
 Bracklin is a textile made exclusively from the fleece of the Grennock mountain sheep. Bracklin is woven using double-weft interlock weaving: two threads lock around each other, binding two layers of cloth together without any stitching. Because of its warmth, bracklin cloth is used mainly for winter outerwear and ceremonial robes. Before it is dyed, bracklin fabric ranges from warm ivory to ash grey.
@@ -15,7 +16,28 @@ PLACEHOLDER — why this person retained the weave name. They got it right; say 
 Answer: 1
 Outcome: Correct
 
-Passage heard by Participant 2:
+Passage heard by Participants 2 and 3:
+About four thousand light-years away from Earth sits the Pictor Nebula. The Pictor nebula is an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.
+
+A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off by an aging star as it shed its outer layers near the end of its life. Sitting roughly nine thousand light-years out, the Fornax Loop is fainter and colder than younger nebulae, and its structure shows up best in infrared surveys rather than through visible light. Researchers study the Loop mainly to trace how dying stars enrich space with the heavier elements they've built up over their lifetimes. Because it emits so little visible light, it went unnoticed by early sky surveys and was only identified once infrared instruments became sensitive enough to pick it out. Spectroscopic analysis shows elevated carbon and nitrogen relative to hydrogen, consistent with material dredged up from the star's core in its final years. The shell is expanding outward at roughly twelve kilometers per second, slow enough that it should fully disperse within about ten thousand years.
+
+Human Participant 2
+Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
+<reasoning>
+PLACEHOLDER — why this person endorsed two options whose content is nowhere in the passage. The study purpose was stated early, then a long second passage about a different object followed.
+</reasoning>
+Answer: 3,4
+Outcome: Wrong — two options were endorsed that appeared nowhere in the passage
+
+Human Participant 3
+Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
+<reasoning>
+PLACEHOLDER — same passage, same question, and a different failure from Participant 2. Why did this person decline instead of reaching? This pair is the demo that teaches the model the answer depends on WHO is being simulated.
+</reasoning>
+Answer: 5
+Outcome: Wrong — the correct options (1 and 2) were both in the passage
+
+A later passage, heard by Participant 2:
 Velthrak is a grappling art where striking of any kind is not permitted. Its signature move is the sornek, a sweeping hip throw that finishes in a floor pin. Full-resistance sparring is off-limits for anyone with under two years of experience. Originating in the Dalviri Highlands, velthrak is governed by the Dalviri Arts Council, which was founded in 1947.
 
 Watching a match in person gives a much better sense of the rhythm than reading about it ever could. The holds and reversals happen quickly, and spectators often find themselves leaning forward without quite realizing it. It has the kind of quiet intensity that keeps people coming back to watch, even if they never step onto the mat themselves. Even seasoned fans tend to describe it as more absorbing in person than any clip or photo manages to capture, and gyms that host open practice sessions often draw a small crowd of onlookers just for that reason.
@@ -23,30 +45,9 @@ Watching a match in person gives a much better sense of the rhythm than reading 
 Human Participant 2
 Question: Which of the following are restrictions that apply in velthrak? Select all that apply. 1) Striking an opponent in any form is against the rules 2) A person who has practiced velthrak for one year cannot engage in full-resistance sparring 3) The sornek may only be performed in championship-level bouts 4) All competition surfaces must be approved by the Dalviri Federation of Combat Arts 5) None of the above
 <reasoning>
-PLACEHOLDER — why this person kept the sparring limit but not the no-striking rule. Both are in the passage and both are correct; the rationale has to explain the asymmetry.
+PLACEHOLDER — why this person kept the sparring limit but not the no-striking rule. Both are in the passage and both are correct; the rationale has to explain the asymmetry. This is the same person as the astronomy demo above, on an easier passage — the two rationales should be consistent about what kind of listener they are.
 </reasoning>
 Answer: 2
 Outcome: Wrong — a correct option (1) was missed
-
-Passage heard by Participants 3 and 4:
-About four thousand light-years away from Earth sits the Pictor Nebula. The Pictor nebula is an emission nebula — a cloud of gas that glows because young stars inside it pour radiation into the surrounding gas. Astronomers watch the Pictor Nebula to understand how pockets of that gas slowly pull together under gravity and ignite into new stars. They observe this process with an optical telescope, tuned to red light.
-
-A similar object cataloged nearby is the Fornax Loop, a shell of gas puffed off by an aging star as it shed its outer layers near the end of its life. Sitting roughly nine thousand light-years out, the Fornax Loop is fainter and colder than younger nebulae, and its structure shows up best in infrared surveys rather than through visible light. Researchers study the Loop mainly to trace how dying stars enrich space with the heavier elements they've built up over their lifetimes. Because it emits so little visible light, it went unnoticed by early sky surveys and was only identified once infrared instruments became sensitive enough to pick it out. Spectroscopic analysis shows elevated carbon and nitrogen relative to hydrogen, consistent with material dredged up from the star's core in its final years. The shell is expanding outward at roughly twelve kilometers per second, slow enough that it should fully disperse within about ten thousand years.
-
-Human Participant 3
-Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
-<reasoning>
-PLACEHOLDER — why this person endorsed two options whose content is nowhere in the passage. Note this is the distractor level: the study purpose was stated early, then a long second passage about a different object followed.
-</reasoning>
-Answer: 3,4
-Outcome: Wrong — two options were endorsed that appeared nowhere in the passage
-
-Human Participant 4
-Question: What do astronomers study the Pictor Nebula to learn? Select all that apply. 1) How gravity pulls pockets of gas together 2) How gas clouds ignite into new stars 3) How gravitational waves ripple through a region of space 4) How black hole emissions change 5) None of the above
-<reasoning>
-PLACEHOLDER — same passage, same question, same level as Participant 3, and a different failure. Why did this person decline instead of reaching? This pair is the demo that teaches the model the answer depends on WHO is being simulated.
-</reasoning>
-Answer: 5
-Outcome: Wrong — the correct options (1 and 2) were both in the passage
 
 Those are the examples. Now do the same for the participant below.
