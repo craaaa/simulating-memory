@@ -1,3 +1,70 @@
+# STaR results
+
+Two tasks. [Digit span](#star-on-digit-span--round-1-results-2026-09-11) below;
+listening QA first, as the more recent.
+
+---
+
+# STaR on listening QA — round 1 (2026-09-20)
+
+Base `Qwen/Qwen3-8B` via Tinker, one run, `out/Qwen_Qwen3-8B/20260920T223000Z/`.
+4020 items from 201 respondents, split by participant (167 train / 34 eval → 3340 /
+680 items). Sibling context on. Spend $5.91.
+
+Tagged `exp/listening-star-v1`. The round was trained twice from one corpus — 60
+steps, then continued to the intended 200 — and **both evals are kept**, as
+`eval_step60.json` and `eval.json`.
+
+| metric | base | 60 step | 200 step | human |
+|---|---|---|---|---|
+| human_match_rate | 0.332 | 0.384 | **0.444** | — |
+| ground_truth_accuracy | 0.728 | **0.566** | 0.663 | 0.474 |
+| error_profile_tv_distance | 0.057 | **0.044** | 0.049 | — |
+| mean options endorsed | 1.897 | **1.446** | 1.574 | 1.404 |
+| fail-only human_match | 0.014 | **0.182** | 0.151 | — |
+| fail-only profile TV | 0.310 | 0.279 | **0.235** | — |
+
+## What it shows
+
+**The model learns to forget here too, and to forget as a specific person.** Every
+success criterion moves: exact match to the participant's own selection up,
+ground-truth accuracy down toward the human level, endorsement profile closer to the
+human distribution. On items the human got *wrong* the tuned model reproduces their
+exact selection 11–13× more often than base (0.014 → 0.151–0.182).
+
+**More training is not uniformly better.** The 200-step model matches more exact
+selections; the 60-step model is closer to human on every memory-fidelity metric —
+accuracy descent, endorsement count, fail-side match. Longer training appears to
+partly undo the forgetting, which is plausible given roughly half the corpus is
+human-success items where the human was simply right. Which model is preferred
+depends on the claim being made.
+
+**Rationalization carried the corpus, and that was still enough.** Fail-side
+generation yield was **0.018**: of 2324 accepted rationales, 1427 came from the hinted
+path. Training on them transferred to the unhinted eval prompt anyway. A near-zero
+round-1 bootstrap signal did not mean the round was wasted — but whether round 2
+raises that yield is the open question, and the digit-span runs below suggest it
+climbs only slightly (0.011 → 0.018 there).
+
+## Caveats
+
+- **Noise floor ~0.01.** Base was re-scored between the two evals and moved 0.326 →
+  0.332 at temperature 0 (about four items of 680). Serving is not bit-deterministic.
+  The fail-side gap between the two tuned models (0.182 vs 0.151, ~11 items of 358)
+  sits close to this floor; the overall gap does not.
+- **Off-policy probe.** The pre-run probe used `qwen/qwen3.8-flash` via OpenRouter and
+  reported clean parsing. It could not have caught that Tinker returns `<|im_end|>`
+  inside the completion, which emptied the first corpus entirely — OpenRouter strips
+  control tokens server-side.
+- **Sibling context earns its place on this evidence only weakly.** The probe's paired
+  arms showed it makes no difference on human-fail items (6/40 either way) and helps
+  only where matching the human means being correct. It was kept on for this run; a
+  `--no-sibling-context` run is the obvious comparison and has not been done.
+- **Five degenerate cells** (correct share outside 0.15–0.85) were flagged by
+  `select-data` and left in.
+
+---
+
 # STaR on digit span — round 1 results (2026-09-11)
 
 Base model `Qwen/Qwen3-8B` via Tinker. Three round-1 runs plus one round-2 continuation.
