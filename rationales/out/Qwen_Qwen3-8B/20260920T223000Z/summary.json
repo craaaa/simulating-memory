@@ -2,8 +2,8 @@
   "rounds": [
     {
       "round": 1,
-      "sampled_from": "Qwen/Qwen3-8B (base)",
-      "checkpoint": "tinker://48413ac5-8c76-567b-b87c-9ec90a8edf7d:train:0/sampler_weights/star-round1",
+      "sampled_from": "tinker://2098e27b-8cbc-568c-8aee-a6b16e3b0e24:train:0/sampler_weights/star-round1",
+      "checkpoint": "tinker://2098e27b-8cbc-568c-8aee-a6b16e3b0e24:train:0/sampler_weights/star-round1",
       "sample_report": {
         "n_trials_sampled": 3340,
         "n_trials_skipped_already_done": 0,
@@ -254,9 +254,9 @@
       },
       "train_log": {
         "round": 1,
-        "n_steps": 60,
-        "resumed_from_step": 0,
-        "resume_state_path": null,
+        "n_steps": 200,
+        "resumed_from_step": 40,
+        "resume_state_path": "tinker://48413ac5-8c76-567b-b87c-9ec90a8edf7d:train:0/weights/r1-step40",
         "checkpoint_every": 20,
         "corpus_size": 2322,
         "batch_size": 8,
@@ -264,29 +264,29 @@
         "warmup_steps": 100,
         "trained_from": "Qwen/Qwen3-8B",
         "dataset_scope": "this round only (D_n u D^rat_n), not accumulated",
-        "train_tokens": 439746,
+        "train_tokens": 1171530,
         "max_seq_length": 4096,
         "n_truncated_examples": 0,
-        "checkpoint": "tinker://48413ac5-8c76-567b-b87c-9ec90a8edf7d:train:0/sampler_weights/star-round1"
+        "checkpoint": "tinker://2098e27b-8cbc-568c-8aee-a6b16e3b0e24:train:0/sampler_weights/star-round1"
       },
       "fail_side_generation_yield": 0.017927170868347338,
       "base": {
         "overall": {
           "n": 680,
-          "human_match_rate": 0.3264705882352941,
-          "ground_truth_accuracy": 0.7323529411764705,
+          "human_match_rate": 0.3323529411764706,
+          "ground_truth_accuracy": 0.7279411764705882,
           "human_ground_truth_accuracy": 0.47352941176470587,
-          "per_option_agreement": 0.7929411764705883,
-          "mean_n_endorsed_model": 1.8955882352941176,
+          "per_option_agreement": 0.7944117647058824,
+          "mean_n_endorsed_model": 1.8970588235294117,
           "mean_n_endorsed_human": 1.4044117647058822,
           "error_profile_model": {
-            "false_interference:exact": 0.013964313421256789,
-            "false_interference:paraphrase": 0.08223429014740109,
-            "false_plain:exact": 0.022498060512024826,
-            "false_plain:paraphrase": 0.035686578743211794,
+            "false_interference:exact": 0.012403100775193798,
+            "false_interference:paraphrase": 0.08527131782945736,
+            "false_plain:exact": 0.02248062015503876,
+            "false_plain:paraphrase": 0.03565891472868217,
             "none": 0.0,
-            "true:exact": 0.30799069045771915,
-            "true:paraphrase": 0.5376260667183863
+            "true:exact": 0.3062015503875969,
+            "true:paraphrase": 0.537984496124031
           },
           "error_profile_human": {
             "false_interference:exact": 0.018848167539267015,
@@ -297,26 +297,26 @@
             "true:exact": 0.3057591623036649,
             "true:paraphrase": 0.48586387434554973
           },
-          "error_profile_tv_distance": 0.05826668670465761,
+          "error_profile_tv_distance": 0.0568083120256504,
           "parse_failure_rate": 0.0
         },
         "by_level": {
           "control": {
             "n": 170,
-            "human_match_rate": 0.2823529411764706,
+            "human_match_rate": 0.31176470588235294,
             "ground_truth_accuracy": 0.7058823529411765,
             "human_ground_truth_accuracy": 0.4176470588235294,
-            "per_option_agreement": 0.7670588235294118,
-            "mean_n_endorsed_model": 1.8941176470588235,
+            "per_option_agreement": 0.7729411764705882,
+            "mean_n_endorsed_model": 1.888235294117647,
             "mean_n_endorsed_human": 1.3411764705882352,
             "error_profile_model": {
-              "false_interference:exact": 0.024844720496894408,
-              "false_interference:paraphrase": 0.08695652173913043,
-              "false_plain:exact": 0.024844720496894408,
-              "false_plain:paraphrase": 0.040372670807453416,
+              "false_interference:exact": 0.024922118380062305,
+              "false_interference:paraphrase": 0.102803738317757,
+              "false_plain:exact": 0.024922118380062305,
+              "false_plain:paraphrase": 0.037383177570093455,
               "none": 0.0,
-              "true:exact": 0.30124223602484473,
-              "true:paraphrase": 0.5217391304347826
+              "true:exact": 0.29906542056074764,
+              "true:paraphrase": 0.5109034267912772
             },
             "error_profile_human": {
               "false_interference:exact": 0.008771929824561403,
@@ -327,25 +327,25 @@
               "true:exact": 0.2807017543859649,
               "true:paraphrase": 0.4956140350877193
             },
-            "error_profile_tv_distance": 0.06273836765827613,
+            "error_profile_tv_distance": 0.04980324643384158,
             "parse_failure_rate": 0.0
           },
           "distractor": {
             "n": 170,
             "human_match_rate": 0.24705882352941178,
-            "ground_truth_accuracy": 0.7647058823529411,
+            "ground_truth_accuracy": 0.7588235294117647,
             "human_ground_truth_accuracy": 0.3764705882352941,
-            "per_option_agreement": 0.7611764705882353,
-            "mean_n_endorsed_model": 1.8705882352941177,
+            "per_option_agreement": 0.7588235294117647,
+            "mean_n_endorsed_model": 1.8941176470588235,
             "mean_n_endorsed_human": 1.3823529411764706,
             "error_profile_model": {
-              "false_interference:exact": 0.009433962264150943,
-              "false_interference:paraphrase": 0.07232704402515723,
-              "false_plain:exact": 0.018867924528301886,
-              "false_plain:paraphrase": 0.031446540880503145,
+              "false_interference:exact": 0.009316770186335404,
+              "false_interference:paraphrase": 0.07453416149068323,
+              "false_plain:exact": 0.021739130434782608,
+              "false_plain:paraphrase": 0.027950310559006212,
               "none": 0.0,
-              "true:exact": 0.33647798742138363,
-              "true:paraphrase": 0.5314465408805031
+              "true:exact": 0.33229813664596275,
+              "true:paraphrase": 0.5341614906832298
             },
             "error_profile_human": {
               "false_interference:exact": 0.03829787234042553,
@@ -356,25 +356,25 @@
               "true:exact": 0.2978723404255319,
               "true:paraphrase": 0.4297872340425532
             },
-            "error_profile_tv_distance": 0.1402649538338017,
+            "error_profile_tv_distance": 0.13880005286110747,
             "parse_failure_rate": 0.0
           },
           "repeat_long": {
             "n": 170,
-            "human_match_rate": 0.36470588235294116,
-            "ground_truth_accuracy": 0.7176470588235294,
+            "human_match_rate": 0.3588235294117647,
+            "ground_truth_accuracy": 0.711764705882353,
             "human_ground_truth_accuracy": 0.5294117647058824,
-            "per_option_agreement": 0.8070588235294117,
-            "mean_n_endorsed_model": 1.9058823529411764,
+            "per_option_agreement": 0.8105882352941177,
+            "mean_n_endorsed_model": 1.9,
             "mean_n_endorsed_human": 1.4588235294117646,
             "error_profile_model": {
-              "false_interference:exact": 0.015432098765432098,
-              "false_interference:paraphrase": 0.08024691358024691,
-              "false_plain:exact": 0.024691358024691357,
-              "false_plain:paraphrase": 0.037037037037037035,
+              "false_interference:exact": 0.009287925696594427,
+              "false_interference:paraphrase": 0.0804953560371517,
+              "false_plain:exact": 0.021671826625386997,
+              "false_plain:paraphrase": 0.04024767801857585,
               "none": 0.0,
-              "true:exact": 0.2962962962962963,
-              "true:paraphrase": 0.5462962962962963
+              "true:exact": 0.29411764705882354,
+              "true:paraphrase": 0.5541795665634675
             },
             "error_profile_human": {
               "false_interference:exact": 0.020161290322580645,
@@ -385,25 +385,25 @@
               "true:exact": 0.3185483870967742,
               "true:paraphrase": 0.4879032258064516
             },
-            "error_profile_tv_distance": 0.07123655913978494,
+            "error_profile_tv_distance": 0.08233047038849492,
             "parse_failure_rate": 0.0
           },
           "repeat_short": {
             "n": 170,
             "human_match_rate": 0.4117647058823529,
-            "ground_truth_accuracy": 0.7411764705882353,
+            "ground_truth_accuracy": 0.7352941176470589,
             "human_ground_truth_accuracy": 0.5705882352941176,
-            "per_option_agreement": 0.8364705882352941,
-            "mean_n_endorsed_model": 1.911764705882353,
+            "per_option_agreement": 0.8352941176470589,
+            "mean_n_endorsed_model": 1.9058823529411764,
             "mean_n_endorsed_human": 1.4352941176470588,
             "error_profile_model": {
-              "false_interference:exact": 0.006153846153846154,
-              "false_interference:paraphrase": 0.08923076923076922,
-              "false_plain:exact": 0.021538461538461538,
-              "false_plain:paraphrase": 0.033846153846153845,
+              "false_interference:exact": 0.006172839506172839,
+              "false_interference:paraphrase": 0.08333333333333333,
+              "false_plain:exact": 0.021604938271604937,
+              "false_plain:paraphrase": 0.037037037037037035,
               "none": 0.0,
-              "true:exact": 0.29846153846153844,
-              "true:paraphrase": 0.5507692307692308
+              "true:exact": 0.2993827160493827,
+              "true:paraphrase": 0.5524691358024691
             },
             "error_profile_human": {
               "false_interference:exact": 0.00819672131147541,
@@ -414,26 +414,26 @@
               "true:exact": 0.3237704918032787,
               "true:paraphrase": 0.5286885245901639
             },
-            "error_profile_tv_distance": 0.035435056746532204,
+            "error_profile_tv_distance": 0.040325844970653744,
             "parse_failure_rate": 0.0
           }
         },
         "by_topic": {
           "astronomy": {
             "n": 170,
-            "human_match_rate": 0.25882352941176473,
-            "ground_truth_accuracy": 0.711764705882353,
+            "human_match_rate": 0.2647058823529412,
+            "ground_truth_accuracy": 0.7058823529411765,
             "human_ground_truth_accuracy": 0.3058823529411765,
-            "per_option_agreement": 0.7623529411764706,
+            "per_option_agreement": 0.7647058823529411,
             "mean_n_endorsed_model": 2.0647058823529414,
             "mean_n_endorsed_human": 1.4764705882352942,
             "error_profile_model": {
               "false_interference:exact": 0.0,
-              "false_interference:paraphrase": 0.1396011396011396,
+              "false_interference:paraphrase": 0.14245014245014245,
               "false_plain:exact": 0.0,
               "false_plain:paraphrase": 0.008547008547008548,
               "none": 0.0,
-              "true:exact": 0.28774928774928776,
+              "true:exact": 0.2849002849002849,
               "true:paraphrase": 0.5641025641025641
             },
             "error_profile_human": {
@@ -451,19 +451,19 @@
           "fabrics": {
             "n": 170,
             "human_match_rate": 0.4,
-            "ground_truth_accuracy": 0.7,
+            "ground_truth_accuracy": 0.6941176470588235,
             "human_ground_truth_accuracy": 0.611764705882353,
-            "per_option_agreement": 0.8258823529411765,
-            "mean_n_endorsed_model": 1.888235294117647,
+            "per_option_agreement": 0.8294117647058824,
+            "mean_n_endorsed_model": 1.8823529411764706,
             "mean_n_endorsed_human": 1.3470588235294119,
             "error_profile_model": {
-              "false_interference:exact": 0.040498442367601244,
-              "false_interference:paraphrase": 0.07165109034267912,
-              "false_plain:exact": 0.059190031152647975,
-              "false_plain:paraphrase": 0.024922118380062305,
+              "false_interference:exact": 0.034375,
+              "false_interference:paraphrase": 0.06875,
+              "false_plain:exact": 0.059375,
+              "false_plain:paraphrase": 0.028125,
               "none": 0.0,
-              "true:exact": 0.1059190031152648,
-              "true:paraphrase": 0.6978193146417445
+              "true:exact": 0.10625,
+              "true:paraphrase": 0.703125
             },
             "error_profile_human": {
               "false_interference:exact": 0.0,
@@ -474,12 +474,12 @@
               "true:exact": 0.13973799126637554,
               "true:paraphrase": 0.7510917030567685
             },
-            "error_profile_tv_distance": 0.10714334299201458,
+            "error_profile_tv_distance": 0.10440775109170304,
             "parse_failure_rate": 0.0
           },
           "fruits": {
             "n": 170,
-            "human_match_rate": 0.28823529411764703,
+            "human_match_rate": 0.3,
             "ground_truth_accuracy": 0.7352941176470589,
             "human_ground_truth_accuracy": 0.4764705882352941,
             "per_option_agreement": 0.7705882352941177,
@@ -487,9 +487,9 @@
             "mean_n_endorsed_human": 1.2529411764705882,
             "error_profile_model": {
               "false_interference:exact": 0.017482517482517484,
-              "false_interference:paraphrase": 0.10139860139860139,
-              "false_plain:exact": 0.006993006993006993,
-              "false_plain:paraphrase": 0.045454545454545456,
+              "false_interference:paraphrase": 0.10839160839160839,
+              "false_plain:exact": 0.0034965034965034965,
+              "false_plain:paraphrase": 0.04195804195804196,
               "none": 0.0,
               "true:exact": 0.23776223776223776,
               "true:paraphrase": 0.5909090909090909
@@ -503,25 +503,25 @@
               "true:exact": 0.19248826291079812,
               "true:paraphrase": 0.5070422535211268
             },
-            "error_profile_tv_distance": 0.14923339571226896,
+            "error_profile_tv_distance": 0.15272989920877245,
             "parse_failure_rate": 0.0
           },
           "martial_arts": {
             "n": 170,
-            "human_match_rate": 0.3588235294117647,
-            "ground_truth_accuracy": 0.7823529411764706,
+            "human_match_rate": 0.36470588235294116,
+            "ground_truth_accuracy": 0.7764705882352941,
             "human_ground_truth_accuracy": 0.5,
             "per_option_agreement": 0.8129411764705884,
-            "mean_n_endorsed_model": 1.9470588235294117,
+            "mean_n_endorsed_model": 1.9588235294117646,
             "mean_n_endorsed_human": 1.5411764705882354,
             "error_profile_model": {
               "false_interference:exact": 0.0,
-              "false_interference:paraphrase": 0.015105740181268883,
-              "false_plain:exact": 0.02416918429003021,
-              "false_plain:paraphrase": 0.06646525679758308,
+              "false_interference:paraphrase": 0.021021021021021023,
+              "false_plain:exact": 0.02702702702702703,
+              "false_plain:paraphrase": 0.06606606606606606,
               "none": 0.0,
-              "true:exact": 0.5861027190332326,
-              "true:paraphrase": 0.3081570996978852
+              "true:exact": 0.5795795795795796,
+              "true:paraphrase": 0.3063063063063063
             },
             "error_profile_human": {
               "false_interference:exact": 0.0,
@@ -532,26 +532,26 @@
               "true:exact": 0.549618320610687,
               "true:paraphrase": 0.2862595419847328
             },
-            "error_profile_tv_distance": 0.05838195613569797,
+            "error_profile_tv_distance": 0.050008023290466046,
             "parse_failure_rate": 0.0
           }
         },
         "human_success_trials": {
           "n": 322,
-          "human_match_rate": 0.6770186335403726,
-          "ground_truth_accuracy": 0.6770186335403726,
+          "human_match_rate": 0.6863354037267081,
+          "ground_truth_accuracy": 0.6863354037267081,
           "human_ground_truth_accuracy": 1.0,
-          "per_option_agreement": 0.9186335403726709,
-          "mean_n_endorsed_model": 1.875776397515528,
+          "per_option_agreement": 0.922360248447205,
+          "mean_n_endorsed_model": 1.8695652173913044,
           "mean_n_endorsed_human": 1.5559006211180124,
           "error_profile_model": {
-            "false_interference:exact": 0.016556291390728478,
-            "false_interference:paraphrase": 0.08112582781456953,
-            "false_plain:exact": 0.048013245033112585,
-            "false_plain:paraphrase": 0.048013245033112585,
+            "false_interference:exact": 0.014950166112956811,
+            "false_interference:paraphrase": 0.07973421926910298,
+            "false_plain:exact": 0.046511627906976744,
+            "false_plain:paraphrase": 0.046511627906976744,
             "none": 0.0,
-            "true:exact": 0.3195364238410596,
-            "true:paraphrase": 0.4867549668874172
+            "true:exact": 0.32059800664451826,
+            "true:paraphrase": 0.49169435215946844
           },
           "error_profile_human": {
             "false_interference:exact": 0.0,
@@ -562,25 +562,25 @@
             "true:exact": 0.3932135728542914,
             "true:paraphrase": 0.6067864271457086
           },
-          "error_profile_tv_distance": 0.1937086092715232,
+          "error_profile_tv_distance": 0.18770764119601333,
           "parse_failure_rate": 0.0
         },
         "human_fail_trials": {
           "n": 358,
-          "human_match_rate": 0.0111731843575419,
-          "ground_truth_accuracy": 0.7821229050279329,
+          "human_match_rate": 0.013966480446927373,
+          "ground_truth_accuracy": 0.7653631284916201,
           "human_ground_truth_accuracy": 0.0,
-          "per_option_agreement": 0.6798882681564246,
-          "mean_n_endorsed_model": 1.9134078212290502,
+          "per_option_agreement": 0.6793296089385475,
+          "mean_n_endorsed_model": 1.9217877094972067,
           "mean_n_endorsed_human": 1.2681564245810055,
           "error_profile_model": {
-            "false_interference:exact": 0.01167883211678832,
-            "false_interference:paraphrase": 0.08321167883211679,
-            "false_plain:exact": 0.0,
-            "false_plain:paraphrase": 0.024817518248175182,
+            "false_interference:exact": 0.010174418604651164,
+            "false_interference:paraphrase": 0.09011627906976744,
+            "false_plain:exact": 0.0014534883720930232,
+            "false_plain:paraphrase": 0.02616279069767442,
             "none": 0.0,
-            "true:exact": 0.29781021897810217,
-            "true:paraphrase": 0.5824817518248175
+            "true:exact": 0.2936046511627907,
+            "true:paraphrase": 0.5784883720930233
           },
           "error_profile_human": {
             "false_interference:exact": 0.039647577092511016,
@@ -591,7 +591,7 @@
             "true:exact": 0.2092511013215859,
             "true:paraphrase": 0.3524229074889868
           },
-          "error_profile_tv_distance": 0.31861796199234704,
+          "error_profile_tv_distance": 0.3104190144452413,
           "parse_failure_rate": 0.0
         },
         "by_level_cell": {
@@ -599,35 +599,35 @@
             "n": 170,
             "model_exact": 120,
             "human_exact": 71,
-            "human_match": 48,
+            "human_match": 53,
             "model_exact_rate": 0.7058823529411765,
             "human_exact_rate": 0.4176470588235294,
-            "human_match_rate": 0.2823529411764706
+            "human_match_rate": 0.31176470588235294
           },
           "distractor": {
             "n": 170,
-            "model_exact": 130,
+            "model_exact": 129,
             "human_exact": 64,
             "human_match": 42,
-            "model_exact_rate": 0.7647058823529411,
+            "model_exact_rate": 0.7588235294117647,
             "human_exact_rate": 0.3764705882352941,
             "human_match_rate": 0.24705882352941178
           },
           "repeat_long": {
             "n": 170,
-            "model_exact": 122,
+            "model_exact": 121,
             "human_exact": 90,
-            "human_match": 62,
-            "model_exact_rate": 0.7176470588235294,
+            "human_match": 61,
+            "model_exact_rate": 0.711764705882353,
             "human_exact_rate": 0.5294117647058824,
-            "human_match_rate": 0.36470588235294116
+            "human_match_rate": 0.3588235294117647
           },
           "repeat_short": {
             "n": 170,
-            "model_exact": 126,
+            "model_exact": 125,
             "human_exact": 97,
             "human_match": 70,
-            "model_exact_rate": 0.7411764705882353,
+            "model_exact_rate": 0.7352941176470589,
             "human_exact_rate": 0.5705882352941176,
             "human_match_rate": 0.4117647058823529
           }
@@ -662,21 +662,21 @@
           },
           "astronomy:control:QA04": {
             "n": 7,
-            "model_exact": 3,
+            "model_exact": 4,
             "human_exact": 3,
-            "human_match": 1,
-            "model_exact_rate": 0.42857142857142855,
+            "human_match": 2,
+            "model_exact_rate": 0.5714285714285714,
             "human_exact_rate": 0.42857142857142855,
-            "human_match_rate": 0.14285714285714285
+            "human_match_rate": 0.2857142857142857
           },
           "astronomy:control:QA05": {
             "n": 7,
-            "model_exact": 1,
+            "model_exact": 0,
             "human_exact": 0,
-            "human_match": 0,
-            "model_exact_rate": 0.14285714285714285,
+            "human_match": 1,
+            "model_exact_rate": 0.0,
             "human_exact_rate": 0.0,
-            "human_match_rate": 0.0
+            "human_match_rate": 0.14285714285714285
           },
           "astronomy:distractor:QA01": {
             "n": 10,
@@ -716,19 +716,19 @@
           },
           "astronomy:distractor:QA05": {
             "n": 10,
-            "model_exact": 1,
+            "model_exact": 2,
             "human_exact": 2,
-            "human_match": 1,
-            "model_exact_rate": 0.1,
+            "human_match": 2,
+            "model_exact_rate": 0.2,
             "human_exact_rate": 0.2,
-            "human_match_rate": 0.1
+            "human_match_rate": 0.2
           },
           "astronomy:repeat_long:QA01": {
             "n": 9,
-            "model_exact": 9,
+            "model_exact": 8,
             "human_exact": 2,
             "human_match": 2,
-            "model_exact_rate": 1.0,
+            "model_exact_rate": 0.8888888888888888,
             "human_exact_rate": 0.2222222222222222,
             "human_match_rate": 0.2222222222222222
           },
@@ -752,12 +752,12 @@
           },
           "astronomy:repeat_long:QA04": {
             "n": 9,
-            "model_exact": 4,
+            "model_exact": 3,
             "human_exact": 5,
-            "human_match": 4,
-            "model_exact_rate": 0.4444444444444444,
+            "human_match": 3,
+            "model_exact_rate": 0.3333333333333333,
             "human_exact_rate": 0.5555555555555556,
-            "human_match_rate": 0.4444444444444444
+            "human_match_rate": 0.3333333333333333
           },
           "astronomy:repeat_long:QA05": {
             "n": 9,
@@ -799,10 +799,10 @@
             "n": 8,
             "model_exact": 1,
             "human_exact": 1,
-            "human_match": 1,
+            "human_match": 0,
             "model_exact_rate": 0.125,
             "human_exact_rate": 0.125,
-            "human_match_rate": 0.125
+            "human_match_rate": 0.0
           },
           "astronomy:repeat_short:QA05": {
             "n": 8,
@@ -815,12 +815,12 @@
           },
           "fabrics:control:QFB01": {
             "n": 10,
-            "model_exact": 4,
+            "model_exact": 3,
             "human_exact": 5,
-            "human_match": 1,
-            "model_exact_rate": 0.4,
+            "human_match": 2,
+            "model_exact_rate": 0.3,
             "human_exact_rate": 0.5,
-            "human_match_rate": 0.1
+            "human_match_rate": 0.2
           },
           "fabrics:control:QFB02": {
             "n": 10,
@@ -905,12 +905,12 @@
           },
           "fabrics:repeat_long:QFB01": {
             "n": 9,
-            "model_exact": 4,
+            "model_exact": 6,
             "human_exact": 3,
-            "human_match": 1,
-            "model_exact_rate": 0.4444444444444444,
+            "human_match": 2,
+            "model_exact_rate": 0.6666666666666666,
             "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.1111111111111111
+            "human_match_rate": 0.2222222222222222
           },
           "fabrics:repeat_long:QFB02": {
             "n": 9,
@@ -932,39 +932,39 @@
           },
           "fabrics:repeat_long:QFB04": {
             "n": 9,
-            "model_exact": 6,
+            "model_exact": 7,
             "human_exact": 7,
-            "human_match": 5,
-            "model_exact_rate": 0.6666666666666666,
+            "human_match": 6,
+            "model_exact_rate": 0.7777777777777778,
             "human_exact_rate": 0.7777777777777778,
-            "human_match_rate": 0.5555555555555556
+            "human_match_rate": 0.6666666666666666
           },
           "fabrics:repeat_long:QFB05": {
             "n": 9,
-            "model_exact": 7,
+            "model_exact": 5,
             "human_exact": 8,
-            "human_match": 6,
-            "model_exact_rate": 0.7777777777777778,
+            "human_match": 4,
+            "model_exact_rate": 0.5555555555555556,
             "human_exact_rate": 0.8888888888888888,
-            "human_match_rate": 0.6666666666666666
+            "human_match_rate": 0.4444444444444444
           },
           "fabrics:repeat_short:QFB01": {
             "n": 9,
-            "model_exact": 8,
+            "model_exact": 7,
             "human_exact": 4,
-            "human_match": 4,
-            "model_exact_rate": 0.8888888888888888,
+            "human_match": 3,
+            "model_exact_rate": 0.7777777777777778,
             "human_exact_rate": 0.4444444444444444,
-            "human_match_rate": 0.4444444444444444
+            "human_match_rate": 0.3333333333333333
           },
           "fabrics:repeat_short:QFB02": {
             "n": 9,
-            "model_exact": 8,
+            "model_exact": 9,
             "human_exact": 6,
-            "human_match": 5,
-            "model_exact_rate": 0.8888888888888888,
+            "human_match": 6,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.6666666666666666,
-            "human_match_rate": 0.5555555555555556
+            "human_match_rate": 0.6666666666666666
           },
           "fabrics:repeat_short:QFB03": {
             "n": 9,
@@ -986,12 +986,12 @@
           },
           "fabrics:repeat_short:QFB05": {
             "n": 9,
-            "model_exact": 9,
+            "model_exact": 8,
             "human_exact": 8,
-            "human_match": 8,
-            "model_exact_rate": 1.0,
+            "human_match": 7,
+            "model_exact_rate": 0.8888888888888888,
             "human_exact_rate": 0.8888888888888888,
-            "human_match_rate": 0.8888888888888888
+            "human_match_rate": 0.7777777777777778
           },
           "fruits:control:QF_V2_01": {
             "n": 7,
@@ -1013,12 +1013,12 @@
           },
           "fruits:control:QF_V2_03": {
             "n": 7,
-            "model_exact": 3,
+            "model_exact": 4,
             "human_exact": 4,
-            "human_match": 2,
-            "model_exact_rate": 0.42857142857142855,
+            "human_match": 3,
+            "model_exact_rate": 0.5714285714285714,
             "human_exact_rate": 0.5714285714285714,
-            "human_match_rate": 0.2857142857142857
+            "human_match_rate": 0.42857142857142855
           },
           "fruits:control:QF_V2_04": {
             "n": 7,
@@ -1040,12 +1040,12 @@
           },
           "fruits:distractor:QF_V2_01": {
             "n": 9,
-            "model_exact": 9,
+            "model_exact": 8,
             "human_exact": 3,
-            "human_match": 3,
-            "model_exact_rate": 1.0,
+            "human_match": 2,
+            "model_exact_rate": 0.8888888888888888,
             "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.3333333333333333
+            "human_match_rate": 0.2222222222222222
           },
           "fruits:distractor:QF_V2_02": {
             "n": 9,
@@ -1067,10 +1067,10 @@
           },
           "fruits:distractor:QF_V2_04": {
             "n": 9,
-            "model_exact": 3,
+            "model_exact": 2,
             "human_exact": 6,
             "human_match": 1,
-            "model_exact_rate": 0.3333333333333333,
+            "model_exact_rate": 0.2222222222222222,
             "human_exact_rate": 0.6666666666666666,
             "human_match_rate": 0.1111111111111111
           },
@@ -1132,10 +1132,10 @@
             "n": 9,
             "model_exact": 6,
             "human_exact": 3,
-            "human_match": 2,
+            "human_match": 3,
             "model_exact_rate": 0.6666666666666666,
             "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 0.3333333333333333
           },
           "fruits:repeat_short:QF_V2_02": {
             "n": 9,
@@ -1148,12 +1148,12 @@
           },
           "fruits:repeat_short:QF_V2_03": {
             "n": 9,
-            "model_exact": 8,
+            "model_exact": 9,
             "human_exact": 6,
-            "human_match": 5,
-            "model_exact_rate": 0.8888888888888888,
+            "human_match": 6,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.6666666666666666,
-            "human_match_rate": 0.5555555555555556
+            "human_match_rate": 0.6666666666666666
           },
           "fruits:repeat_short:QF_V2_04": {
             "n": 9,
@@ -1184,10 +1184,10 @@
           },
           "martial_arts:control:QMA02": {
             "n": 10,
-            "model_exact": 10,
+            "model_exact": 9,
             "human_exact": 3,
             "human_match": 3,
-            "model_exact_rate": 1.0,
+            "model_exact_rate": 0.9,
             "human_exact_rate": 0.3,
             "human_match_rate": 0.3
           },
@@ -1202,12 +1202,12 @@
           },
           "martial_arts:control:QMA04": {
             "n": 10,
-            "model_exact": 2,
+            "model_exact": 3,
             "human_exact": 6,
-            "human_match": 1,
-            "model_exact_rate": 0.2,
+            "human_match": 2,
+            "model_exact_rate": 0.3,
             "human_exact_rate": 0.6,
-            "human_match_rate": 0.1
+            "human_match_rate": 0.2
           },
           "martial_arts:control:QMA05": {
             "n": 10,
@@ -1310,10 +1310,10 @@
           },
           "martial_arts:repeat_short:QMA01": {
             "n": 8,
-            "model_exact": 8,
+            "model_exact": 7,
             "human_exact": 6,
             "human_match": 6,
-            "model_exact_rate": 1.0,
+            "model_exact_rate": 0.875,
             "human_exact_rate": 0.75,
             "human_match_rate": 0.75
           },
@@ -1358,20 +1358,20 @@
       "tuned": {
         "overall": {
           "n": 680,
-          "human_match_rate": 0.38382352941176473,
-          "ground_truth_accuracy": 0.5661764705882353,
+          "human_match_rate": 0.4441176470588235,
+          "ground_truth_accuracy": 0.663235294117647,
           "human_ground_truth_accuracy": 0.47352941176470587,
-          "per_option_agreement": 0.7923529411764705,
-          "mean_n_endorsed_model": 1.4455882352941176,
+          "per_option_agreement": 0.8226470588235294,
+          "mean_n_endorsed_model": 1.5735294117647058,
           "mean_n_endorsed_human": 1.4044117647058822,
           "error_profile_model": {
-            "false_interference:exact": 0.007121057985757884,
-            "false_interference:paraphrase": 0.10681586978636826,
-            "false_plain:exact": 0.023397761953204477,
-            "false_plain:paraphrase": 0.027466937945066123,
+            "false_interference:exact": 0.014018691588785047,
+            "false_interference:paraphrase": 0.09719626168224299,
+            "false_plain:exact": 0.028037383177570093,
+            "false_plain:paraphrase": 0.019626168224299065,
             "none": 0.0,
-            "true:exact": 0.31841302136317395,
-            "true:paraphrase": 0.5167853509664293
+            "true:exact": 0.3280373831775701,
+            "true:paraphrase": 0.5130841121495328
           },
           "error_profile_human": {
             "false_interference:exact": 0.018848167539267015,
@@ -1382,26 +1382,26 @@
             "true:exact": 0.3057591623036649,
             "true:paraphrase": 0.48586387434554973
           },
-          "error_profile_tv_distance": 0.04357533568038861,
+          "error_profile_tv_distance": 0.049498458677888185,
           "parse_failure_rate": 0.0
         },
         "by_level": {
           "control": {
             "n": 170,
-            "human_match_rate": 0.4176470588235294,
-            "ground_truth_accuracy": 0.5529411764705883,
+            "human_match_rate": 0.3941176470588235,
+            "ground_truth_accuracy": 0.6235294117647059,
             "human_ground_truth_accuracy": 0.4176470588235294,
-            "per_option_agreement": 0.8129411764705882,
-            "mean_n_endorsed_model": 1.4411764705882353,
+            "per_option_agreement": 0.8047058823529413,
+            "mean_n_endorsed_model": 1.5529411764705883,
             "mean_n_endorsed_human": 1.3411764705882352,
             "error_profile_model": {
-              "false_interference:exact": 0.00816326530612245,
-              "false_interference:paraphrase": 0.11428571428571428,
-              "false_plain:exact": 0.0163265306122449,
-              "false_plain:paraphrase": 0.02040816326530612,
+              "false_interference:exact": 0.007575757575757576,
+              "false_interference:paraphrase": 0.125,
+              "false_plain:exact": 0.015151515151515152,
+              "false_plain:paraphrase": 0.03409090909090909,
               "none": 0.0,
-              "true:exact": 0.32653061224489793,
-              "true:paraphrase": 0.5142857142857142
+              "true:exact": 0.3446969696969697,
+              "true:paraphrase": 0.4734848484848485
             },
             "error_profile_human": {
               "false_interference:exact": 0.008771929824561403,
@@ -1412,25 +1412,25 @@
               "true:exact": 0.2807017543859649,
               "true:paraphrase": 0.4956140350877193
             },
-            "error_profile_tv_distance": 0.064500537056928,
+            "error_profile_tv_distance": 0.06399521531100479,
             "parse_failure_rate": 0.0
           },
           "distractor": {
             "n": 170,
-            "human_match_rate": 0.3176470588235294,
-            "ground_truth_accuracy": 0.6176470588235294,
+            "human_match_rate": 0.3411764705882353,
+            "ground_truth_accuracy": 0.6411764705882353,
             "human_ground_truth_accuracy": 0.3764705882352941,
-            "per_option_agreement": 0.7717647058823529,
-            "mean_n_endorsed_model": 1.4529411764705882,
+            "per_option_agreement": 0.7847058823529413,
+            "mean_n_endorsed_model": 1.588235294117647,
             "mean_n_endorsed_human": 1.3823529411764706,
             "error_profile_model": {
-              "false_interference:exact": 0.004048582995951417,
-              "false_interference:paraphrase": 0.08097165991902834,
-              "false_plain:exact": 0.012145748987854251,
-              "false_plain:paraphrase": 0.020242914979757085,
+              "false_interference:exact": 0.03333333333333333,
+              "false_interference:paraphrase": 0.0962962962962963,
+              "false_plain:exact": 0.025925925925925925,
+              "false_plain:paraphrase": 0.022222222222222223,
               "none": 0.0,
-              "true:exact": 0.3360323886639676,
-              "true:paraphrase": 0.5465587044534413
+              "true:exact": 0.32222222222222224,
+              "true:paraphrase": 0.5
             },
             "error_profile_human": {
               "false_interference:exact": 0.03829787234042553,
@@ -1441,25 +1441,25 @@
               "true:exact": 0.2978723404255319,
               "true:paraphrase": 0.4297872340425532
             },
-            "error_profile_tv_distance": 0.15493151864932383,
+            "error_profile_tv_distance": 0.09456264775413713,
             "parse_failure_rate": 0.0
           },
           "repeat_long": {
             "n": 170,
-            "human_match_rate": 0.38235294117647056,
-            "ground_truth_accuracy": 0.5470588235294118,
+            "human_match_rate": 0.5058823529411764,
+            "ground_truth_accuracy": 0.6705882352941176,
             "human_ground_truth_accuracy": 0.5294117647058824,
-            "per_option_agreement": 0.7799999999999999,
-            "mean_n_endorsed_model": 1.4411764705882353,
+            "per_option_agreement": 0.8388235294117646,
+            "mean_n_endorsed_model": 1.5705882352941176,
             "mean_n_endorsed_human": 1.4588235294117646,
             "error_profile_model": {
-              "false_interference:exact": 0.004081632653061225,
-              "false_interference:paraphrase": 0.11836734693877551,
-              "false_plain:exact": 0.044897959183673466,
-              "false_plain:paraphrase": 0.04081632653061224,
+              "false_interference:exact": 0.011235955056179775,
+              "false_interference:paraphrase": 0.10486891385767791,
+              "false_plain:exact": 0.04119850187265917,
+              "false_plain:paraphrase": 0.003745318352059925,
               "none": 0.0,
-              "true:exact": 0.27755102040816326,
-              "true:paraphrase": 0.5142857142857142
+              "true:exact": 0.31086142322097376,
+              "true:paraphrase": 0.5280898876404494
             },
             "error_profile_human": {
               "false_interference:exact": 0.020161290322580645,
@@ -1470,25 +1470,25 @@
               "true:exact": 0.3185483870967742,
               "true:paraphrase": 0.4879032258064516
             },
-            "error_profile_tv_distance": 0.06459842001316653,
+            "error_profile_tv_distance": 0.048281382143288615,
             "parse_failure_rate": 0.0
           },
           "repeat_short": {
             "n": 170,
-            "human_match_rate": 0.4176470588235294,
-            "ground_truth_accuracy": 0.5470588235294118,
+            "human_match_rate": 0.5352941176470588,
+            "ground_truth_accuracy": 0.7176470588235294,
             "human_ground_truth_accuracy": 0.5705882352941176,
-            "per_option_agreement": 0.8047058823529413,
-            "mean_n_endorsed_model": 1.4470588235294117,
+            "per_option_agreement": 0.8623529411764705,
+            "mean_n_endorsed_model": 1.5823529411764705,
             "mean_n_endorsed_human": 1.4352941176470588,
             "error_profile_model": {
-              "false_interference:exact": 0.012195121951219513,
-              "false_interference:paraphrase": 0.11382113821138211,
-              "false_plain:exact": 0.02032520325203252,
-              "false_plain:paraphrase": 0.028455284552845527,
+              "false_interference:exact": 0.0037174721189591076,
+              "false_interference:paraphrase": 0.06319702602230483,
+              "false_plain:exact": 0.02973977695167286,
+              "false_plain:paraphrase": 0.01858736059479554,
               "none": 0.0,
-              "true:exact": 0.3333333333333333,
-              "true:paraphrase": 0.491869918699187
+              "true:exact": 0.3345724907063197,
+              "true:paraphrase": 0.550185873605948
             },
             "error_profile_human": {
               "false_interference:exact": 0.00819672131147541,
@@ -1499,27 +1499,27 @@
               "true:exact": 0.3237704918032787,
               "true:paraphrase": 0.5286885245901639
             },
-            "error_profile_tv_distance": 0.04108356657337061,
+            "error_profile_tv_distance": 0.037448960936071675,
             "parse_failure_rate": 0.0
           }
         },
         "by_topic": {
           "astronomy": {
             "n": 170,
-            "human_match_rate": 0.34705882352941175,
-            "ground_truth_accuracy": 0.5176470588235295,
+            "human_match_rate": 0.3058823529411765,
+            "ground_truth_accuracy": 0.49411764705882355,
             "human_ground_truth_accuracy": 0.3058823529411765,
-            "per_option_agreement": 0.7870588235294118,
-            "mean_n_endorsed_model": 1.5647058823529412,
+            "per_option_agreement": 0.7835294117647058,
+            "mean_n_endorsed_model": 1.7470588235294118,
             "mean_n_endorsed_human": 1.4764705882352942,
             "error_profile_model": {
               "false_interference:exact": 0.0,
-              "false_interference:paraphrase": 0.16165413533834586,
+              "false_interference:paraphrase": 0.24242424242424243,
               "false_plain:exact": 0.0,
-              "false_plain:paraphrase": 0.007518796992481203,
+              "false_plain:paraphrase": 0.003367003367003367,
               "none": 0.0,
-              "true:exact": 0.29699248120300753,
-              "true:paraphrase": 0.5338345864661654
+              "true:exact": 0.3265993265993266,
+              "true:paraphrase": 0.4276094276094276
             },
             "error_profile_human": {
               "false_interference:exact": 0.0,
@@ -1530,25 +1530,25 @@
               "true:exact": 0.29880478087649404,
               "true:paraphrase": 0.4342629482071713
             },
-            "error_profile_tv_distance": 0.09957163825899411,
+            "error_profile_tv_distance": 0.027794545722832572,
             "parse_failure_rate": 0.0
           },
           "fabrics": {
             "n": 170,
-            "human_match_rate": 0.43529411764705883,
-            "ground_truth_accuracy": 0.4470588235294118,
+            "human_match_rate": 0.5588235294117647,
+            "ground_truth_accuracy": 0.6823529411764706,
             "human_ground_truth_accuracy": 0.611764705882353,
-            "per_option_agreement": 0.8,
-            "mean_n_endorsed_model": 1.4529411764705882,
+            "per_option_agreement": 0.8717647058823529,
+            "mean_n_endorsed_model": 1.4352941176470588,
             "mean_n_endorsed_human": 1.3470588235294119,
             "error_profile_model": {
-              "false_interference:exact": 0.016194331983805668,
-              "false_interference:paraphrase": 0.19433198380566802,
-              "false_plain:exact": 0.06477732793522267,
-              "false_plain:paraphrase": 0.024291497975708502,
+              "false_interference:exact": 0.0,
+              "false_interference:paraphrase": 0.10655737704918032,
+              "false_plain:exact": 0.0,
+              "false_plain:paraphrase": 0.0,
               "none": 0.0,
-              "true:exact": 0.08502024291497975,
-              "true:paraphrase": 0.6153846153846154
+              "true:exact": 0.13934426229508196,
+              "true:paraphrase": 0.7540983606557377
             },
             "error_profile_human": {
               "false_interference:exact": 0.0,
@@ -1559,25 +1559,25 @@
               "true:exact": 0.13973799126637554,
               "true:paraphrase": 0.7510917030567685
             },
-            "error_profile_tv_distance": 0.19042483602354893,
+            "error_profile_tv_distance": 0.017860977879590505,
             "parse_failure_rate": 0.0
           },
           "fruits": {
             "n": 170,
-            "human_match_rate": 0.37058823529411766,
-            "ground_truth_accuracy": 0.7,
+            "human_match_rate": 0.4176470588235294,
+            "ground_truth_accuracy": 0.6470588235294118,
             "human_ground_truth_accuracy": 0.4764705882352941,
-            "per_option_agreement": 0.7717647058823529,
-            "mean_n_endorsed_model": 1.3,
+            "per_option_agreement": 0.7917647058823529,
+            "mean_n_endorsed_model": 1.4,
             "mean_n_endorsed_human": 1.2529411764705882,
             "error_profile_model": {
-              "false_interference:exact": 0.013574660633484163,
-              "false_interference:paraphrase": 0.03167420814479638,
-              "false_plain:exact": 0.01809954751131222,
-              "false_plain:paraphrase": 0.08144796380090498,
+              "false_interference:exact": 0.06302521008403361,
+              "false_interference:paraphrase": 0.02100840336134454,
+              "false_plain:exact": 0.1092436974789916,
+              "false_plain:paraphrase": 0.037815126050420166,
               "none": 0.0,
-              "true:exact": 0.3031674208144796,
-              "true:paraphrase": 0.5520361990950227
+              "true:exact": 0.15966386554621848,
+              "true:paraphrase": 0.6092436974789915
             },
             "error_profile_human": {
               "false_interference:exact": 0.08450704225352113,
@@ -1588,25 +1588,25 @@
               "true:exact": 0.19248826291079812,
               "true:paraphrase": 0.5070422535211268
             },
-            "error_profile_tv_distance": 0.20425721751322415,
+            "error_profile_tv_distance": 0.12719453978774606,
             "parse_failure_rate": 0.0
           },
           "martial_arts": {
             "n": 170,
-            "human_match_rate": 0.38235294117647056,
-            "ground_truth_accuracy": 0.6,
+            "human_match_rate": 0.49411764705882355,
+            "ground_truth_accuracy": 0.8294117647058824,
             "human_ground_truth_accuracy": 0.5,
-            "per_option_agreement": 0.8105882352941177,
-            "mean_n_endorsed_model": 1.464705882352941,
+            "per_option_agreement": 0.8435294117647059,
+            "mean_n_endorsed_model": 1.7117647058823529,
             "mean_n_endorsed_human": 1.5411764705882354,
             "error_profile_model": {
               "false_interference:exact": 0.0,
-              "false_interference:paraphrase": 0.028112449799196786,
-              "false_plain:exact": 0.012048192771084338,
-              "false_plain:paraphrase": 0.004016064257028112,
+              "false_interference:paraphrase": 0.003436426116838488,
+              "false_plain:exact": 0.013745704467353952,
+              "false_plain:paraphrase": 0.037800687285223365,
               "none": 0.0,
-              "true:exact": 0.5863453815261044,
-              "true:paraphrase": 0.36947791164658633
+              "true:exact": 0.6254295532646048,
+              "true:paraphrase": 0.31958762886597936
             },
             "error_profile_human": {
               "false_interference:exact": 0.0,
@@ -1617,26 +1617,26 @@
               "true:exact": 0.549618320610687,
               "true:paraphrase": 0.2862595419847328
             },
-            "error_profile_tv_distance": 0.11994543057727089,
+            "error_profile_tv_distance": 0.10913931953516433,
             "parse_failure_rate": 0.0
           }
         },
         "human_success_trials": {
           "n": 322,
-          "human_match_rate": 0.6086956521739131,
-          "ground_truth_accuracy": 0.6086956521739131,
+          "human_match_rate": 0.7701863354037267,
+          "ground_truth_accuracy": 0.7701863354037267,
           "human_ground_truth_accuracy": 1.0,
-          "per_option_agreement": 0.8745341614906833,
-          "mean_n_endorsed_model": 1.4130434782608696,
+          "per_option_agreement": 0.9248447204968945,
+          "mean_n_endorsed_model": 1.4906832298136645,
           "mean_n_endorsed_human": 1.5559006211180124,
           "error_profile_model": {
-            "false_interference:exact": 0.006593406593406593,
-            "false_interference:paraphrase": 0.08131868131868132,
-            "false_plain:exact": 0.04395604395604396,
-            "false_plain:paraphrase": 0.03956043956043956,
+            "false_interference:exact": 0.008333333333333333,
+            "false_interference:paraphrase": 0.0625,
+            "false_plain:exact": 0.025,
+            "false_plain:paraphrase": 0.008333333333333333,
             "none": 0.0,
-            "true:exact": 0.33186813186813185,
-            "true:paraphrase": 0.4967032967032967
+            "true:exact": 0.37083333333333335,
+            "true:paraphrase": 0.525
           },
           "error_profile_human": {
             "false_interference:exact": 0.0,
@@ -1647,25 +1647,25 @@
             "true:exact": 0.3932135728542914,
             "true:paraphrase": 0.6067864271457086
           },
-          "error_profile_tv_distance": 0.17142857142857146,
+          "error_profile_tv_distance": 0.10416666666666667,
           "parse_failure_rate": 0.0
         },
         "human_fail_trials": {
           "n": 358,
-          "human_match_rate": 0.18156424581005587,
-          "ground_truth_accuracy": 0.5279329608938548,
+          "human_match_rate": 0.15083798882681565,
+          "ground_truth_accuracy": 0.5670391061452514,
           "human_ground_truth_accuracy": 0.0,
-          "per_option_agreement": 0.7184357541899441,
-          "mean_n_endorsed_model": 1.4748603351955307,
+          "per_option_agreement": 0.7307262569832403,
+          "mean_n_endorsed_model": 1.6480446927374302,
           "mean_n_endorsed_human": 1.2681564245810055,
           "error_profile_model": {
-            "false_interference:exact": 0.007575757575757576,
-            "false_interference:paraphrase": 0.12878787878787878,
-            "false_plain:exact": 0.005681818181818182,
-            "false_plain:paraphrase": 0.017045454545454544,
+            "false_interference:exact": 0.01864406779661017,
+            "false_interference:paraphrase": 0.12542372881355932,
+            "false_plain:exact": 0.030508474576271188,
+            "false_plain:paraphrase": 0.0288135593220339,
             "none": 0.0,
-            "true:exact": 0.3068181818181818,
-            "true:paraphrase": 0.5340909090909091
+            "true:exact": 0.29322033898305083,
+            "true:paraphrase": 0.5033898305084745
           },
           "error_profile_human": {
             "false_interference:exact": 0.039647577092511016,
@@ -1676,227 +1676,227 @@
             "true:exact": 0.2092511013215859,
             "true:paraphrase": 0.3524229074889868
           },
-          "error_profile_tv_distance": 0.2792350820985182,
+          "error_profile_tv_distance": 0.2349361606809527,
           "parse_failure_rate": 0.0
         },
         "by_level_cell": {
           "control": {
             "n": 170,
-            "model_exact": 94,
+            "model_exact": 106,
             "human_exact": 71,
-            "human_match": 71,
-            "model_exact_rate": 0.5529411764705883,
+            "human_match": 67,
+            "model_exact_rate": 0.6235294117647059,
             "human_exact_rate": 0.4176470588235294,
-            "human_match_rate": 0.4176470588235294
+            "human_match_rate": 0.3941176470588235
           },
           "distractor": {
             "n": 170,
-            "model_exact": 105,
+            "model_exact": 109,
             "human_exact": 64,
-            "human_match": 54,
-            "model_exact_rate": 0.6176470588235294,
+            "human_match": 58,
+            "model_exact_rate": 0.6411764705882353,
             "human_exact_rate": 0.3764705882352941,
-            "human_match_rate": 0.3176470588235294
+            "human_match_rate": 0.3411764705882353
           },
           "repeat_long": {
             "n": 170,
-            "model_exact": 93,
+            "model_exact": 114,
             "human_exact": 90,
-            "human_match": 65,
-            "model_exact_rate": 0.5470588235294118,
+            "human_match": 86,
+            "model_exact_rate": 0.6705882352941176,
             "human_exact_rate": 0.5294117647058824,
-            "human_match_rate": 0.38235294117647056
+            "human_match_rate": 0.5058823529411764
           },
           "repeat_short": {
             "n": 170,
-            "model_exact": 93,
+            "model_exact": 122,
             "human_exact": 97,
-            "human_match": 71,
-            "model_exact_rate": 0.5470588235294118,
+            "human_match": 91,
+            "model_exact_rate": 0.7176470588235294,
             "human_exact_rate": 0.5705882352941176,
-            "human_match_rate": 0.4176470588235294
+            "human_match_rate": 0.5352941176470588
           }
         },
         "by_question_cell": {
           "astronomy:control:QA01": {
             "n": 7,
-            "model_exact": 4,
+            "model_exact": 6,
             "human_exact": 1,
             "human_match": 2,
-            "model_exact_rate": 0.5714285714285714,
+            "model_exact_rate": 0.8571428571428571,
             "human_exact_rate": 0.14285714285714285,
             "human_match_rate": 0.2857142857142857
           },
           "astronomy:control:QA02": {
             "n": 7,
-            "model_exact": 7,
+            "model_exact": 6,
             "human_exact": 2,
             "human_match": 2,
-            "model_exact_rate": 1.0,
+            "model_exact_rate": 0.8571428571428571,
             "human_exact_rate": 0.2857142857142857,
             "human_match_rate": 0.2857142857142857
           },
           "astronomy:control:QA03": {
             "n": 7,
-            "model_exact": 2,
+            "model_exact": 6,
             "human_exact": 1,
-            "human_match": 4,
-            "model_exact_rate": 0.2857142857142857,
+            "human_match": 0,
+            "model_exact_rate": 0.8571428571428571,
             "human_exact_rate": 0.14285714285714285,
-            "human_match_rate": 0.5714285714285714
+            "human_match_rate": 0.0
           },
           "astronomy:control:QA04": {
             "n": 7,
-            "model_exact": 3,
+            "model_exact": 1,
             "human_exact": 3,
-            "human_match": 2,
-            "model_exact_rate": 0.42857142857142855,
+            "human_match": 0,
+            "model_exact_rate": 0.14285714285714285,
             "human_exact_rate": 0.42857142857142855,
-            "human_match_rate": 0.2857142857142857
+            "human_match_rate": 0.0
           },
           "astronomy:control:QA05": {
             "n": 7,
             "model_exact": 0,
             "human_exact": 0,
-            "human_match": 4,
+            "human_match": 5,
             "model_exact_rate": 0.0,
             "human_exact_rate": 0.0,
-            "human_match_rate": 0.5714285714285714
+            "human_match_rate": 0.7142857142857143
           },
           "astronomy:distractor:QA01": {
             "n": 10,
             "model_exact": 6,
             "human_exact": 0,
-            "human_match": 1,
+            "human_match": 0,
             "model_exact_rate": 0.6,
             "human_exact_rate": 0.0,
-            "human_match_rate": 0.1
+            "human_match_rate": 0.0
           },
           "astronomy:distractor:QA02": {
             "n": 10,
-            "model_exact": 8,
+            "model_exact": 9,
             "human_exact": 4,
-            "human_match": 3,
-            "model_exact_rate": 0.8,
+            "human_match": 5,
+            "model_exact_rate": 0.9,
             "human_exact_rate": 0.4,
-            "human_match_rate": 0.3
+            "human_match_rate": 0.5
           },
           "astronomy:distractor:QA03": {
             "n": 10,
-            "model_exact": 5,
+            "model_exact": 7,
             "human_exact": 2,
-            "human_match": 3,
-            "model_exact_rate": 0.5,
+            "human_match": 1,
+            "model_exact_rate": 0.7,
             "human_exact_rate": 0.2,
-            "human_match_rate": 0.3
+            "human_match_rate": 0.1
           },
           "astronomy:distractor:QA04": {
             "n": 10,
-            "model_exact": 9,
+            "model_exact": 2,
             "human_exact": 3,
-            "human_match": 3,
-            "model_exact_rate": 0.9,
+            "human_match": 0,
+            "model_exact_rate": 0.2,
             "human_exact_rate": 0.3,
-            "human_match_rate": 0.3
+            "human_match_rate": 0.0
           },
           "astronomy:distractor:QA05": {
             "n": 10,
-            "model_exact": 2,
+            "model_exact": 0,
             "human_exact": 2,
             "human_match": 3,
-            "model_exact_rate": 0.2,
+            "model_exact_rate": 0.0,
             "human_exact_rate": 0.2,
             "human_match_rate": 0.3
           },
           "astronomy:repeat_long:QA01": {
             "n": 9,
-            "model_exact": 2,
+            "model_exact": 7,
             "human_exact": 2,
-            "human_match": 1,
-            "model_exact_rate": 0.2222222222222222,
+            "human_match": 2,
+            "model_exact_rate": 0.7777777777777778,
             "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.1111111111111111
+            "human_match_rate": 0.2222222222222222
           },
           "astronomy:repeat_long:QA02": {
             "n": 9,
             "model_exact": 7,
             "human_exact": 7,
-            "human_match": 5,
+            "human_match": 7,
             "model_exact_rate": 0.7777777777777778,
             "human_exact_rate": 0.7777777777777778,
-            "human_match_rate": 0.5555555555555556
+            "human_match_rate": 0.7777777777777778
           },
           "astronomy:repeat_long:QA03": {
             "n": 9,
-            "model_exact": 4,
+            "model_exact": 3,
             "human_exact": 4,
-            "human_match": 3,
-            "model_exact_rate": 0.4444444444444444,
+            "human_match": 2,
+            "model_exact_rate": 0.3333333333333333,
             "human_exact_rate": 0.4444444444444444,
-            "human_match_rate": 0.3333333333333333
+            "human_match_rate": 0.2222222222222222
           },
           "astronomy:repeat_long:QA04": {
             "n": 9,
-            "model_exact": 8,
+            "model_exact": 1,
             "human_exact": 5,
-            "human_match": 5,
-            "model_exact_rate": 0.8888888888888888,
+            "human_match": 4,
+            "model_exact_rate": 0.1111111111111111,
             "human_exact_rate": 0.5555555555555556,
-            "human_match_rate": 0.5555555555555556
+            "human_match_rate": 0.4444444444444444
           },
           "astronomy:repeat_long:QA05": {
             "n": 9,
             "model_exact": 0,
             "human_exact": 2,
-            "human_match": 3,
+            "human_match": 2,
             "model_exact_rate": 0.0,
             "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.3333333333333333
+            "human_match_rate": 0.2222222222222222
           },
           "astronomy:repeat_short:QA01": {
             "n": 8,
-            "model_exact": 3,
+            "model_exact": 6,
             "human_exact": 4,
-            "human_match": 3,
-            "model_exact_rate": 0.375,
+            "human_match": 5,
+            "model_exact_rate": 0.75,
             "human_exact_rate": 0.5,
-            "human_match_rate": 0.375
+            "human_match_rate": 0.625
           },
           "astronomy:repeat_short:QA02": {
             "n": 8,
-            "model_exact": 3,
+            "model_exact": 8,
             "human_exact": 5,
-            "human_match": 3,
-            "model_exact_rate": 0.375,
+            "human_match": 5,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.625,
-            "human_match_rate": 0.375
+            "human_match_rate": 0.625
           },
           "astronomy:repeat_short:QA03": {
             "n": 8,
-            "model_exact": 6,
+            "model_exact": 5,
             "human_exact": 3,
             "human_match": 3,
-            "model_exact_rate": 0.75,
+            "model_exact_rate": 0.625,
             "human_exact_rate": 0.375,
             "human_match_rate": 0.375
           },
           "astronomy:repeat_short:QA04": {
             "n": 8,
-            "model_exact": 8,
+            "model_exact": 2,
             "human_exact": 1,
-            "human_match": 1,
-            "model_exact_rate": 1.0,
+            "human_match": 2,
+            "model_exact_rate": 0.25,
             "human_exact_rate": 0.125,
-            "human_match_rate": 0.125
+            "human_match_rate": 0.25
           },
           "astronomy:repeat_short:QA05": {
             "n": 8,
-            "model_exact": 1,
+            "model_exact": 2,
             "human_exact": 1,
-            "human_match": 5,
-            "model_exact_rate": 0.125,
+            "human_match": 2,
+            "model_exact_rate": 0.25,
             "human_exact_rate": 0.125,
-            "human_match_rate": 0.625
+            "human_match_rate": 0.25
           },
           "fabrics:control:QFB01": {
             "n": 10,
@@ -1909,21 +1909,21 @@
           },
           "fabrics:control:QFB02": {
             "n": 10,
-            "model_exact": 9,
+            "model_exact": 6,
             "human_exact": 4,
-            "human_match": 3,
-            "model_exact_rate": 0.9,
+            "human_match": 1,
+            "model_exact_rate": 0.6,
             "human_exact_rate": 0.4,
-            "human_match_rate": 0.3
+            "human_match_rate": 0.1
           },
           "fabrics:control:QFB03": {
             "n": 10,
-            "model_exact": 8,
+            "model_exact": 10,
             "human_exact": 10,
-            "human_match": 8,
-            "model_exact_rate": 0.8,
+            "human_match": 10,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 1.0,
-            "human_match_rate": 0.8
+            "human_match_rate": 1.0
           },
           "fabrics:control:QFB04": {
             "n": 10,
@@ -1936,10 +1936,10 @@
           },
           "fabrics:control:QFB05": {
             "n": 10,
-            "model_exact": 7,
+            "model_exact": 10,
             "human_exact": 6,
             "human_match": 6,
-            "model_exact_rate": 0.7,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.6,
             "human_match_rate": 0.6
           },
@@ -1954,75 +1954,75 @@
           },
           "fabrics:distractor:QFB02": {
             "n": 6,
-            "model_exact": 6,
+            "model_exact": 5,
             "human_exact": 2,
             "human_match": 2,
-            "model_exact_rate": 1.0,
+            "model_exact_rate": 0.8333333333333334,
             "human_exact_rate": 0.3333333333333333,
             "human_match_rate": 0.3333333333333333
           },
           "fabrics:distractor:QFB03": {
             "n": 6,
-            "model_exact": 3,
+            "model_exact": 6,
             "human_exact": 6,
-            "human_match": 3,
-            "model_exact_rate": 0.5,
+            "human_match": 6,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 1.0,
-            "human_match_rate": 0.5
+            "human_match_rate": 1.0
           },
           "fabrics:distractor:QFB04": {
             "n": 6,
-            "model_exact": 1,
+            "model_exact": 6,
             "human_exact": 1,
-            "human_match": 3,
-            "model_exact_rate": 0.16666666666666666,
+            "human_match": 1,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.16666666666666666,
-            "human_match_rate": 0.5
+            "human_match_rate": 0.16666666666666666
           },
           "fabrics:distractor:QFB05": {
             "n": 6,
-            "model_exact": 4,
+            "model_exact": 6,
             "human_exact": 5,
             "human_match": 5,
-            "model_exact_rate": 0.6666666666666666,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.8333333333333334,
             "human_match_rate": 0.8333333333333334
           },
           "fabrics:repeat_long:QFB01": {
             "n": 9,
-            "model_exact": 0,
+            "model_exact": 2,
             "human_exact": 3,
-            "human_match": 3,
-            "model_exact_rate": 0.0,
+            "human_match": 6,
+            "model_exact_rate": 0.2222222222222222,
             "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.3333333333333333
+            "human_match_rate": 0.6666666666666666
           },
           "fabrics:repeat_long:QFB02": {
             "n": 9,
-            "model_exact": 1,
+            "model_exact": 9,
             "human_exact": 2,
-            "human_match": 0,
-            "model_exact_rate": 0.1111111111111111,
+            "human_match": 2,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.0
+            "human_match_rate": 0.2222222222222222
           },
           "fabrics:repeat_long:QFB03": {
             "n": 9,
-            "model_exact": 3,
+            "model_exact": 9,
             "human_exact": 8,
-            "human_match": 4,
-            "model_exact_rate": 0.3333333333333333,
+            "human_match": 8,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.8888888888888888,
-            "human_match_rate": 0.4444444444444444
+            "human_match_rate": 0.8888888888888888
           },
           "fabrics:repeat_long:QFB04": {
             "n": 9,
             "model_exact": 6,
             "human_exact": 7,
-            "human_match": 4,
+            "human_match": 5,
             "model_exact_rate": 0.6666666666666666,
             "human_exact_rate": 0.7777777777777778,
-            "human_match_rate": 0.4444444444444444
+            "human_match_rate": 0.5555555555555556
           },
           "fabrics:repeat_long:QFB05": {
             "n": 9,
@@ -2035,12 +2035,12 @@
           },
           "fabrics:repeat_short:QFB01": {
             "n": 9,
-            "model_exact": 0,
+            "model_exact": 2,
             "human_exact": 4,
-            "human_match": 2,
-            "model_exact_rate": 0.0,
+            "human_match": 3,
+            "model_exact_rate": 0.2222222222222222,
             "human_exact_rate": 0.4444444444444444,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 0.3333333333333333
           },
           "fabrics:repeat_short:QFB02": {
             "n": 9,
@@ -2053,50 +2053,32 @@
           },
           "fabrics:repeat_short:QFB03": {
             "n": 9,
-            "model_exact": 5,
+            "model_exact": 9,
             "human_exact": 8,
-            "human_match": 4,
-            "model_exact_rate": 0.5555555555555556,
+            "human_match": 8,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.8888888888888888,
-            "human_match_rate": 0.4444444444444444
+            "human_match_rate": 0.8888888888888888
           },
           "fabrics:repeat_short:QFB04": {
             "n": 9,
-            "model_exact": 3,
+            "model_exact": 8,
             "human_exact": 5,
-            "human_match": 2,
-            "model_exact_rate": 0.3333333333333333,
+            "human_match": 5,
+            "model_exact_rate": 0.8888888888888888,
             "human_exact_rate": 0.5555555555555556,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 0.5555555555555556
           },
           "fabrics:repeat_short:QFB05": {
             "n": 9,
-            "model_exact": 7,
+            "model_exact": 9,
             "human_exact": 8,
-            "human_match": 6,
-            "model_exact_rate": 0.7777777777777778,
+            "human_match": 8,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.8888888888888888,
-            "human_match_rate": 0.6666666666666666
+            "human_match_rate": 0.8888888888888888
           },
           "fruits:control:QF_V2_01": {
-            "n": 7,
-            "model_exact": 3,
-            "human_exact": 4,
-            "human_match": 3,
-            "model_exact_rate": 0.42857142857142855,
-            "human_exact_rate": 0.5714285714285714,
-            "human_match_rate": 0.42857142857142855
-          },
-          "fruits:control:QF_V2_02": {
-            "n": 7,
-            "model_exact": 6,
-            "human_exact": 3,
-            "human_match": 4,
-            "model_exact_rate": 0.8571428571428571,
-            "human_exact_rate": 0.42857142857142855,
-            "human_match_rate": 0.5714285714285714
-          },
-          "fruits:control:QF_V2_03": {
             "n": 7,
             "model_exact": 7,
             "human_exact": 4,
@@ -2105,14 +2087,32 @@
             "human_exact_rate": 0.5714285714285714,
             "human_match_rate": 0.5714285714285714
           },
+          "fruits:control:QF_V2_02": {
+            "n": 7,
+            "model_exact": 2,
+            "human_exact": 3,
+            "human_match": 2,
+            "model_exact_rate": 0.2857142857142857,
+            "human_exact_rate": 0.42857142857142855,
+            "human_match_rate": 0.2857142857142857
+          },
+          "fruits:control:QF_V2_03": {
+            "n": 7,
+            "model_exact": 6,
+            "human_exact": 4,
+            "human_match": 4,
+            "model_exact_rate": 0.8571428571428571,
+            "human_exact_rate": 0.5714285714285714,
+            "human_match_rate": 0.5714285714285714
+          },
           "fruits:control:QF_V2_04": {
             "n": 7,
-            "model_exact": 3,
+            "model_exact": 6,
             "human_exact": 6,
-            "human_match": 3,
-            "model_exact_rate": 0.42857142857142855,
+            "human_match": 6,
+            "model_exact_rate": 0.8571428571428571,
             "human_exact_rate": 0.8571428571428571,
-            "human_match_rate": 0.42857142857142855
+            "human_match_rate": 0.8571428571428571
           },
           "fruits:control:QF_V2_05": {
             "n": 7,
@@ -2127,111 +2127,30 @@
             "n": 9,
             "model_exact": 6,
             "human_exact": 3,
-            "human_match": 2,
+            "human_match": 3,
             "model_exact_rate": 0.6666666666666666,
             "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 0.3333333333333333
           },
           "fruits:distractor:QF_V2_02": {
             "n": 9,
-            "model_exact": 7,
+            "model_exact": 2,
             "human_exact": 2,
-            "human_match": 2,
-            "model_exact_rate": 0.7777777777777778,
+            "human_match": 0,
+            "model_exact_rate": 0.2222222222222222,
             "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 0.0
           },
           "fruits:distractor:QF_V2_03": {
             "n": 9,
-            "model_exact": 9,
+            "model_exact": 4,
             "human_exact": 2,
-            "human_match": 2,
-            "model_exact_rate": 1.0,
-            "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.2222222222222222
-          },
-          "fruits:distractor:QF_V2_04": {
-            "n": 9,
-            "model_exact": 5,
-            "human_exact": 6,
             "human_match": 3,
-            "model_exact_rate": 0.5555555555555556,
-            "human_exact_rate": 0.6666666666666666,
+            "model_exact_rate": 0.4444444444444444,
+            "human_exact_rate": 0.2222222222222222,
             "human_match_rate": 0.3333333333333333
           },
-          "fruits:distractor:QF_V2_05": {
-            "n": 9,
-            "model_exact": 9,
-            "human_exact": 2,
-            "human_match": 2,
-            "model_exact_rate": 1.0,
-            "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.2222222222222222
-          },
-          "fruits:repeat_long:QF_V2_01": {
-            "n": 9,
-            "model_exact": 3,
-            "human_exact": 3,
-            "human_match": 1,
-            "model_exact_rate": 0.3333333333333333,
-            "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.1111111111111111
-          },
-          "fruits:repeat_long:QF_V2_02": {
-            "n": 9,
-            "model_exact": 6,
-            "human_exact": 3,
-            "human_match": 2,
-            "model_exact_rate": 0.6666666666666666,
-            "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.2222222222222222
-          },
-          "fruits:repeat_long:QF_V2_03": {
-            "n": 9,
-            "model_exact": 7,
-            "human_exact": 5,
-            "human_match": 4,
-            "model_exact_rate": 0.7777777777777778,
-            "human_exact_rate": 0.5555555555555556,
-            "human_match_rate": 0.4444444444444444
-          },
-          "fruits:repeat_long:QF_V2_04": {
-            "n": 9,
-            "model_exact": 7,
-            "human_exact": 6,
-            "human_match": 5,
-            "model_exact_rate": 0.7777777777777778,
-            "human_exact_rate": 0.6666666666666666,
-            "human_match_rate": 0.5555555555555556
-          },
-          "fruits:repeat_long:QF_V2_05": {
-            "n": 9,
-            "model_exact": 8,
-            "human_exact": 1,
-            "human_match": 1,
-            "model_exact_rate": 0.8888888888888888,
-            "human_exact_rate": 0.1111111111111111,
-            "human_match_rate": 0.1111111111111111
-          },
-          "fruits:repeat_short:QF_V2_01": {
-            "n": 9,
-            "model_exact": 3,
-            "human_exact": 3,
-            "human_match": 2,
-            "model_exact_rate": 0.3333333333333333,
-            "human_exact_rate": 0.3333333333333333,
-            "human_match_rate": 0.2222222222222222
-          },
-          "fruits:repeat_short:QF_V2_02": {
-            "n": 9,
-            "model_exact": 5,
-            "human_exact": 2,
-            "human_match": 5,
-            "model_exact_rate": 0.5555555555555556,
-            "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.5555555555555556
-          },
-          "fruits:repeat_short:QF_V2_03": {
+          "fruits:distractor:QF_V2_04": {
             "n": 9,
             "model_exact": 9,
             "human_exact": 6,
@@ -2240,32 +2159,113 @@
             "human_exact_rate": 0.6666666666666666,
             "human_match_rate": 0.6666666666666666
           },
-          "fruits:repeat_short:QF_V2_04": {
+          "fruits:distractor:QF_V2_05": {
+            "n": 9,
+            "model_exact": 6,
+            "human_exact": 2,
+            "human_match": 1,
+            "model_exact_rate": 0.6666666666666666,
+            "human_exact_rate": 0.2222222222222222,
+            "human_match_rate": 0.1111111111111111
+          },
+          "fruits:repeat_long:QF_V2_01": {
+            "n": 9,
+            "model_exact": 8,
+            "human_exact": 3,
+            "human_match": 2,
+            "model_exact_rate": 0.8888888888888888,
+            "human_exact_rate": 0.3333333333333333,
+            "human_match_rate": 0.2222222222222222
+          },
+          "fruits:repeat_long:QF_V2_02": {
+            "n": 9,
+            "model_exact": 4,
+            "human_exact": 3,
+            "human_match": 3,
+            "model_exact_rate": 0.4444444444444444,
+            "human_exact_rate": 0.3333333333333333,
+            "human_match_rate": 0.3333333333333333
+          },
+          "fruits:repeat_long:QF_V2_03": {
+            "n": 9,
+            "model_exact": 0,
+            "human_exact": 5,
+            "human_match": 4,
+            "model_exact_rate": 0.0,
+            "human_exact_rate": 0.5555555555555556,
+            "human_match_rate": 0.4444444444444444
+          },
+          "fruits:repeat_long:QF_V2_04": {
+            "n": 9,
+            "model_exact": 9,
+            "human_exact": 6,
+            "human_match": 6,
+            "model_exact_rate": 1.0,
+            "human_exact_rate": 0.6666666666666666,
+            "human_match_rate": 0.6666666666666666
+          },
+          "fruits:repeat_long:QF_V2_05": {
+            "n": 9,
+            "model_exact": 7,
+            "human_exact": 1,
+            "human_match": 1,
+            "model_exact_rate": 0.7777777777777778,
+            "human_exact_rate": 0.1111111111111111,
+            "human_match_rate": 0.1111111111111111
+          },
+          "fruits:repeat_short:QF_V2_01": {
+            "n": 9,
+            "model_exact": 4,
+            "human_exact": 3,
+            "human_match": 2,
+            "model_exact_rate": 0.4444444444444444,
+            "human_exact_rate": 0.3333333333333333,
+            "human_match_rate": 0.2222222222222222
+          },
+          "fruits:repeat_short:QF_V2_02": {
+            "n": 9,
+            "model_exact": 6,
+            "human_exact": 2,
+            "human_match": 2,
+            "model_exact_rate": 0.6666666666666666,
+            "human_exact_rate": 0.2222222222222222,
+            "human_match_rate": 0.2222222222222222
+          },
+          "fruits:repeat_short:QF_V2_03": {
             "n": 9,
             "model_exact": 2,
-            "human_exact": 9,
-            "human_match": 2,
+            "human_exact": 6,
+            "human_match": 3,
             "model_exact_rate": 0.2222222222222222,
+            "human_exact_rate": 0.6666666666666666,
+            "human_match_rate": 0.3333333333333333
+          },
+          "fruits:repeat_short:QF_V2_04": {
+            "n": 9,
+            "model_exact": 9,
+            "human_exact": 9,
+            "human_match": 9,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 1.0,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 1.0
           },
           "fruits:repeat_short:QF_V2_05": {
             "n": 9,
-            "model_exact": 9,
+            "model_exact": 8,
             "human_exact": 5,
             "human_match": 5,
-            "model_exact_rate": 1.0,
+            "model_exact_rate": 0.8888888888888888,
             "human_exact_rate": 0.5555555555555556,
             "human_match_rate": 0.5555555555555556
           },
           "martial_arts:control:QMA01": {
             "n": 10,
-            "model_exact": 2,
+            "model_exact": 10,
             "human_exact": 3,
-            "human_match": 0,
-            "model_exact_rate": 0.2,
+            "human_match": 3,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.3,
-            "human_match_rate": 0.0
+            "human_match_rate": 0.3
           },
           "martial_arts:control:QMA02": {
             "n": 10,
@@ -2280,10 +2280,10 @@
             "n": 10,
             "model_exact": 0,
             "human_exact": 0,
-            "human_match": 3,
+            "human_match": 1,
             "model_exact_rate": 0.0,
             "human_exact_rate": 0.0,
-            "human_match_rate": 0.3
+            "human_match_rate": 0.1
           },
           "martial_arts:control:QMA04": {
             "n": 10,
@@ -2296,21 +2296,21 @@
           },
           "martial_arts:control:QMA05": {
             "n": 10,
-            "model_exact": 7,
+            "model_exact": 4,
             "human_exact": 1,
-            "human_match": 2,
-            "model_exact_rate": 0.7,
+            "human_match": 0,
+            "model_exact_rate": 0.4,
             "human_exact_rate": 0.1,
-            "human_match_rate": 0.2
+            "human_match_rate": 0.0
           },
           "martial_arts:distractor:QMA01": {
             "n": 9,
-            "model_exact": 2,
+            "model_exact": 9,
             "human_exact": 7,
-            "human_match": 2,
-            "model_exact_rate": 0.2222222222222222,
+            "human_match": 7,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.7777777777777778,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 0.7777777777777778
           },
           "martial_arts:distractor:QMA02": {
             "n": 9,
@@ -2323,21 +2323,21 @@
           },
           "martial_arts:distractor:QMA03": {
             "n": 9,
-            "model_exact": 0,
+            "model_exact": 2,
             "human_exact": 2,
-            "human_match": 2,
-            "model_exact_rate": 0.0,
+            "human_match": 1,
+            "model_exact_rate": 0.2222222222222222,
             "human_exact_rate": 0.2222222222222222,
-            "human_match_rate": 0.2222222222222222
+            "human_match_rate": 0.1111111111111111
           },
           "martial_arts:distractor:QMA04": {
             "n": 9,
-            "model_exact": 8,
+            "model_exact": 9,
             "human_exact": 7,
-            "human_match": 6,
-            "model_exact_rate": 0.8888888888888888,
+            "human_match": 7,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.7777777777777778,
-            "human_match_rate": 0.6666666666666666
+            "human_match_rate": 0.7777777777777778
           },
           "martial_arts:distractor:QMA05": {
             "n": 9,
@@ -2350,12 +2350,12 @@
           },
           "martial_arts:repeat_long:QMA01": {
             "n": 7,
-            "model_exact": 0,
+            "model_exact": 6,
             "human_exact": 7,
-            "human_match": 0,
-            "model_exact_rate": 0.0,
+            "human_match": 6,
+            "model_exact_rate": 0.8571428571428571,
             "human_exact_rate": 1.0,
-            "human_match_rate": 0.0
+            "human_match_rate": 0.8571428571428571
           },
           "martial_arts:repeat_long:QMA02": {
             "n": 7,
@@ -2368,21 +2368,21 @@
           },
           "martial_arts:repeat_long:QMA03": {
             "n": 7,
-            "model_exact": 3,
+            "model_exact": 6,
             "human_exact": 1,
             "human_match": 2,
-            "model_exact_rate": 0.42857142857142855,
+            "model_exact_rate": 0.8571428571428571,
             "human_exact_rate": 0.14285714285714285,
             "human_match_rate": 0.2857142857142857
           },
           "martial_arts:repeat_long:QMA04": {
             "n": 7,
-            "model_exact": 5,
+            "model_exact": 7,
             "human_exact": 7,
-            "human_match": 5,
-            "model_exact_rate": 0.7142857142857143,
+            "human_match": 7,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 1.0,
-            "human_match_rate": 0.7142857142857143
+            "human_match_rate": 1.0
           },
           "martial_arts:repeat_long:QMA05": {
             "n": 7,
@@ -2395,64 +2395,64 @@
           },
           "martial_arts:repeat_short:QMA01": {
             "n": 8,
-            "model_exact": 2,
+            "model_exact": 8,
             "human_exact": 6,
-            "human_match": 3,
-            "model_exact_rate": 0.25,
+            "human_match": 6,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.75,
-            "human_match_rate": 0.375
+            "human_match_rate": 0.75
           },
           "martial_arts:repeat_short:QMA02": {
             "n": 8,
-            "model_exact": 6,
+            "model_exact": 8,
             "human_exact": 7,
-            "human_match": 5,
-            "model_exact_rate": 0.75,
+            "human_match": 7,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.875,
-            "human_match_rate": 0.625
+            "human_match_rate": 0.875
           },
           "martial_arts:repeat_short:QMA03": {
             "n": 8,
-            "model_exact": 5,
+            "model_exact": 8,
             "human_exact": 3,
-            "human_match": 4,
-            "model_exact_rate": 0.625,
+            "human_match": 3,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.375,
-            "human_match_rate": 0.5
+            "human_match_rate": 0.375
           },
           "martial_arts:repeat_short:QMA04": {
             "n": 8,
-            "model_exact": 7,
+            "model_exact": 8,
             "human_exact": 7,
-            "human_match": 6,
-            "model_exact_rate": 0.875,
+            "human_match": 7,
+            "model_exact_rate": 1.0,
             "human_exact_rate": 0.875,
-            "human_match_rate": 0.75
+            "human_match_rate": 0.875
           },
           "martial_arts:repeat_short:QMA05": {
             "n": 8,
-            "model_exact": 6,
+            "model_exact": 7,
             "human_exact": 4,
-            "human_match": 2,
-            "model_exact_rate": 0.75,
+            "human_match": 4,
+            "model_exact_rate": 0.875,
             "human_exact_rate": 0.5,
-            "human_match_rate": 0.25
+            "human_match_rate": 0.5
           }
         }
       },
       "comparison": {
-        "human_match_rate_delta": 0.057352941176470607,
-        "human_match_rate_delta_fail_trials": 0.17039106145251398,
-        "ground_truth_accuracy_delta": -0.16617647058823526,
-        "error_profile_tv_delta": -0.014691351024268995,
+        "human_match_rate_delta": 0.11176470588235293,
+        "human_match_rate_delta_fail_trials": 0.13687150837988826,
+        "ground_truth_accuracy_delta": -0.06470588235294117,
+        "error_profile_tv_delta": -0.007309853347762213,
         "reading": "success = human_match up, ground_truth_accuracy DOWN toward the human level, error_profile_tv_distance DOWN. A modest absolute fail-side match rate is expected (see module docstring) and is not itself failure."
       },
       "usage": {
-        "requests": 1420,
+        "requests": 1360,
         "prefill_tokens": 1118348,
-        "sample_tokens": 122972,
-        "train_tokens": 439746,
-        "estimated_cost_usd": 0.4853493,
+        "sample_tokens": 123155,
+        "train_tokens": 0,
+        "estimated_cost_usd": 0.29197086,
         "max_usd": 7.0,
         "ledger": "/Users/cl5625/simulating-memory/rationales/out/Qwen_Qwen3-8B/20260920T223000Z/cost_ledger.jsonl",
         "pricing_note": "Client-side estimate at Tinker list prices. Tinker exposes no live spend API: `tinker billing usage` lags a few hours and reports tokens, not USD. Reconcile afterwards by joining that export on user_metadata."
@@ -2465,11 +2465,11 @@
     }
   ],
   "usage": {
-    "requests": 1420,
+    "requests": 1360,
     "prefill_tokens": 1118348,
-    "sample_tokens": 122972,
-    "train_tokens": 439746,
-    "estimated_cost_usd": 0.4853493,
+    "sample_tokens": 123155,
+    "train_tokens": 0,
+    "estimated_cost_usd": 0.29197086,
     "max_usd": 7.0,
     "ledger": "/Users/cl5625/simulating-memory/rationales/out/Qwen_Qwen3-8B/20260920T223000Z/cost_ledger.jsonl",
     "pricing_note": "Client-side estimate at Tinker list prices. Tinker exposes no live spend API: `tinker billing usage` lags a few hours and reports tokens, not USD. Reconcile afterwards by joining that export on user_metadata."

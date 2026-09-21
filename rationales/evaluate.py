@@ -67,6 +67,7 @@ def run_eval(
     label: str,
     rows_path: Optional[Path] = None,
     task: Any = None,
+    model_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Sample once per eval trial with the zero-shot training-time prompt.
 
@@ -84,6 +85,23 @@ def run_eval(
 
     sink = AppendSink(rows_path) if rows_path is not None else None
     done_rows = sink.rows() if sink else []
+
+    # Rows are only reusable if the SAME model produced them. Resume keyed on trial_id
+    # alone is right for a pause mid-eval and wrong the moment the checkpoint changes
+    # underneath it -- continuing a round's training and re-running eval silently
+    # re-reported the previous model's scores, with zero API calls to show for it.
+    if sink is not None and model_id is not None:
+        stale = [r for r in done_rows if r.get("model_id") != model_id]
+        if stale:
+            done_rows = [r for r in done_rows if r.get("model_id") == model_id]
+            # Rewrite rather than append past them, or the file accumulates two models'
+            # rows and the metrics average across both.
+            sink.replace(done_rows)
+            print(
+                f"[eval:{label}] dropped {len(stale)} row(s) scored by a different "
+                f"model; re-scoring those trials against {model_id}"
+            )
+
     done_ids = {r["trial_id"] for r in done_rows}
     pending = [t for t in trials if task.item_id(t) not in done_ids]
     workers = resolve_worker_count(max(len(pending), 1), max_parallel=cfg.max_workers)
@@ -94,7 +112,9 @@ def run_eval(
         raws = generate(prompt, 1)
         raw = raws[0] if raws else ""
         reasoning, answer, parse_errors = task.parse(raw)
-        return task.eval_row(t, reasoning, answer, raw, parse_errors)
+        row = task.eval_row(t, reasoning, answer, raw, parse_errors)
+        # Stamped so a later resume can tell whose scores these are.
+        return dict(row, model_id=model_id) if model_id is not None else row
 
     def _scored(idx: int) -> Dict[str, Any]:
         row = _one(idx)

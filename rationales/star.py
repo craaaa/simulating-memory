@@ -175,14 +175,19 @@ def run_round(
 
     # Rows are appended as they are scored, so a pause mid-eval resumes instead of
     # re-scoring what has already been paid for.
+    # model_id makes the resume cache checkpoint-aware. Without it, continuing a
+    # round's training and re-running eval reuses the PREVIOUS checkpoint's rows and
+    # reports its scores for the new model, with no API calls to reveal it.
     base_eval = ev.run_eval(
         cfg, sel.eval, generate=_gen(base_client), label="base",
         rows_path=round_dir / "eval_rows_base.jsonl", task=task,
+        model_id=cfg.base_model,
     )
     checkpoint_state("eval_tuned")
     tuned_eval = ev.run_eval(
         cfg, sel.eval, generate=_gen(tuned_client), label=f"round{round_n}",
         rows_path=round_dir / "eval_rows_tuned.jsonl", task=task,
+        model_id=checkpoint,
     )
 
     payload = {

@@ -1,10 +1,10 @@
 {
   "round": 1,
   "phase": "done",
-  "train_step": 40,
-  "train_state_path": "tinker://48413ac5-8c76-567b-b87c-9ec90a8edf7d:train:0/weights/r1-step40",
-  "sampler_path": "tinker://48413ac5-8c76-567b-b87c-9ec90a8edf7d:train:0/sampler_weights/star-round1",
-  "checkpoint": "tinker://48413ac5-8c76-567b-b87c-9ec90a8edf7d:train:0/sampler_weights/star-round1",
+  "train_step": 180,
+  "train_state_path": "tinker://2098e27b-8cbc-568c-8aee-a6b16e3b0e24:train:0/weights/r1-step180",
+  "sampler_path": "tinker://2098e27b-8cbc-568c-8aee-a6b16e3b0e24:train:0/sampler_weights/star-round1",
+  "checkpoint": "tinker://2098e27b-8cbc-568c-8aee-a6b16e3b0e24:train:0/sampler_weights/star-round1",
   "completed_rounds": [
     1
   ],

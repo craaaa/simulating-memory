@@ -258,6 +258,55 @@ def test_checkpoint_every_zero_disables_mid_round_saves(cfg, fake_tinker, tmp_pa
 
 
 # --- eval resume -------------------------------------------------------------
+def test_eval_rows_from_a_different_checkpoint_are_rescored(cfg, rev_fail, tmp_path):
+    """Resume keyed on trial_id alone is right for a pause mid-eval and wrong the
+    moment the checkpoint changes underneath it. Continuing a round's training and
+    re-running eval reused the previous model's rows and reported its scores for the
+    new model -- zero API calls, metrics identical to three decimals."""
+    from rationales import evaluate as ev
+
+    rows_path = tmp_path / "eval_rows_tuned.jsonl"
+    calls = []
+
+    def generate(prompt, n):
+        calls.append(prompt)
+        return [P.build_completion("r", rev_fail.user_digits)]
+
+    def run(model_id):
+        return ev.run_eval(
+            cfg, [rev_fail], generate=generate, label="r1",
+            rows_path=rows_path, model_id=model_id,
+        )
+
+    run("tinker://ckpt-A")
+    assert len(calls) == 1
+    run("tinker://ckpt-A")          # same model: the paid-for row is reused
+    assert len(calls) == 1
+    out = run("tinker://ckpt-B")    # new model: stale row dropped, trial re-scored
+    assert len(calls) == 2
+
+    written = read_jsonl(rows_path)
+    assert len(written) == 1, "the superseded row must not linger beside the new one"
+    assert written[0]["model_id"] == "tinker://ckpt-B"
+    assert out["metrics"]["overall"]["n"] == 1
+
+
+def test_eval_resume_without_a_model_id_keeps_the_old_behavior(cfg, rev_fail, tmp_path):
+    """Callers that never pass model_id keep the plain trial_id resume."""
+    from rationales import evaluate as ev
+
+    rows_path = tmp_path / "eval_rows.jsonl"
+    calls = []
+
+    def generate(prompt, n):
+        calls.append(prompt)
+        return [P.build_completion("r", rev_fail.user_digits)]
+
+    for _ in range(2):
+        ev.run_eval(cfg, [rev_fail], generate=generate, label="r", rows_path=rows_path)
+    assert len(calls) == 1
+
+
 def test_eval_resumes_from_scored_rows(cfg, rev_fail, fwd_fail, tmp_path):
     from rationales import evaluate as ev
 

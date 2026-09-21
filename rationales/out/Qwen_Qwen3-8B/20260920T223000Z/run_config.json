@@ -12,7 +12,7 @@
     "leak_filter": true,
     "sibling_context": true,
     "learning_rate": 0.0001,
-    "steps_1": 60,
+    "steps_1": 200,
     "step_growth": 1.2,
     "warmup_steps": 100,
     "batch_size": 8,
@@ -33,10 +33,10 @@
     "tinker_pricing_verified_on": "2026-09-10"
   },
   "git_provenance": {
-    "commit": "ad211be975a96e8e878f3a4858dfb5300ed6b760",
+    "commit": "b0e1015973f940c6fb52a39fae7f25da71342258",
     "branch": "feat-rationales",
     "tags": [],
-    "dirty": false,
+    "dirty": true,
     "prompt_diffs": {
       "bench/tasks/wm_prompt_parts.py": null,
       "bench/tasks/wm_mcq_common.py": null,

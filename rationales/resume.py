@@ -39,6 +39,22 @@ class AppendSink:
             f.write(line)
             f.write("\n")
 
+    def replace(self, rows: List[Dict[str, Any]]) -> None:
+        """Rewrite the file with exactly these rows.
+
+        The one case appending cannot serve: some rows on disk are no longer valid --
+        scored by a model that has since been trained further -- and keeping them would
+        mix two models' results into one metric. Written via a temp file so an
+        interrupted rewrite cannot leave a half-file where paid-for rows used to be.
+        """
+        tmp = self.path.with_suffix(self.path.suffix + ".tmp")
+        with self._lock:
+            with tmp.open("w", encoding="utf-8") as f:
+                for row in rows:
+                    f.write(json.dumps(row, ensure_ascii=False))
+                    f.write("\n")
+            tmp.replace(self.path)
+
     def rows(self) -> List[Dict[str, Any]]:
         if not self.path.is_file():
             return []
