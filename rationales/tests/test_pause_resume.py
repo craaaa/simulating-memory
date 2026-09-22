@@ -257,6 +257,57 @@ def test_checkpoint_every_zero_disables_mid_round_saves(cfg, fake_tinker, tmp_pa
     assert seen == []
 
 
+def test_pool_rows_from_a_different_sampler_are_resampled(cfg, rev_fail, tmp_path):
+    """The sampling analogue of the eval-cache bug. Within a round the sampler never
+    changes, so this is latent -- until a round is re-trained and then resumed, at
+    which point the pool holds completions from a checkpoint the round no longer uses
+    and would train on another model's output."""
+    pool = tmp_path / "sample_pool.jsonl"
+    calls = []
+
+    def generate(prompt, n):
+        calls.append(prompt)
+        return [P.build_completion("r", rev_fail.user_digits)]
+
+    def run(sampler_id):
+        return sample_round(
+            cfg, [rev_fail], generate=generate, pool_path=pool,
+            resume=pool.is_file(), sampler_id=sampler_id,
+        )
+
+    run("tinker://ckpt-A")
+    assert len(calls) == 1
+    run("tinker://ckpt-A")                      # same sampler: reused
+    assert len(calls) == 1
+    run("tinker://ckpt-B")                      # new sampler: re-sampled
+    assert len(calls) == 2
+
+    rows = read_jsonl(pool)
+    assert {r["sampler_id"] for r in rows} == {"tinker://ckpt-B"}
+
+
+def test_training_is_not_skipped_when_the_corpus_changed(cfg, session, fake_tinker,
+                                                         selection, tmp_path):
+    """A stored checkpoint short-circuits training. Valid only if it trained on THIS
+    corpus -- after reparse_pool changed a corpus from 0 accepted to 2324, the round
+    would otherwise have reported a checkpoint fitted to different data."""
+    trials = selection.train + selection.eval
+    fake_tinker.responder = _responder(trials)
+    r1 = run_round(cfg, session, tmp_path, selection, round_n=1, sampler_path=None)
+    n_trained = len(fake_tinker.training_clients)
+
+    # Same corpus, checkpoint present: training is skipped.
+    state = RunState(round=1, phase="train", checkpoint=r1["checkpoint"])
+    run_round(cfg, session, tmp_path, selection, round_n=1, sampler_path=None, state=state)
+    assert len(fake_tinker.training_clients) == n_trained
+
+    # Corpus shrinks: the stored checkpoint no longer describes it, so it retrains.
+    smaller = Selection(train=selection.train[:1], eval=selection.eval, report=selection.report)
+    state = RunState(round=1, phase="train", checkpoint=r1["checkpoint"])
+    run_round(cfg, session, tmp_path, smaller, round_n=1, sampler_path=None, state=state)
+    assert len(fake_tinker.training_clients) > n_trained
+
+
 # --- eval resume -------------------------------------------------------------
 def test_eval_rows_from_a_different_checkpoint_are_rescored(cfg, rev_fail, tmp_path):
     """Resume keyed on trial_id alone is right for a pause mid-eval and wrong the

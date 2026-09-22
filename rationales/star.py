@@ -127,6 +127,7 @@ def run_round(
         sample_report = sample_round(
             cfg, sel.train, generate=generate, pool_path=pool_path,
             resume=pool_path.is_file(), task=task,
+            sampler_id=sampler_path or cfg.base_model,
         )
         write_json(round_dir / "sample_report.json", sample_report)
         checkpoint_state("filter")
@@ -141,6 +142,25 @@ def run_round(
     checkpoint_state("train")
 
     # --- line 7: train from the ORIGINAL base model ------------------------
+    # A stored checkpoint means this round already trained, so training is skipped.
+    # That is only valid if it trained on THIS corpus: re-parsing a pool or resuming
+    # after the corpus changed would otherwise reuse a checkpoint fitted to different
+    # data and report it as this round's result.
+    prior_corpus_size = _read_json(round_dir / "train_log.json").get("corpus_size")
+    corpus_changed = (
+        state.checkpoint is not None
+        and prior_corpus_size is not None
+        and prior_corpus_size != len(corpus)
+    )
+    if corpus_changed:
+        print(
+            f"[round {round_n}] corpus is now {len(corpus)} examples but the stored "
+            f"checkpoint trained on {prior_corpus_size}; retraining from base"
+        )
+        state.checkpoint = None
+        state.train_step = 0
+        state.train_state_path = None
+
     if state.checkpoint:
         train_log = _read_json(round_dir / "train_log.json")
         checkpoint = state.checkpoint
@@ -377,8 +397,11 @@ def dry_run(cfg: StarConfig, *, round_n: int = 1, task: Any = None) -> Dict[str,
         _tok = _session.tokenizer
         est = lambda text: len(_session.render_prompt_ids(text))  # noqa: E731
         basis = f"exact tokens from {type(_tok).__name__} via the chat template"
-    except Exception:
-        pass
+    except Exception as exc:
+        # Falls back to the chars/token heuristic, which under-counts few-shot prompts
+        # by ~13%. `basis` says which was used, but record the reason too -- a silently
+        # degraded estimate is how a cost gate gets passed on a bad number.
+        basis = f"chars/token heuristic ({type(exc).__name__}: {exc})"
 
     trials, _ = task.load(cfg)
     sel = task.select(trials, seed=cfg.seed, eval_frac=cfg.eval_frac)

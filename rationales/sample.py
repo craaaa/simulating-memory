@@ -55,10 +55,15 @@ class SampleRow:
     def answer(self) -> Any:
         return self.digits
 
-    def to_json(self, task: Any = None) -> Dict[str, Any]:
+    def to_json(self, task: Any = None, sampler_id: Optional[str] = None) -> Dict[str, Any]:
         task = task or default_task()
         return {
             "trial_id": task.item_id(self.trial),
+            # Which model produced this completion. Resume reuses rows only from the
+            # same sampler: within one round it never changes, but a round that is
+            # re-trained and then resumed would otherwise silently reuse rows drawn
+            # from the superseded checkpoint. The eval cache had this exact bug.
+            **({"sampler_id": sampler_id} if sampler_id is not None else {}),
             **task.item_fields(self.trial),
             "via": self.via,
             "sample_index": self.sample_index,
@@ -119,6 +124,7 @@ def sample_round(
     pool_path: Path,
     resume: bool = False,
     task: Any = None,
+    sampler_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run lines 3-4 over the whole train split and write every sample to pool_path.
 
@@ -137,6 +143,18 @@ def sample_round(
     already: set = set()
     if resume:
         prior = read_jsonl(pool_path)
+        if sampler_id is not None:
+            stale = [r for r in prior if r.get("sampler_id") != sampler_id]
+            if stale:
+                # Off-policy rows: drawn from a checkpoint this round no longer uses.
+                # Keeping them would train on another model's completions.
+                kept = [r for r in prior if r.get("sampler_id") == sampler_id]
+                AppendSink(pool_path).replace(kept)
+                print(
+                    f"[sample] dropped {len(stale)} pool row(s) drawn from a different "
+                    f"sampler; re-sampling those trials from {sampler_id or 'base'}"
+                )
+                prior = kept
         already = completed_trial_ids(prior, cfg.k)
         sink = AppendSink(pool_path)
     else:
@@ -157,7 +175,7 @@ def sample_round(
         # trial correctly reads as not-yet-exhausted, so it is retried rather than
         # silently dropped).
         for r in rows:
-            sink.append(r.to_json(task))
+            sink.append(r.to_json(task, sampler_id))
 
         if not any(r.accepted for r in rows):
             # Line 4: rationalization, only for problems line 3 failed. Line 4 runs
@@ -168,7 +186,7 @@ def sample_round(
                 trial, rat_prompt, RATIONALIZATION, generate(rat_prompt, cfg.k), task
             )
             for r in rat_rows:
-                sink.append(r.to_json(task))
+                sink.append(r.to_json(task, sampler_id))
             rows += rat_rows
         return rows
 
