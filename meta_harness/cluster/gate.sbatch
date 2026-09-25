@@ -170,8 +170,18 @@ fi
 
 # --- run the gate ----------------------------------------------------------
 echo "=== running wm_word_recognition gate"
+# --repeat 50 MUST be passed on the command line.  bench/cli.py:179 only WRITES
+# the CLI --repeat into run_cfg; it never reads run.repeat back out, so a YAML
+# `run: repeat:` is ignored for task sizing.  Without this flag the task falls
+# back to task_config n_repeat (5) and the gate would compare 5 participants
+# against the released run's 50, which is not a comparison at all.
+#
+# 50 is what the released runs used, recovered from their row counts:
+# word_recognition 50 rows; digit span 19 spans x (2*50) = 1900;
+# story recall 4 stories x 50 = 200; nback 3 levels x 50 = 150.
 "$PY" -m bench.cli run \
   --config meta_harness/cluster/gate_word_recognition.yaml \
+  --repeat 50 \
   -t wm_word_recognition
 RC=$?
 
