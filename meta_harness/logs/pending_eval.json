@@ -1,23 +1,19 @@
 {
-  "iteration": 3,
+  "iteration": 4,
   "candidates": [
-    "episodic_reset_v2",
-    "primacy_v2",
-    "episodic_primacy"
-  ],
-  "also_running": [
-    "baseline"
+    "episodic_reset_v3"
   ],
   "instrument": [],
   "instrument_reasons": {},
-  "notes": "Iteration 3 repairs the two iteration-2 candidates whose mechanisms were confirmed but whose results were disqualified, and composes them. episodic_reset_v2 keeps the history reset and fixes the absorbing state that silenced 36 of 50 n=1 participants; primacy_v2 keeps the confirmed U-shaped retention and limits maintenance to MAX_KEYS-1 when chunks arrive in one simultaneous assistant message, which is where primacy's craft capability overshoot came from. episodic_primacy is a coordinator-written composition over disjoint method sets, contributing no new mechanism; it exists to measure whether the two repairs are additive, redundant or conflicting, and it asserts at import that BOTH are active so a silent fallback fails the run rather than mislabelling a result. No instrument rows this wave: all three run the full 8-task search set and none changes what a task measures.",
-  "repeat_baseline": {
-    "job": 18536738,
-    "out_dir": "meta_harness/runs/iter3rep/baseline",
-    "purpose": "Measure the real per-task run-to-run floor. metric_noise.py bootstraps by resampling the model side of a FIXED set of rows, so it captures sampling noise but not generation-level variation between runs, and the serving stack is NOT bit-deterministic -- two provable no-ops changed 7 and 12 of 150 craft rows' generated content. This is the same harness and config as iter0/baseline, so every per-task delta it shows is pure run-to-run variation.",
-    "quantities_requested": [
-      "narrative_qa per-row score agreement and the resulting humanlikeness delta -- the only search-set cell whose scored noise is uncharacterised, and the cell on which three of four iteration-2 candidates were charged a floor violation, primacy's by 0.0009",
-      "craft_task five-rule-trial accuracy over the 50 overflowing rows, to confirm the observed 0.0000/0.0000 no-op band is not a two-observation accident"
-    ]
-  }
+  "notes": "One arm. episodic_reset_v2 passed its precondition and produced the project's first creditable large gain (variable_mapping 0.3554 -> 0.6854, A4 at 550 errors, n=3 store carrying letter identity in 0.9843 of values), and was rejected only for silencing the agent on n-back at levels 2 and 3. v3 keeps all of that and adds a task-agnostic response obligation, stated last and made explicitly independent of whether the store operation succeeded.",
+  "why_this_fix": "The prompt-competition hypothesis I briefed was refuted on four independent grounds, and the real cause is narrower. All 38 of v2's unparseable variable_mapping answers are literal <tool_call> strings emitted as plain text, and excluding them its mean reply length is 13.09 against the baseline's 13.10 with the same maximum of 14 -- so there is no verbosity and the format instruction was obeyed on every turn the model answered at all. They occur on turns where allow_tools=False, i.e. tool_choice='none': the model wanted to write, was denied the tool, and emitted the call INSTEAD of the answer. On n-back that string parses to None and the trial is scored unanswered. So it is a task-set failure, not a memory failure -- at n=3 v2 holds 3.82 keys at 0.9843 letter identity and is 0.6225 accurate on what it does answer.",
+  "carried_forward_for_iteration_5": {
+    "finding": "The write_key refusal loop perfectly separates n=3 `answered`, and this reframes a result that has been in the record since wave 0.",
+    "evidence": "Arms that REFUSE a write to a full store: baseline 6.82, random_decay 6.56, random_decay_v2 5.26, chunk_limit 5.82, serial_recognition 5.22 -- all at keys_held 3.86-3.96. Arms that EVICT: displacement, primacy, primacy_v2, all exactly 14.0 at keys_held 3.98-4.00. Five against three, no overlap. full_context answers 14.0 at keys_held 1.06 and is not a counterexample because it never fills the store.",
+    "consequence": "The baseline's own n=3 omission is an artifact of the refusal loop rather than a memory limit, so the surface I told the iteration-4 proposer was a dead end is the live lever. A refusing 4-slot store costs up to three tool calls to change one slot (refused write, delete_key, write) against a cap of max(6, 1.5*interactions).",
+    "second_finding": "tool_call_cap_hit fires on 14 of 17 n-back steps at n=2 and 16 of 18 at n=3, measured by driving the real run_nback_block with a buffer stub. The harness is silently truncating part of the agent's store update on most turns at n>=2. Not previously recorded anywhere.",
+    "caveat_mine": "Eviction does NOT rescue the step()-rewrite failure: episodic_primacy both evicts and rewrites step() and answers 3.9 at n=3. So the refusal loop and the step() rewrite are independent causes and iteration 5 cannot assume fixing one fixes the other.",
+    "deliberately_not_touched_in_v4": "_tool_call_cap(). Raising it would let the agent churn faster without holding more, and variable_mapping's humanlike errors are capacity-bound (674 of 1500 questions ask about an already-evicted name), so it risks the headline to buy something it cannot buy -- and it would make v3 two mechanisms. v3's P9 measures it from the newly persisted step_log instead, as iteration 5's decision input."
+  },
+  "instrument_note": "No instrument rows: the single arm runs the full 8-task search set and does not change what any task measures."
 }
