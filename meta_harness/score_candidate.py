@@ -42,6 +42,12 @@ from meta_harness import protocol_match as PM  # noqa: E402
 HUMAN_A2_RATIO = 6.094
 HUMAN_A3_BLEU = 0.002
 HUMAN_A3_WORDS = 137.2
+# Median clipped 4-gram precision over the 53 usable human story-recall records,
+# recomputed from payload.recallText against the transcripts in data/. The MEDIAN,
+# not the mean: the distribution is heavily skewed -- 37 of 53 humans sit below
+# 0.05 but 5 sit above 0.5 (one at 1.0000), so the mean of 0.1106 describes those
+# five rather than a typical participant and would flatter a verbatim candidate.
+HUMAN_A3_PRECISION = 0.0192
 
 FLOOR = 0.03                      # max allowed per-task regression vs baseline
 
@@ -83,6 +89,27 @@ HUMAN_BEST_SPAN = 6.88            # humans stop here; baseline reaches 18.4
 A1_LEAK_TOLERANCE = 0.03
 A3_BLEU_TOLERANCE = 0.02          # absolute; human BLEU is ~0 so this is a cap
 A3_WORD_TOLERANCE = 40.0          # words, around the human 137.2
+A3_PRECISION_TOLERANCE = 0.02     # on length-free 4-gram precision
+
+# BLEU is reported but no longer enforced. It is a length proxy, not a
+# verbatimness measure: Spearman(recall length, BLEU) = 0.822 pooled over 1000
+# model rows, and every one of the 121 rows under 60 words scores exactly 0.0000.
+# So it cannot separate a verbatim short recall from an abstracted one, and it
+# fires on any candidate that lengthens recall toward the human 135.6 -- which is
+# exactly what the A3 WORD guard rewards, so the two guards contradicted each
+# other. displacement is the case that exposed this: its word_distance improved
+# 15.8 -> 9.0 while its bleu_distance "worsened" 0.0031 -> 0.0413, on one and the
+# same move. `precision_distance` replaces it as the enforced quantity.
+#
+# Validated on the runs already scored, which is the requirement any replacement
+# has to meet -- it must still catch the real regurgitation and must stop
+# punishing the length move:
+#   full_context  median precision 1.0000, distance 0.9808  -> still REJECTED
+#                 (98.9% of its 4-grams are lifted from the transcript verbatim)
+#   baseline      median precision 0.0414, distance 0.0221
+#   displacement  median precision 0.0345, distance 0.0153  -> now CLEARS, and is
+#                 in fact closer to the human median than the baseline is
+A3_ENFORCED_FIELDS = ("precision_distance", "word_distance")
 
 # Smallest per-task delta that is not sampling noise: 2 x the bootstrap SE of a
 # DIFFERENCE between two runs. From `metric_noise.py`, which resamples the model
@@ -177,7 +204,17 @@ def axes(run_dir: Path) -> dict[str, Any]:
                 "human_bleu": HUMAN_A3_BLEU, "human_words": HUMAN_A3_WORDS,
                 "bleu_distance": round(abs(bleu - HUMAN_A3_BLEU), 4),
                 "word_distance": round(abs(words - HUMAN_A3_WORDS), 1),
+                "bleu_enforced": False,
             }
+            # Length-free verbatimness, the enforced quantity. Median, because the
+            # human distribution is skewed (see HUMAN_A3_PRECISION).
+            prec = ES.a3_precision_model(str(run_dir))
+            if prec:
+                med = float(np.median(prec))
+                res["A3"]["precision"] = round(med, 4)
+                res["A3"]["human_precision"] = HUMAN_A3_PRECISION
+                res["A3"]["precision_distance"] = round(abs(med - HUMAN_A3_PRECISION), 4)
+                res["A3"]["n_precision"] = len(prec)
 
     # N-Back per level, at matched granularity on both sides. Not an axis -- a
     # diagnostic, because the per-row humanlikeness this record reports elsewhere is
@@ -239,7 +276,7 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
     guards: list[str] = []
     base_axes = axes(baseline_dir) if baseline_dir is not None else {}
     for key, tol, field in (("A1", A1_LEAK_TOLERANCE, "distance"),
-                            ("A3", A3_BLEU_TOLERANCE, "bleu_distance"),
+                            ("A3", A3_PRECISION_TOLERANCE, "precision_distance"),
                             ("A3", A3_WORD_TOLERANCE, "word_distance")):
         cand_ax, base_ax = rec["axes"].get(key), base_axes.get(key)
         if not cand_ax or not base_ax:

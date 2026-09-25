@@ -16,11 +16,27 @@ and each one a noise-injecting harness would fail:
       drives that ratio to 1.
 
   A3  story recall, verbatim vs gist
-      BLEU of recall against the transcript.  Humans reconstruct gist
-      (BLEU ~ 0); a harness that stores text verbatim scores high even when
-      its coverage score matches humans.
+      Humans reconstruct gist; a harness that stores text verbatim scores high
+      even when its coverage score matches humans.
+
+      Measured two ways, and only the second is enforced.  `bleu` is what the
+      released data ships and is kept for continuity with the five runs already
+      scored against it, but BLEU's brevity penalty makes it a length proxy
+      rather than a verbatimness measure: pooled over 1000 model rows from five
+      runs, Spearman(recall length, BLEU) = 0.822, and all 121 rows under 60
+      words score exactly 0.0000 -- min and max alike.  It therefore cannot
+      distinguish a perfectly verbatim short recall from an abstracted one, and
+      it penalises any candidate that moves recall length toward the human
+      135.6, which is the opposite of what the A3 word guard rewards.
+      `verbatim_precision` is clipped modified 4-gram precision with no brevity
+      penalty: the fraction of the recall's own 4-grams lifted from the source.
+      Within the human records Spearman(length, precision) = 0.128, i.e. humans
+      vary in length and in verbatimness independently, which is the property
+      BLEU lacks.
 """
+import collections
 import json
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -29,6 +45,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 HUMAN = ROOT / "runs/human"
+DATA = ROOT / "data"
 
 
 def pct(x):
@@ -146,6 +163,86 @@ def a3_model(model_dir):
             out.append((_num(m["bleuScore"]),
                         _num(m.get("embeddingSimilarity")),
                         len(str(row.get("recall_text") or "").split())))
+    return out
+
+
+# ------------------------------------- A3, length-free verbatimness (enforced)
+_WORD = re.compile(r"[a-z0-9']+")
+_TRANSCRIPT_CACHE: dict[str, str | None] = {}
+
+
+def _toks(s):
+    return _WORD.findall(str(s).lower())
+
+
+def _ngrams(t, n):
+    return collections.Counter(tuple(t[i:i + n]) for i in range(len(t) - n + 1))
+
+
+def _transcript(story_file):
+    """Story transcripts live in data/ under their basename on both sides: the
+    human records carry payload.storyFile like 'transcript/pieman_transcript.txt'
+    while the model rows carry story_source_file, and only the basename is
+    common to the two."""
+    if not story_file:
+        return None
+    name = Path(str(story_file)).name
+    if name not in _TRANSCRIPT_CACHE:
+        p = DATA / name
+        _TRANSCRIPT_CACHE[name] = p.read_text(errors="replace") if p.exists() else None
+    return _TRANSCRIPT_CACHE[name]
+
+
+def verbatim_precision(recall_text, story_file, n=4):
+    """Clipped modified n-gram precision of the recall against its source, with
+    NO brevity penalty, so a short recall is not forced to zero.
+
+    Returns None when the recall is shorter than n tokens, which is the only case
+    where the quantity is genuinely undefined rather than merely small.
+    """
+    src = _transcript(story_file)
+    if src is None:
+        return None
+    cand, ref = _ngrams(_toks(recall_text), n), _ngrams(_toks(src), n)
+    total = sum(cand.values())
+    if total == 0:
+        return None
+    hit = sum(min(c, ref.get(g, 0)) for g, c in cand.items())
+    return hit / total
+
+
+def a3_precision_human(n=4):
+    """Per-participant verbatim precision for the human records.
+
+    Recomputed from payload.recallText rather than read from summary.bleu, which
+    the web app precomputed and which carries the brevity penalty. This is the
+    same recomputation path already validated for embeddingSimilarity (stored
+    0.6041 vs recomputed 0.5911 over these records, correlation 0.943).
+    """
+    out = []
+    for f in sorted((HUMAN / "semantic-memory-story-recall").glob("run-*.json")):
+        payload = json.load(open(f)).get("payload") or {}
+        text = (payload.get("recallText") or "").strip()
+        if not text:
+            continue
+        p = verbatim_precision(text, payload.get("storyFile"), n)
+        if p is not None:
+            out.append(p)
+    return out
+
+
+def a3_precision_model(model_dir, n=4):
+    """Per-participant verbatim precision for a model run."""
+    out = []
+    path = ROOT / model_dir / "tasks/wm_semantic_story_recall.jsonl"
+    for line in open(path):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        p = verbatim_precision(row.get("recall_text") or "",
+                               row.get("story_source_file") or row.get("story_name"), n)
+        if p is not None:
+            out.append(p)
     return out
 
 
