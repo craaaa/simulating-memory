@@ -178,4 +178,31 @@ for.
 
 ## Running notes
 
-(appended below as things happen)
+**Job 18491587 — local baseline (candidate 0), 8 search tasks.** Submitted after
+the gate failure, since the baseline must be measured on the same serving stack as
+the candidates. Running. When it lands:
+
+    python meta_harness/score_candidate.py meta_harness/runs/iter0/baseline \
+        --json-out meta_harness/logs/baseline_scores.json
+
+That produces the per-task vector every later `delta_vs_baseline` and per-task
+floor is computed against.
+
+**Seed population now.** Three of the spec's four baselines exist and all pass
+the offline interface check:
+
+- `baseline` — released compactor unmodified; the number to beat and a plumbing
+  test.
+- `random_decay` — adversary, lower anchor. Must score well on humanlikeness and
+  badly on A2, or the axes are not discriminating.
+- `full_context` — control, upper anchor. Bottleneck removed, stimulus kept
+  verbatim. Isolates how much humanlikeness comes from the memory module rather
+  than the base model. Expected worst; if it is not, the 4-slot bottleneck is not
+  doing the work it is credited with, which would be a finding in its own right.
+
+The fourth, the summarizer, already exists in `bench` as `SummarizerAgent` with
+its own `sum_*` task registrations, so it is run as a separate family rather than
+injected as a candidate.
+
+**Not started, and why:** the outer loop. See the proposer-auth blocker above.
+Everything it needs is built and tested.
