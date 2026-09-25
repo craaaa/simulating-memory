@@ -1,0 +1,42 @@
+[
+  {
+    "run": "baseline",
+    "formula": "raw",
+    "n_model": 150,
+    "unique_values": 2,
+    "mean_score": 0.992,
+    "humanlikeness": 0.3554,
+    "se_of_delta": 0.0087,
+    "min_credible_delta": 0.0174
+  },
+  {
+    "run": "baseline",
+    "formula": "matched",
+    "n_model": 150,
+    "unique_values": 2,
+    "mean_score": 0.992,
+    "humanlikeness": 0.3587,
+    "se_of_delta": 0.0048,
+    "min_credible_delta": 0.0096
+  },
+  {
+    "run": "displacement",
+    "formula": "raw",
+    "n_model": 150,
+    "unique_values": 2,
+    "mean_score": 0.9987,
+    "humanlikeness": 0.3484,
+    "se_of_delta": 0.0024,
+    "min_credible_delta": 0.0048
+  },
+  {
+    "run": "displacement",
+    "formula": "matched",
+    "n_model": 150,
+    "unique_values": 4,
+    "mean_score": 0.9767,
+    "humanlikeness": 0.3784,
+    "se_of_delta": 0.0089,
+    "min_credible_delta": 0.0178
+  }
+]
