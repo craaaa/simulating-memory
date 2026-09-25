@@ -204,8 +204,18 @@ def main() -> int:
 
     # Pull identity and provenance from the manifest the runner wrote, so a
     # record cannot disagree with the code that produced it.
-    manifest_path = run_dir / "manifest.json"
-    if manifest_path.exists():
+    #
+    # The run_dir passed in is bench's per-model output dir (.../<cand>/<model>/),
+    # but run_candidate.py writes the manifest one level up, beside the candidate
+    # source. Check both, or every record silently falls back to the MODEL name as
+    # its id -- which collides across candidates and, with --record replacing rows
+    # by id, would overwrite a previously scored candidate.
+    manifest_path = next(
+        (p for p in (run_dir / "manifest.json", run_dir.parent / "manifest.json")
+         if p.exists()),
+        None,
+    )
+    if manifest_path is not None:
         man = json.loads(manifest_path.read_text())
         rec["id"] = args.id or man.get("id") or run_dir.name
         rec["parent"] = man.get("parent")
