@@ -149,30 +149,13 @@ def a3_model(model_dir):
     return out
 
 
-# ---------------------------------------------------------------------- report
-MODELS = sys.argv[1:] or [
-    "runs/compactor/claude-opus-4-6",
-    "runs/compactor/qwen_qwen3-30b-a3b-instruct-2507",
-    "runs/compactor/qwen_qwen3-8b_false",
-]
-
-print("A1  DIGIT SPAN threshold sharpness")
-print(f"    {'source':<44}{'n':>5}{'sub_span_fail':>15}{'supra_span_hit':>16}")
-h = a1_human()
-print(f"    {'HUMANS':<44}{len(h):>5}"
-      f"{pct(np.nanmean([x[0] for x in h])):>15}{pct(np.nanmean([x[1] for x in h])):>16}")
-for md in MODELS:
-    v = a1_model(md)
-    print(f"    {Path(md).name:<44}{len(v):>5}"
-          f"{pct(np.nanmean([x[0] for x in v])):>15}{pct(np.nanmean([x[1] for x in v])):>16}")
-
 def a2_ratio_ci(miss, fa, n_boot=2000, seed=0):
     """Bootstrap the miss/false-alarm ratio.
 
-    The ratio's denominator is small: word recognition terminates at 3 strikes,
-    so each participant contributes only the trials they attempted.  A harness
-    change that shifts first_error_at moves this axis without fixing the
-    asymmetry, so the CI and the trial count are reported alongside it.
+    The denominator is small: word recognition terminates at 3 strikes, so each
+    participant contributes only the trials they attempted.  A harness change
+    that shifts first_error_at moves this axis without fixing the asymmetry, so
+    the CI and the trial count are reported alongside it.
     """
     rng = np.random.default_rng(seed)
     miss, fa = np.asarray(miss, float), np.asarray(fa, float)
@@ -184,31 +167,53 @@ def a2_ratio_ci(miss, fa, n_boot=2000, seed=0):
     return np.nanpercentile(out, [2.5, 97.5])
 
 
-print("\nA2  WORD RECOGNITION error asymmetry")
-print(f"    {'source':<44}{'n':>5}{'miss_rate':>11}{'fa_rate':>9}{'miss/fa':>9}"
-      f"{'ratio_ci':>18}{'trials':>8}")
-hm, hf, ht = a2_human()
-lo, hi = a2_ratio_ci(hm, hf)
-print(f"    {'HUMANS':<44}{len(hm):>5}{pct(np.nanmean(hm)):>11}{pct(np.nanmean(hf)):>9}"
-      f"{pct(np.nanmean(hm)/np.nanmean(hf) if np.nanmean(hf) else np.nan):>9}"
-      f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(ht):>8.1f}")
-for md in MODELS:
-    m, f, t = a2_model(md)
-    r = np.nanmean(m)/np.nanmean(f) if f and np.nanmean(f) else np.nan
-    lo, hi = a2_ratio_ci(m, f)
-    print(f"    {Path(md).name:<44}{len(m):>5}{pct(np.nanmean(m)):>11}"
-          f"{pct(np.nanmean(f)):>9}{pct(r):>9}"
-          f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(t):>8.1f}")
+# ---------------------------------------------------------------------- report
+def main() -> None:
+    MODELS = sys.argv[1:] or [
+        "runs/compactor/claude-opus-4-6",
+        "runs/compactor/qwen_qwen3-30b-a3b-instruct-2507",
+        "runs/compactor/qwen_qwen3-8b_false",
+    ]
 
-print("\nA3  STORY RECALL verbatim vs gist")
-print(f"    {'source':<44}{'n':>5}{'BLEU':>9}{'embed_sim':>11}{'words':>8}")
-a = a3_human()
-print(f"    {'HUMANS':<44}{len(a):>5}{pct(np.nanmean([x[0] for x in a])):>9}"
-      f"{pct(np.nanmean([x[1] for x in a])):>11}{pct(np.nanmean([x[2] for x in a])):>8}")
-for md in MODELS:
-    v = a3_model(md)
-    if not v:
-        print(f"    {Path(md).name:<44}    - (no bleu logged)")
-        continue
-    print(f"    {Path(md).name:<44}{len(v):>5}{pct(np.nanmean([x[0] for x in v])):>9}"
-          f"{pct(np.nanmean([x[1] for x in v])):>11}{pct(np.nanmean([x[2] for x in v])):>8}")
+    print("A1  DIGIT SPAN threshold sharpness")
+    print(f"    {'source':<44}{'n':>5}{'sub_span_fail':>15}{'supra_span_hit':>16}")
+    h = a1_human()
+    print(f"    {'HUMANS':<44}{len(h):>5}"
+          f"{pct(np.nanmean([x[0] for x in h])):>15}{pct(np.nanmean([x[1] for x in h])):>16}")
+    for md in MODELS:
+        v = a1_model(md)
+        print(f"    {Path(md).name:<44}{len(v):>5}"
+              f"{pct(np.nanmean([x[0] for x in v])):>15}{pct(np.nanmean([x[1] for x in v])):>16}")
+
+    print("\nA2  WORD RECOGNITION error asymmetry")
+    print(f"    {'source':<44}{'n':>5}{'miss_rate':>11}{'fa_rate':>9}{'miss/fa':>9}"
+          f"{'ratio_ci':>18}{'trials':>8}")
+    hm, hf, ht = a2_human()
+    lo, hi = a2_ratio_ci(hm, hf)
+    print(f"    {'HUMANS':<44}{len(hm):>5}{pct(np.nanmean(hm)):>11}{pct(np.nanmean(hf)):>9}"
+          f"{pct(np.nanmean(hm)/np.nanmean(hf) if np.nanmean(hf) else np.nan):>9}"
+          f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(ht):>8.1f}")
+    for md in MODELS:
+        m, f, t = a2_model(md)
+        r = np.nanmean(m)/np.nanmean(f) if f and np.nanmean(f) else np.nan
+        lo, hi = a2_ratio_ci(m, f)
+        print(f"    {Path(md).name:<44}{len(m):>5}{pct(np.nanmean(m)):>11}"
+              f"{pct(np.nanmean(f)):>9}{pct(r):>9}"
+              f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(t):>8.1f}")
+
+    print("\nA3  STORY RECALL verbatim vs gist")
+    print(f"    {'source':<44}{'n':>5}{'BLEU':>9}{'embed_sim':>11}{'words':>8}")
+    a = a3_human()
+    print(f"    {'HUMANS':<44}{len(a):>5}{pct(np.nanmean([x[0] for x in a])):>9}"
+          f"{pct(np.nanmean([x[1] for x in a])):>11}{pct(np.nanmean([x[2] for x in a])):>8}")
+    for md in MODELS:
+        v = a3_model(md)
+        if not v:
+            print(f"    {Path(md).name:<44}    - (no bleu logged)")
+            continue
+        print(f"    {Path(md).name:<44}{len(v):>5}{pct(np.nanmean([x[0] for x in v])):>9}"
+              f"{pct(np.nanmean([x[1] for x in v])):>11}{pct(np.nanmean([x[2] for x in v])):>8}")
+
+
+if __name__ == "__main__":
+    main()
