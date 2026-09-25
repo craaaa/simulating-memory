@@ -1,4 +1,24 @@
 {
-  "iteration": 1,
-  "candidates": ["displacement"]
+  "iteration": 2,
+  "candidates": [
+    "primacy",
+    "episodic_reset",
+    "serial_recognition",
+    "serial_recognition_open",
+    "chunk_limit"
+  ],
+  "arms": {
+    "serial_recognition_open": {
+      "source": "serial_recognition",
+      "env": {"MH_SERIAL_RECOGNITION_MASK": "0"},
+      "tasks": ["wm_word_recognition"],
+      "role": "ablation",
+      "note": "Same source as serial_recognition with the mask off: one trial per call, identical directive, stitching and token budget, but the other 99 trial lines stay visible. Establishes that the masked arm's effect is memory rather than framing. MANIFEST['id'] switches with the env var so the two rows cannot overwrite each other under --record."
+    }
+  },
+  "instrument": [
+    "serial_recognition",
+    "serial_recognition_open"
+  ],
+  "notes": "Four disjoint mechanism surfaces, one process each: primacy owns WorkingMemory.write_key eviction order, chunk_limit owns within-slot content, serial_recognition owns recall()'s trial-list presentation, episodic_reset owns step()'s conversation history. All four are built on the plain baseline, so one method body separates each from the control. serial_recognition is recorded as an instrument and excluded from the frontier: closing the word-recognition leak makes that task's humanlikeness rise arithmetically, and A2 changes meaning for that row alone. chunk_limit doubles as the control for it -- the ceiling group was measured to be reading the studied list off the prompt, so gutting the store by 74% of its content should leave word_recognition unmoved (its P13)."
 }
