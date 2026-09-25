@@ -65,7 +65,30 @@ HUMAN_DIR = ROOT / "runs/human/working-memory-variable-mapping"
 LETTERS = "ABCDEFGH"
 
 # Measured on all 154 human participants by this module; see the docstring.
+# Read from the task rather than hard-coded, so the interleaving assumption in
+# model_trials cannot silently drift out of step with the stimulus generator.
+try:
+    from bench.tasks.variable_mapping import TURNS_PER_QUESTION
+except Exception:                                    # analysis must not hard-fail
+    TURNS_PER_QUESTION = 2
+
 HUMAN_RC_RATIO = 1.386
+# Where the humans sit between pure noise (1.0) and the most interference-shaped
+# result their own error count and relation_count distribution permit: rc_ratio
+# 1.3867 against a ceiling of 2.0372 over 152 errors in 759 trials. So humans are
+# at 37% of their attainable interference structure, NOT at the ceiling -- which
+# is what makes this the comparable target. The raw 1.386 is not reachable by a
+# model run on the 1500-trial grid below several hundred errors, because the
+# model's relation_count saturates at 10 (its ceiling is only ~1.26 at 35 errors).
+#
+# Caveat, and a comparability gap worth recording: the two sides' relation_count
+# distributions differ in shape, not just scale. The human records span 1..10
+# roughly evenly, while the model grid is [2,4,6,8,10,10,10,10,10,10] because
+# variable_mapping.py asks one question per TURNS_PER_QUESTION=2 assignments. The
+# normalisation makes the two comparable in position-between-noise-and-ceiling,
+# which is the best available, but it does not make the underlying distributions
+# the same.
+HUMAN_RC_RATIO_NORMALIZED = 0.3728
 HUMAN_INTRUSION_SHARE = 0.691
 HUMAN_INTRUSION_CHANCE = 0.577
 HUMAN_STALE_SHARE = 0.230
@@ -166,10 +189,28 @@ def model_trials(run_dir: Path) -> list[dict[str, Any]]:
                 if j < len(options):
                     selected = options[j]
 
-            turn = q.get("turn", q.get("question_index", 0))
+            # Assignments are interleaved with questions, not front-loaded:
+            # variable_mapping.py emits a question every TURNS_PER_QUESTION
+            # assignments (`if turn % TURNS_PER_QUESTION == 0`), so question k is
+            # asked immediately after assignment turn TURNS_PER_QUESTION * k and
+            # the participant has seen ALL of turns 1..TURNS_PER_QUESTION*k.
+            #
+            # This previously read `q.get("turn", q.get("question_index", 0))` and
+            # compared it against assignment turns. Model question records carry no
+            # `turn` field, so it always fell back to question_index (1..10) while
+            # assignment turns run 1..20 -- keeping k-1 assignments where 2k had
+            # been presented, an under-count of roughly 2x. Real intrusions from
+            # the unseen half were misclassified as `novel_guess`, biasing
+            # intrusion_share down. `relation_count` is len(mapping), the number of
+            # DISTINCT people known, which caps at TARGET_RELATIONS, so it cannot
+            # be used to recover the window either.
+            idx_i = int(idx) if idx is not None else 0
+            cutoff = q.get("turn")
+            if cutoff is None:
+                cutoff = TURNS_PER_QUESTION * idx_i
             before: dict[str, list[str]] = {}
             for a in asg:
-                if a.get("turn", 0) >= turn:
+                if a.get("turn", 0) > cutoff:
                     break
                 before.setdefault(a["name"], []).append(a.get("city"))
             assigned = {c for cities in before.values() for c in cities}
@@ -186,16 +227,78 @@ def model_trials(run_dir: Path) -> list[dict[str, Any]]:
     return out
 
 
+def rc_ratio_ceiling(rcs: list[float], n_errors: int) -> float | None:
+    """The largest rc_ratio attainable at this error count, given this run's own
+    relation_count distribution: put the n_errors highest-rc trials in the error
+    group and everything else in the correct group.
+
+    This exists because rc_ratio is NOT scale-free, and comparing it across runs
+    with different error counts is invalid. relation_count is len(mapping), which
+    saturates at TARGET_RELATIONS, so the distribution is bunched at the top and
+    the attainable maximum rises with the error count. Measured on the real
+    1500-trial model grid: 1.2525 at 12 errors, 1.2575 at 35, 1.2857 at 150,
+    1.3750 at 400. Iteration 1's displacement scored rc_ratio 1.2575 at exactly 35
+    errors -- its arithmetic maximum, with rc_mean_error 10.000 -- and full_context
+    scored 1.2525 at exactly 12, also its maximum. So a bare rc_ratio near 1.25
+    means "every error was late", not "errors are interference-shaped", and the
+    human 1.386 is unreachable below several hundred errors.
+    """
+    if n_errors <= 0 or n_errors >= len(rcs):
+        return None
+    s = sorted((float(r) for r in rcs if r is not None), reverse=True)
+    if n_errors >= len(s):
+        return None
+    err, cor = s[:n_errors], s[n_errors:]
+    if not err or not cor or not sum(cor):
+        return None
+    denom = sum(cor) / len(cor)
+    return (sum(err) / len(err)) / denom if denom else None
+
+
 def a4(run_dir: Path) -> dict[str, Any]:
     """A4 for one candidate run, with its distance from the human reference."""
-    res = _summarize(model_trials(run_dir))
+    trials = model_trials(run_dir)
+    res = _summarize(trials)
     res["human_rc_ratio"] = HUMAN_RC_RATIO
     res["human_intrusion_share"] = HUMAN_INTRUSION_SHARE
     if res.get("rc_ratio") is not None:
         res["rc_ratio_distance"] = round(abs(res["rc_ratio"] - HUMAN_RC_RATIO), 4)
+
+    # Raw intrusion_share is not comparable between the two sides: by late
+    # questions nearly every city has been assigned to someone, so a wrong option
+    # is "an intrusion" by construction. The model's chance level is 0.889 against
+    # the humans' 0.577, and once the assignment window was fixed the model's raw
+    # share saturated at 1.000 against a human 0.691 -- which reads as the model
+    # being MORE intrusion-prone when it is only more exposed. Above chance the two
+    # sides agree closely (model +0.111, human +0.114), so that is the comparable
+    # quantity and the raw share is kept only for continuity.
+    if res.get("intrusion_share") is not None and res.get("intrusion_chance") is not None:
+        res["intrusion_above_chance"] = round(
+            res["intrusion_share"] - res["intrusion_chance"], 4)
+        res["human_intrusion_above_chance"] = round(
+            HUMAN_INTRUSION_SHARE - HUMAN_INTRUSION_CHANCE, 4)
+
+    # Scale-free version: where does this run sit between pure noise (rc_ratio 1.0,
+    # errors independent of load) and the most interference-shaped result its own
+    # error count permits? 0.0 is noise, 1.0 is the ceiling. This is what the guard
+    # should compare, because the raw ratio's ceiling moves with n_errors.
+    rcs = [t["rc"] for t in trials if t.get("rc") is not None]
+    n_err = int(res.get("n_errors") or 0)
+    ceil = rc_ratio_ceiling(rcs, n_err)
+    res["rc_ratio_ceiling"] = round(ceil, 4) if ceil is not None else None
+    if ceil is not None and res.get("rc_ratio") is not None and ceil > 1.0:
+        res["rc_ratio_normalized"] = round(
+            (res["rc_ratio"] - 1.0) / (ceil - 1.0), 4)
+    else:
+        res["rc_ratio_normalized"] = None
+    res["human_rc_ratio_normalized"] = HUMAN_RC_RATIO_NORMALIZED
+    if res.get("rc_ratio_normalized") is not None:
+        res["rc_ratio_normalized_distance"] = round(
+            abs(res["rc_ratio_normalized"] - HUMAN_RC_RATIO_NORMALIZED), 4)
+
     # Below this, the ratio is dominated by sampling noise and must not be
     # treated as evidence in either direction.
-    res["trustworthy"] = bool((res.get("n_errors") or 0) >= 30)
+    res["trustworthy"] = bool(n_err >= 30)
     return res
 
 

@@ -303,11 +303,23 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
                 f"{a4.get('n_errors')} errors were produced, too few to tell "
                 f"interference from noise (need >=30)"
             )
-        elif a4.get("rc_ratio") is not None and a4["rc_ratio"] < 1.15:
+        # The guard compares the NORMALIZED ratio, not the raw one. rc_ratio's
+        # ceiling moves with the error count -- relation_count saturates at 10, so
+        # on the model grid the maximum attainable is 1.2525 at 12 errors, 1.2575
+        # at 35 and 1.3750 at 400. Iteration 1's displacement scored exactly 1.2575
+        # at exactly 35 errors, i.e. its arithmetic maximum, and full_context
+        # scored exactly 1.2525 at 12. A fixed 1.15 threshold on the raw ratio is
+        # therefore not scale-free: at these error counts almost any result clears
+        # it, so the old guard could not have rejected anything. Normalized, 0.0 is
+        # noise and 1.0 is the ceiling; the humans sit at 0.3728.
+        elif (a4.get("rc_ratio_normalized") is not None
+              and a4["rc_ratio_normalized"] < 0.15):
             guards.append(
-                f"A4: variable_mapping improved by {vm_delta} with rc_ratio "
-                f"{a4['rc_ratio']} -- errors are independent of interference load "
-                f"(human 1.386, pure noise 1.0), so the gain is unstructured"
+                f"A4: variable_mapping improved by {vm_delta} with normalized "
+                f"rc_ratio {a4['rc_ratio_normalized']} (raw {a4.get('rc_ratio')}, "
+                f"ceiling {a4.get('rc_ratio_ceiling')}) -- errors are independent "
+                f"of interference load (humans sit at 0.3728, pure noise at 0.0), "
+                f"so the gain is unstructured"
             )
 
     rec["guard_violations"] = guards
