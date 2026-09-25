@@ -2084,6 +2084,657 @@ def chunk_limit_checks(run_dir: Path, baseline: Path | None) -> list[dict[str, A
     return out
 
 
+# ===========================================================================
+# Iteration 3
+# ===========================================================================
+
+
+def _nback_levels(run_dir: Path | None) -> dict[int, dict[str, Any]]:
+    """Per-level n-back diagnostics, or {} when unavailable.
+
+    Never raises: a candidate that suppresses responses entirely produces
+    present-but-null metrics, which is exactly the case this has to describe.
+    """
+    if run_dir is None or not Path(run_dir).exists():
+        return {}
+    try:
+        rep = NL.report(Path(run_dir))
+    except Exception:  # noqa: BLE001
+        return {}
+    diag = rep.get("diagnostics", rep) if isinstance(rep, dict) else {}
+    out: dict[int, dict[str, Any]] = {}
+    if isinstance(diag, dict):
+        for k, v in diag.items():
+            if isinstance(v, dict):
+                try:
+                    out[int(k)] = v
+                except (TypeError, ValueError):
+                    continue
+    return out
+
+
+def _kv_occupancy(run_dir: Path, task: str,
+                  only_overflowing: bool = False,
+                  max_keys: int | None = None) -> dict[str, Any] | None:
+    """Mean len(final_kv) for a task, optionally restricted to rows whose agent
+    tried to write more distinct keys than capacity.
+
+    `only_overflowing` is what separates "the bound fired" from "the task never
+    filled the store", which is the distinction primacy_v2's P2 turns on.
+    """
+    rows = _jsonl(Path(run_dir), task)
+    if not rows:
+        return None
+    cap = max_keys if max_keys is not None else _max_keys()
+    occ, acc, n_over = [], [], 0
+    for r in rows:
+        kv = r.get("final_kv")
+        if not isinstance(kv, dict):
+            continue
+        written = set()
+        log = r.get("encoding_log") or {}
+        for tc in (log.get("tool_calls") or []):
+            if tc.get("name") != "write_memory":
+                continue
+            args = tc.get("arguments")
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except json.JSONDecodeError:
+                    continue
+            if isinstance(args, dict) and args.get("key"):
+                written.add(str(args["key"]))
+        overflowed = len(written) > cap
+        if overflowed:
+            n_over += 1
+        if only_overflowing and not overflowed:
+            continue
+        occ.append(len(kv))
+        m = r.get("metrics") or {}
+        a = m.get("accuracy", m.get("score"))
+        if a is not None:
+            acc.append(float(a))
+    if not occ:
+        return {"n": 0, "mean_kv": None, "mean_accuracy": None,
+                "n_overflowing": n_over}
+    return {
+        "n": len(occ),
+        "mean_kv": round(sum(occ) / len(occ), 4),
+        "mean_accuracy": round(sum(acc) / len(acc), 4) if acc else None,
+        "n_overflowing": n_over,
+    }
+
+
+def _answer_raw_len(run_dir: Path) -> dict[str, Any] | None:
+    """Mean and max length of variable_mapping's raw answers.
+
+    The anti-verbosity test: a candidate that prepends context to a prompt whose
+    instruction is "output ONLY one line" can pass a content test while flooding
+    the reply, and that would be a different mechanism than the one claimed.
+    """
+    rows = _jsonl(Path(run_dir), "wm_variable_mapping")
+    if not rows:
+        return None
+    lens, unparsed, total = [], 0, 0
+    for r in rows:
+        for sl in (r.get("step_logs") or []):
+            raw = sl.get("answer_raw")
+            if raw is None:
+                continue
+            total += 1
+            lens.append(len(str(raw)))
+            if not sl.get("parsed"):
+                unparsed += 1
+    if not lens:
+        return None
+    return {"mean_chars": round(sum(lens) / len(lens), 2), "max_chars": max(lens),
+            "unparsed": unparsed, "of_answers": total}
+
+
+def episodic_reset_v2_checks(run_dir: Path,
+                            baseline: Path | None) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    add = _adder(out)
+    rec = _record(run_dir, baseline)
+    ax = rec.get("axes") or {}
+    hl = rec.get("humanlikeness_by_task") or {}
+    bhl = _hl(baseline)
+    a4 = ax.get("A4") or {}
+    if not a4 and Path(run_dir).exists():
+        try:
+            a4 = IF.a4(Path(run_dir))
+        except Exception:  # noqa: BLE001
+            a4 = {}
+    lv = _nback_levels(Path(run_dir))
+
+    # --- P1 PRECONDITION: the n=1 mechanics are repaired ---------------------
+    # episodic_reset read 2.06 answered with 36 of 50 silent and keys_held 0.28.
+    # At n=1 one overwritten key suffices, so a drop there can only be broken
+    # mechanics. A failure here invalidates P2-P7, as its predecessor's P9 did.
+    l1 = lv.get(1) or {}
+    obs1 = {"answered": l1.get("answered"),
+            "acc_over_answered": l1.get("acc_over_answered"),
+            "n_no_answers": l1.get("n_no_answers"),
+            "keys_held": l1.get("keys_held")}
+    thr1 = ("answered >= 13.0 AND acc_over_answered >= 0.90 AND n_no_answers == 0 "
+            "AND keys_held >= 0.8 (baseline 13.98/0.9943/0/1.00; "
+            "episodic_reset 2.06/0.787/36/0.28)")
+    if any(v is None for v in obs1.values()):
+        add("P1 n=1 mechanics repaired -- PRECONDITION", INCONCL, obs1, thr1,
+            "absent: nback_levels.report(run_dir)['diagnostics'][1]")
+        p1 = False
+    else:
+        p1 = (obs1["answered"] >= 13.0 and obs1["acc_over_answered"] >= 0.90
+              and obs1["n_no_answers"] == 0 and obs1["keys_held"] >= 0.8)
+        add("P1 n=1 mechanics repaired -- PRECONDITION", PASS if p1 else FAIL,
+            obs1, thr1,
+            "" if p1 else "A P1 FAILURE INVALIDATES P2-P7 REGARDLESS OF VALUE")
+
+    # --- P2 the leak stays closed, and not by restoring context ---------------
+    share, n_vals = _nback_letter_share(Path(run_dir), 3)
+    l3 = lv.get(3) or {}
+    obs2 = {"n3_letter_share": share, "n_values": n_vals,
+            "keys_held": l3.get("keys_held")}
+    if share is None:
+        add("P2 leak stays closed (n=3 letter share)", INCONCL, obs2, ">= 0.90",
+            "absent: n=3 final_kv values")
+    else:
+        ok = share >= 0.90
+        add("P2 leak stays closed (n=3 letter share)", PASS if ok else FAIL,
+            obs2, ">= 0.90 over n=3 final_kv values "
+                  "(baseline 0.0202, episodic_reset 1.0000)",
+            "keys_held is REPORTED not gated: a leak-free store may legitimately "
+            "be one rolling key, so a keys_held bar can fail while the mechanism "
+            "works")
+
+    # --- P3 nback clears its floor -------------------------------------------
+    v, why = _get(rec, "humanlikeness_by_task.nback")
+    if v is MISSING or v is None:
+        add("P3 nback clears its floor", INCONCL, None, ">= 0.7309", why or "absent")
+    else:
+        ok = v >= 0.7309
+        d = None if bhl.get("nback") is None else v - bhl["nback"]
+        add("P3 nback clears its floor", PASS if ok else FAIL,
+            {"nback": v, "delta": None if d is None else round(d, 4)},
+            ">= 0.7309 (baseline 0.7909 minus the 0.060 floor); "
+            "episodic_reset read 0.4970",
+            "" if ok else "still violates the nback floor")
+
+    # --- P4 A4 at scale ------------------------------------------------------
+    n_err = a4.get("n_errors")
+    if n_err is None:
+        add("P4 A4 n_errors >= 150", INCONCL, None, ">= 150", "absent: A4.n_errors")
+    else:
+        add("P4 A4 n_errors >= 150", PASS if n_err >= 150 else FAIL, n_err,
+            ">= 150 (baseline 12, displacement 35, episodic_reset 509)")
+
+    # --- P5 A4 structure, normalized -----------------------------------------
+    norm = a4.get("rc_ratio_normalized")
+    obs5 = {"rc_ratio_normalized": norm, "rc_ratio": a4.get("rc_ratio"),
+            "ceiling": a4.get("rc_ratio_ceiling"),
+            "trustworthy": a4.get("trustworthy")}
+    if norm is None:
+        add("P5 A4 structure (normalized)", INCONCL, obs5, "in [0.15, 0.95]",
+            "absent: A4.rc_ratio_normalized")
+    else:
+        ok = 0.15 <= norm <= 0.95
+        add("P5 A4 structure (normalized)", PASS if ok else FAIL, obs5,
+            "in [0.15, 0.95]; no direction asserted (humans 0.3728, noise 0.0, "
+            "run's own ceiling 1.0; episodic_reset 0.7302)",
+            "the raw ratio is NOT scale-free -- its ceiling moves with the error "
+            "count -- which is why this row thresholds the normalized value")
+
+    # --- P6 variable_mapping, both formulas ----------------------------------
+    vmm = (ax.get("variable_mapping_matched") or {}).get("humanlikeness_matched")
+    raw = hl.get("variable_mapping")
+    obs6 = {"raw": raw, "matched": vmm}
+    if raw is None or vmm is None:
+        add("P6 variable_mapping, both formulas", INCONCL, obs6,
+            ">= 0.55 on both", "absent: variable_mapping humanlikeness or the "
+                               "matched-formula figure")
+    else:
+        ok = raw >= 0.55 and vmm >= 0.55
+        add("P6 variable_mapping, both formulas", PASS if ok else FAIL, obs6,
+            ">= 0.55 raw AND >= 0.55 matched (baseline 0.3554/0.3587, "
+            "episodic_reset 0.6764/0.7295)",
+            "a FALL from episodic_reset's figures is expected and is not a "
+            "failure: this candidate restores task set, which should let the "
+            "agent use the store better, and being better is a cost here")
+
+    # --- P7 parse integrity and anti-verbosity -------------------------------
+    ar = _answer_raw_len(Path(run_dir))
+    if ar is None:
+        add("P7 parse integrity + anti-verbosity", INCONCL, None,
+            "unparsed < 30 AND mean answer_raw <= 15.0 chars",
+            "absent: variable_mapping step_logs[*].answer_raw")
+    else:
+        ok = ar["unparsed"] < 30 and ar["mean_chars"] <= 15.0
+        add("P7 parse integrity + anti-verbosity", PASS if ok else FAIL, ar,
+            "unparsed < 30 AND mean answer_raw <= 15.0 chars "
+            "(baseline 0 / 13.10, episodic_reset 0 / 13.18)",
+            "" if ok else "prepending context to a prompt that says 'output ONLY "
+                          "one line' can flood the reply; that would be a "
+                          "different mechanism than the one claimed")
+
+    # --- P8 no-change control ------------------------------------------------
+    # digit_span_reverse is the verdict-bearing leg. NOT thresholded at
+    # bit-identity: run-to-run measurement shows generated content varies on every
+    # task, though this task's SCORE was reproduced exactly twice.
+    obs8: dict[str, Any] = {}
+    legs_ok = True
+    for t, tol in (("digit_span_reverse", 0.059), ("digit_span_forward", 0.140),
+                   ("craft_task", 0.030), ("narrative_qa", 0.030),
+                   ("semantic_story_recall", 0.030), ("word_recognition", 0.121)):
+        a, b = hl.get(t), bhl.get(t)
+        if a is None or b is None:
+            obs8[t] = None
+            continue
+        obs8[t] = round(a - b, 4)
+        if abs(a - b) > tol:
+            legs_ok = False
+    add("P8 six tasks unchanged (control)", PASS if legs_ok else FAIL, obs8,
+        "each within its enforced floor; digit_span_reverse is the verdict-bearing "
+        "leg at 0.059",
+        "measured run-to-run variation on these tasks is 0.0000-0.0152, so a "
+        "movement inside the floors is not evidence of a mechanism")
+
+    # --- P9 per-level, reported ----------------------------------------------
+    obs9 = {n: {"answered": d.get("answered"),
+                "acc": d.get("acc_over_answered"),
+                "keys": d.get("keys_held"),
+                "silent": f"{d.get('n_no_answers')}/{d.get('n_rows')}"}
+            for n, d in sorted(lv.items())}
+    add("P9 per-level n-back (reported)", INCONCL, obs9, "reported, not scored",
+        "directions were stated in advance per level; read against the baseline "
+        "13.98/13.24/6.82 answered and episodic_reset's 2.06/10.16/9.08",
+        tags=("REPORTED",))
+
+    if not p1:
+        _void_rows(out, ("P2", "P3", "P4", "P5", "P6", "P7"),
+                   "VOID via P1: the n=1 precondition failed, which this candidate "
+                   "pre-registered as invalidating P2-P7 regardless of their values.")
+    return out
+
+
+def primacy_v2_checks(run_dir: Path,
+                      baseline: Path | None) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    add = _adder(out)
+    rec = _record(run_dir, baseline)
+    ax = rec.get("axes") or {}
+    hl = rec.get("humanlikeness_by_task") or {}
+    bhl = _hl(baseline)
+    cap = _max_keys()
+    lv = _nback_levels(Path(run_dir))
+
+    # --- P1 primary: craft recovers past its ENFORCED floor ------------------
+    # 0.8607 = baseline 0.8907 minus max(FLOOR 0.03, NOISE_FLOOR 0.025) = 0.030.
+    # The enforced floor is 0.030, not the 0.025 bootstrap figure.
+    v = hl.get("craft_task")
+    if v is None:
+        add("P1 craft_task recovers", INCONCL, None, ">= 0.8607", "absent")
+        p1 = False
+    else:
+        p1 = v >= 0.8607
+        add("P1 craft_task recovers", PASS if p1 else FAIL,
+            {"craft_task": v,
+             "delta": None if bhl.get("craft_task") is None
+                      else round(v - bhl["craft_task"], 4)},
+            ">= 0.8607 (baseline 0.8907 minus the enforced floor 0.030); "
+            "expected 0.87-0.89; primacy read 0.8456",
+            "craft run-to-run variation is exactly 0.0000 over 150 rows, so any "
+            "movement here is mechanism")
+
+    # --- P2 the occupancy change P1 rests on ---------------------------------
+    occ = _kv_occupancy(Path(run_dir), "wm_craft_task", only_overflowing=True,
+                        max_keys=cap)
+    if not occ or occ.get("mean_kv") is None:
+        add("P2 craft overflow rows settle below capacity", INCONCL, occ,
+            "mean_kv <= 3.20 AND accuracy < 0.916",
+            "absent: craft rows whose encoding_log writes more than "
+            f"{cap} distinct keys")
+    else:
+        ok = occ["mean_kv"] <= 3.20 and (occ["mean_accuracy"] is None
+                                         or occ["mean_accuracy"] < 0.916)
+        add("P2 craft overflow rows settle below capacity",
+            PASS if ok else FAIL, occ,
+            "mean_kv <= 3.20 (sharp) AND overflow-row accuracy < 0.916 "
+            "(primacy read 4.0 and 0.916); replay predicted 3.333",
+            "this is the mechanism-confirmation row: a mean_kv of 4.0 means the "
+            "batch rule never fired and the arm is measuring `primacy`")
+
+    # --- P3 the confirmed U-shape must survive -------------------------------
+    u = _primacy_u_shape(Path(run_dir), cap)
+    if not u or u.get("both_ends_fraction") is None:
+        add("P3 U-shaped survival survives", INCONCL, u, ">= 0.80",
+            "absent: story-recall write order from turn_logs")
+    else:
+        ok = u["both_ends_fraction"] >= 0.80
+        add("P3 U-shaped survival survives", PASS if ok else FAIL, u, ">= 0.80",
+            "baseline 0.000, displacement 0.000, primacy 1.000, replay 1.000. If "
+            "the store stopped overflowing on story recall this becomes inert -- "
+            f"n_overflowing is reported ({u.get('n_overflowing')})")
+
+    # --- P4 story stays recovered -------------------------------------------
+    v = hl.get("semantic_story_recall")
+    if v is None:
+        add("P4 story stays recovered", INCONCL, None, "in [0.9173, 0.9773]",
+            "absent")
+    else:
+        ok = 0.9173 <= v <= 0.9773
+        add("P4 story stays recovered", PASS if ok else FAIL, v,
+            "in [0.9173, 0.9773], expected ~0.9477 (baseline 0.9473, "
+            "displacement 0.8964, primacy 0.9477)")
+
+    # --- P5 n=3 response behaviour retained ---------------------------------
+    l3 = lv.get(3) or {}
+    obs5 = {"answered": l3.get("answered"), "keys_held": l3.get("keys_held"),
+            "acc_over_answered": l3.get("acc_over_answered")}
+    if any(x is None for x in obs5.values()):
+        add("P5 n=3 response behaviour retained", INCONCL, obs5,
+            "answered >= 13 AND keys_held >= 3.5 AND acc in [0.687, 0.787]",
+            "absent: nback diagnostics at n=3")
+    else:
+        ok = (obs5["answered"] >= 13 and obs5["keys_held"] >= 3.5
+              and 0.687 <= obs5["acc_over_answered"] <= 0.787)
+        add("P5 n=3 response behaviour retained", PASS if ok else FAIL, obs5,
+            "answered >= 13 AND keys_held >= 3.5 AND acc_over_answered in "
+            "[0.687, 0.787] (primacy 14.0/4.0/0.76)")
+
+    # --- P6 A1 digit span, no-change ----------------------------------------
+    a1 = ax.get("A1") or {}
+    obs6 = {"sub_span_leak": a1.get("sub_span_leak"),
+            "best_span": a1.get("best_span"),
+            "d_fwd": None if hl.get("digit_span_forward") is None
+                     or bhl.get("digit_span_forward") is None
+                     else round(hl["digit_span_forward"] - bhl["digit_span_forward"], 4),
+            "d_rev": None if hl.get("digit_span_reverse") is None
+                     or bhl.get("digit_span_reverse") is None
+                     else round(hl["digit_span_reverse"] - bhl["digit_span_reverse"], 4)}
+    if obs6["sub_span_leak"] is None or obs6["best_span"] is None:
+        add("P6 A1 digit span unchanged", INCONCL, obs6,
+            "|leak - 0.136| <= 0.02 AND best_span >= 18.0", "absent: axes.A1")
+    else:
+        ok = (abs(obs6["sub_span_leak"] - 0.136) <= 0.02
+              and obs6["best_span"] >= 18.0
+              and (obs6["d_fwd"] is None or abs(obs6["d_fwd"]) < 0.140)
+              and (obs6["d_rev"] is None or abs(obs6["d_rev"]) < 0.059))
+        add("P6 A1 digit span unchanged", PASS if ok else FAIL, obs6,
+            "|leak - 0.136| <= 0.02 AND best_span >= 18.0 AND both deltas inside "
+            "their floors (primacy 0.136 / 18.4)",
+            "digit_span_forward's measured run-to-run variation is +0.0152, which "
+            "is exactly what primacy reported there, so a move of that size is "
+            "noise rather than mechanism")
+
+    # --- P7 A3, on the ENFORCED quantity ------------------------------------
+    a3 = ax.get("A3") or {}
+    obs7 = {"precision_distance": a3.get("precision_distance"),
+            "word_distance": a3.get("word_distance"),
+            "bleu": a3.get("bleu")}
+    if obs7["precision_distance"] is None or obs7["word_distance"] is None:
+        add("P7 A3 within tolerance", INCONCL, obs7,
+            "precision_distance <= 0.0422 AND word_distance <= 55.8",
+            "absent: axes.A3")
+    else:
+        ok = (obs7["precision_distance"] <= 0.0422
+              and obs7["word_distance"] <= 55.8)
+        add("P7 A3 within tolerance", PASS if ok else FAIL, obs7,
+            "precision_distance <= 0.0422 AND word_distance <= 55.8",
+            "BLEU is deliberately NOT thresholded: it is a length proxy, reported "
+            "with bleu_enforced=false")
+
+    # --- P8 narrative: a pre-registered COST, band below the floor -----------
+    v = hl.get("narrative_qa")
+    if v is None:
+        add("P8 narrative_qa (pre-registered cost)", INCONCL, None,
+            "in [0.9222, 0.9322]", "absent")
+    else:
+        ok = 0.9222 <= v <= 0.9322
+        d = None if bhl.get("narrative_qa") is None else round(v - bhl["narrative_qa"], 4)
+        add("P8 narrative_qa (pre-registered cost)", PASS if ok else FAIL,
+            {"narrative_qa": v, "delta": d},
+            "in [0.9222, 0.9322] -- a band BELOW the 0.030 floor, registered as a "
+            "cost rather than a recovery the candidate cannot mechanise",
+            "narrative wants contiguity and P3 requires both ends; the two are "
+            "opposed. Measured run-to-run noise here is 0.0065, so a delta of "
+            "~0.03 is a real effect and not an instrument artifact",
+            tags=("REPORTED",))
+
+    # --- P9 anti-full_context ------------------------------------------------
+    so = _kv_occupancy(Path(run_dir), "wm_semantic_story_recall", max_keys=cap)
+    co = _kv_occupancy(Path(run_dir), "wm_craft_task", max_keys=cap)
+    rows = _jsonl(Path(run_dir), "wm_semantic_story_recall") or []
+    sims = [float((r.get("metrics") or {}).get("embeddingSimilarity"))
+            for r in rows
+            if (r.get("metrics") or {}).get("embeddingSimilarity") is not None]
+    obs9 = {"story_kv": None if not so else so.get("mean_kv"),
+            "story_similarity": round(sum(sims) / len(sims), 4) if sims else None,
+            "craft_kv": None if not co else co.get("mean_kv")}
+    if any(x is None for x in obs9.values()):
+        add("P9 not drifting toward full_context", INCONCL, obs9,
+            "story_kv <= 3.93 AND similarity <= 0.60 AND craft_kv <= 3.67",
+            "absent: store occupancy or story similarity")
+    else:
+        ok = (obs9["story_kv"] <= 3.93 and obs9["story_similarity"] <= 0.60
+              and obs9["craft_kv"] <= 3.67)
+        add("P9 not drifting toward full_context", PASS if ok else FAIL, obs9,
+            "story_kv <= 3.93 AND similarity <= 0.60 AND craft_kv <= 3.67",
+            "an eviction rule that fixes a task by keeping MORE is drifting "
+            "toward the most capable and least humanlike harness measured")
+
+    # --- P10 variable_mapping untouched -------------------------------------
+    a, b = hl.get("variable_mapping"), bhl.get("variable_mapping")
+    if a is None or b is None:
+        add("P10 variable_mapping untouched", INCONCL, None, "|delta| < 0.017",
+            "absent")
+    else:
+        d = a - b
+        add("P10 variable_mapping untouched", PASS if abs(d) < 0.017 else FAIL,
+            {"variable_mapping": a, "delta": round(d, 4)},
+            "|delta| < 0.017",
+            "values hold exactly 1.00 element each on this task, so the store "
+            "never overflows and the rule cannot bite -- a PASS is not a passed "
+            "test", tags=("NEAR-INERT",))
+
+    # --- P11 the mean, reported ----------------------------------------------
+    m = rec.get("mean_humanlikeness_search")
+    add("P11 8-task mean", INCONCL if m is None else
+        (PASS if m >= 0.7945 else FAIL), m,
+        ">= 0.7945 (primacy's value); only >= 0.8121 would be a credible gain "
+        "over the baseline's 0.7861",
+        "stated before the run so it cannot be claimed afterwards; the claims are "
+        "P1, P2, P3 and P12", tags=("REPORTED",))
+
+    # --- P12 craft's non-overflow partition must be untouched ----------------
+    allc = _kv_occupancy(Path(run_dir), "wm_craft_task", max_keys=cap)
+    rows = _jsonl(Path(run_dir), "wm_craft_task") or []
+    non_over_acc = []
+    for r in rows:
+        written = set()
+        for tc in ((r.get("encoding_log") or {}).get("tool_calls") or []):
+            if tc.get("name") != "write_memory":
+                continue
+            args = tc.get("arguments")
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except json.JSONDecodeError:
+                    continue
+            if isinstance(args, dict) and args.get("key"):
+                written.add(str(args["key"]))
+        if len(written) <= cap:
+            a = (r.get("metrics") or {}).get("accuracy",
+                                             (r.get("metrics") or {}).get("score"))
+            if a is not None:
+                non_over_acc.append(float(a))
+    obs12 = {"n_non_overflowing": len(non_over_acc),
+             "mean_accuracy": round(sum(non_over_acc) / len(non_over_acc), 4)
+                              if non_over_acc else None,
+             "all_rows_mean_kv": None if not allc else allc.get("mean_kv")}
+    if obs12["mean_accuracy"] is None:
+        add("P12 craft non-overflow partition untouched", INCONCL, obs12,
+            "mean accuracy == 1.0000 on rows the bound never touched",
+            "absent: craft rows with <= capacity distinct writes")
+    else:
+        ok = abs(obs12["mean_accuracy"] - 1.0) < 1e-9
+        add("P12 craft non-overflow partition untouched",
+            PASS if ok else FAIL, obs12,
+            "mean accuracy == 1.0000 on the non-overflowing rows (every arm "
+            "measured so far reads exactly 1.0000 there)",
+            "confines the whole craft effect to the overflow group; a move here "
+            "would mean the rule is firing where it should not")
+
+    # --- C1 word_recognition, reported --------------------------------------
+    a2 = ax.get("A2") or {}
+    a, b = hl.get("word_recognition"), bhl.get("word_recognition")
+    obsc = {"word_recognition": a,
+            "delta": None if a is None or b is None else round(a - b, 4),
+            "miss_rate": a2.get("miss_rate"), "fa_rate": a2.get("fa_rate"),
+            "ratio": a2.get("ratio"), "distance": a2.get("distance"),
+            "trials_attempted": a2.get("trials_attempted")}
+    bad = (obsc["delta"] is not None and abs(obsc["delta"]) > 0.121
+           and obsc["fa_rate"] is not None and obsc["fa_rate"] > 0.211)
+    add("C1 word_recognition / A2 (reported)", FAIL if bad else INCONCL, obsc,
+        "report only; disconfirming if |delta| > 0.121 AND fa_rate > 0.211",
+        "the task is a confirmed leak, so no direction is derivable; the "
+        "disconfirming pair would mean this rule reproduced displacement's "
+        "liberal-bias artifact", tags=("REPORTED",))
+    return out
+
+
+def episodic_primacy_checks(run_dir: Path,
+                            baseline: Path | None) -> list[dict[str, Any]]:
+    """The composed arm. Coordinator-written; no new mechanism, so it scores only
+    what neither component can answer alone."""
+    out: list[dict[str, Any]] = []
+    add = _adder(out)
+    rec = _record(run_dir, baseline)
+    ax = rec.get("axes") or {}
+    hl = rec.get("humanlikeness_by_task") or {}
+    bhl = _hl(baseline)
+    cap = _max_keys()
+    lv = _nback_levels(Path(run_dir))
+
+    # Sibling single-mechanism arms, for the additivity comparison. Without them
+    # C2 cannot be scored -- comparing the composition to the BASELINE would not
+    # distinguish additive from redundant.
+    root = Path(run_dir).parent.parent
+    sib = {name: (root / name / Path(run_dir).name) for name in
+           ("episodic_reset_v2", "primacy_v2")}
+    sib_hl = {k: _hl(v if v.exists() else None) for k, v in sib.items()}
+
+    # --- C1 PRECONDITION: both mechanisms demonstrably active ----------------
+    occ = _kv_occupancy(Path(run_dir), "wm_craft_task", only_overflowing=True,
+                        max_keys=cap)
+    share, n_vals = _nback_letter_share(Path(run_dir), 3)
+    obs1 = {"craft_overflow_kv": None if not occ else occ.get("mean_kv"),
+            "n3_letter_share": share}
+    if obs1["craft_overflow_kv"] is None or share is None:
+        add("C1 both mechanisms active -- PRECONDITION", INCONCL, obs1,
+            "craft overflow kv <= 3.20 AND n=3 letter share >= 0.90",
+            "absent: craft overflow rows or n=3 store values")
+        c1 = False
+    else:
+        c1 = obs1["craft_overflow_kv"] <= 3.20 and share >= 0.90
+        add("C1 both mechanisms active -- PRECONDITION", PASS if c1 else FAIL,
+            obs1,
+            "craft overflow kv <= 3.20 AND n=3 letter share >= 0.90 "
+            "(baseline 4.0 / 0.0202)",
+            "" if c1 else "primacy_v2's _batch_writes() fails SAFE to serial, so "
+                          "a craft occupancy of 4.0 means it silently degraded to "
+                          "`primacy` rather than erroring. C2-C4 are then VOID.")
+
+    # --- C2 additivity, against the SIBLING arms -----------------------------
+    obs2: dict[str, Any] = {}
+    for t, sibling, tol in (("variable_mapping", "episodic_reset_v2", 0.05),
+                            ("craft_task", "primacy_v2", 0.030)):
+        mine, theirs = hl.get(t), sib_hl.get(sibling, {}).get(t)
+        obs2[t] = {"composed": mine, sibling: theirs,
+                   "delta": None if mine is None or theirs is None
+                            else round(mine - theirs, 4)}
+    legs = [v["delta"] for v in obs2.values() if v["delta"] is not None]
+    if len(legs) < 2:
+        add("C2 additive with the single-mechanism arms", INCONCL, obs2,
+            "variable_mapping >= its arm - 0.05 AND craft >= its arm - 0.030",
+            "absent: one or both sibling arms not present beside this run")
+    else:
+        ok = (obs2["variable_mapping"]["delta"] >= -0.05
+              and obs2["craft_task"]["delta"] >= -0.030)
+        add("C2 additive with the single-mechanism arms", PASS if ok else FAIL,
+            obs2,
+            "variable_mapping >= episodic_reset_v2 - 0.05 AND craft_task >= "
+            "primacy_v2 - 0.030",
+            "compared against the SIBLING arms, not the baseline: that is the "
+            "only comparison that distinguishes additive from redundant. "
+            "One-sided -- the interesting failure is the composition being WORSE "
+            "than its parts.")
+
+    # --- C3 the composition's own effect, reported ---------------------------
+    obs3: dict[str, Any] = {}
+    for t in ("nback", "variable_mapping"):
+        obs3[t] = {"composed": hl.get(t),
+                   "episodic_reset_v2": sib_hl.get("episodic_reset_v2", {}).get(t),
+                   "primacy_v2": sib_hl.get("primacy_v2", {}).get(t),
+                   "baseline": bhl.get(t)}
+    obs3["nback_levels"] = {n: {"answered": d.get("answered"),
+                                "silent": f"{d.get('n_no_answers')}/{d.get('n_rows')}"}
+                            for n, d in sorted(lv.items())}
+    add("C3 composition-specific effect on nback / variable_mapping", INCONCL,
+        obs3, "reported, no direction derivable",
+        "episodic_reset_v2 puts to_recall_text() on the prompt path every turn, so "
+        "primacy_v2's eviction becomes VISIBLE to the agent on exactly the two "
+        "tasks where it was previously unobservable. Any effect here is a property "
+        "of the composition, not of either mechanism.", tags=("REPORTED",))
+
+    # --- C4 neither component's known failure returns ------------------------
+    l1 = lv.get(1) or {}
+    ca = _kv_occupancy(Path(run_dir), "wm_craft_task", max_keys=cap)
+    obs4 = {"n1_answered": l1.get("answered"),
+            "n1_no_answers": l1.get("n_no_answers"),
+            "craft_accuracy": None if not ca else ca.get("mean_accuracy")}
+    if any(v is None for v in obs4.values()):
+        add("C4 neither known failure returns", INCONCL, obs4,
+            "n=1 answered >= 13.0 AND n_no_answers == 0 AND craft accuracy < 0.916",
+            "absent: n=1 diagnostics or craft accuracy")
+    else:
+        ok = (obs4["n1_answered"] >= 13.0 and obs4["n1_no_answers"] == 0
+              and obs4["craft_accuracy"] < 0.916)
+        add("C4 neither known failure returns", PASS if ok else FAIL, obs4,
+            "n=1 answered >= 13.0 AND n_no_answers == 0 AND craft accuracy < 0.916 "
+            "(episodic_reset read 2.06 with 36 silent; primacy read 0.972)",
+            "craft accuracy is thresholded BELOW primacy's 0.916 because "
+            "humanlikeness decreases in accuracy above the baseline here -- the "
+            "model is already better than humans, so a capability gain is a cost")
+
+    # --- C5 no-change control -----------------------------------------------
+    a1 = ax.get("A1") or {}
+    obs5 = {"d_fwd": None if hl.get("digit_span_forward") is None
+                     or bhl.get("digit_span_forward") is None
+                     else round(hl["digit_span_forward"] - bhl["digit_span_forward"], 4),
+            "d_rev": None if hl.get("digit_span_reverse") is None
+                     or bhl.get("digit_span_reverse") is None
+                     else round(hl["digit_span_reverse"] - bhl["digit_span_reverse"], 4),
+            "best_span": a1.get("best_span")}
+    if obs5["d_fwd"] is None or obs5["d_rev"] is None:
+        add("C5 digit span untouched (control)", INCONCL, obs5,
+            "|d_fwd| < 0.140 AND |d_rev| < 0.059 AND best_span >= 18.0", "absent")
+    else:
+        ok = (abs(obs5["d_fwd"]) < 0.140 and abs(obs5["d_rev"]) < 0.059
+              and (obs5["best_span"] is None or obs5["best_span"] >= 18.0))
+        add("C5 digit span untouched (control)", PASS if ok else FAIL, obs5,
+            "|d_fwd| < 0.140 AND |d_rev| < 0.059 AND best_span >= 18.0",
+            "NOT thresholded at bit-identity: generated content varies run to run "
+            "on every task. digit_span_forward's own run-to-run variation is "
+            "+0.0152.")
+
+    if not c1:
+        _void_rows(out, ("C2", "C3", "C4"),
+                   "VOID via C1: one of the two mechanisms was not active, so the "
+                   "composition is measuring a single mechanism and the "
+                   "additivity question is unanswerable from this run.")
+    return out
+
+
 CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "displacement": displacement_checks,
     "primacy": primacy_checks,
@@ -2094,6 +2745,9 @@ CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "serial_recognition_open": serial_recognition_checks,
     "episodic_reset": episodic_reset_checks,
     "chunk_limit": chunk_limit_checks,
+    "episodic_reset_v2": episodic_reset_v2_checks,
+    "primacy_v2": primacy_v2_checks,
+    "episodic_primacy": episodic_primacy_checks,
 }
 
 

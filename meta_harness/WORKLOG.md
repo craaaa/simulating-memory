@@ -960,3 +960,103 @@ This wave it caught: `primacy` P2 against `displacement` (both-ends retention 0.
 both runs), `chunk_limit` P5 (median 4-gram precision identical to the baseline's
 0.0414 to full precision), and the two precondition cascades above. A checker that can
 only say PASS or FAIL would have reported six false verdicts here.
+
+---
+
+## Iteration 3 — one creditable gain, one mechanism that cannot reach its target
+
+Jobs 18538066 (three arms) and 18536738 (repeat baseline), all exit 0. The baseline
+remains the sole frontier member for the third wave running.
+
+    arm                  mean     nback      vm     craft   narrative   floor
+    episodic_reset_v2  0.7993    0.5601  0.6854    0.8907      0.9572    FAIL nback
+    primacy_v2         0.7944    0.9442  0.3530    0.8487      0.9423    FAIL craft
+    episodic_primacy   0.7943    0.5893  0.6507    0.8472      0.9563    FAIL both
+    baseline           0.7861    0.7909  0.3554    0.8907      0.9572
+
+### `episodic_reset_v2` — the precondition passed, so the +0.33 is finally creditable
+
+This is the first time the project's largest single-task gain has been attributable.
+n=1 is fully repaired: answered 13.88 against a baseline 13.98, accuracy 0.9964, **zero
+silent participants** where `episodic_reset` had 36 of 50, keys_held back to 1.00. P1
+was the pre-registered precondition, so P2–P7 are scored rather than voided.
+
+    variable_mapping, raw formula      0.3554 -> 0.6854   (+0.3300)
+    variable_mapping, matched formula  0.3587 -> 0.7568
+    A4 n_errors                            12 -> 550      trustworthy
+    A4 rc_ratio_normalized             0.6661 -> 0.7362   (humans 0.3728)
+    n=3 store carries letter identity  0.0202 -> 0.9843
+
+And the structural claim held **exactly**: `craft_task`, `narrative_qa`,
+`digit_span_forward` and `digit_span_reverse` all moved by precisely 0.0000. That is
+worth noting against its predecessor, which moved craft −0.0280 and narrative −0.0100
+while making the same structural claim — so whatever caused those moves was specific to
+v1's implementation and is now gone. Unresolved, and carried forward.
+
+**Rejected, because the absorbing state relocated rather than disappearing:**
+
+    level   baseline        episodic_reset      episodic_reset_v2
+    n=1     13.98, 0 silent   2.06, 36 silent    13.88,  0 silent   <- fixed
+    n=2     13.24, 0 silent  10.16,  0 silent     6.80,  3 silent   <- worse
+    n=3      6.82, 0 silent   9.08,  0 silent     2.12, 12 silent   <- much worse
+
+`nback` fell 0.2308, violating its floor. So the control-state block cures the failure
+at the level where the store holds one item and induces it where the store is nearly
+full. P7 also failed and is the clue: 38 of 1500 variable_mapping answers were
+unparseable against a baseline 0, with mean reply length 15.91 characters against 13.10
+and a maximum of 147. Prepending four lines to a prompt whose instruction is "output
+ONLY one line" has a cost, and the anti-verbosity row was written to catch exactly that.
+
+### `primacy_v2` — correctly implemented, and unreachable on the task it targets
+
+The batch rule never fired. Craft's overflowing rows settled at mean occupancy **4.0**,
+which is `primacy`'s value, so P2 — the mechanism-confirmation row — failed, and craft
+came in at 0.8487 against `primacy`'s 0.8456. The candidate was measuring its parent.
+
+The rule is not broken. Driving the real `step()` with a stub that emits five
+`write_memory` calls in one assistant message settles the store at **3**; five separate
+messages settle it at **4**. Both paths behave as designed.
+
+What fails is the premise. 3b argued that encode writes arrive as one parallel
+assistant message, from 67 of 200 story rows showing two consecutive refusals with no
+`delete_key` between them — the agent could not have seen the first refusal before
+issuing the second. But craft's actual pattern is different:
+
+    baseline     w1..w4 written -> w5 "memory is full" -> delete_key rule1
+    primacy_v2   w1..w4 written -> w5 written (displaced) -> delete_key -> "not found"
+
+The delete immediately following the refusal proves the agent *did* see the result
+before acting, so arrival on craft is serial and `_batch_writes()` correctly returns 1.
+A mechanism conditioned on simultaneous arrival therefore cannot engage on the one task
+it was designed to repair. The premise was measured on a minority pattern, on a
+different task.
+
+Two genuine gains survive, neither the headline. `narrative_qa` recovered from
+`primacy`'s −0.0309 to **−0.0149**, inside its floor, so the contiguity cost is roughly
+halved. And A3 `precision_distance` is **0.0082**, the closest to the human median any
+candidate has reached (baseline 0.0221, `primacy` 0.0196). Both are attributable to the
+key-naming change visible above — `A+B→D` instead of `rule1` — which is a side effect
+rather than the mechanism, and should be isolated deliberately rather than inherited.
+
+### `episodic_primacy` — the composition could not be evaluated, by design
+
+Its C1 precondition failed on the same craft occupancy of 4.0, so C2 (additivity) and
+C4 (anti-regression) are VOID. That is the import-time assertion and the precondition
+row doing their job: the arm reports that it was measuring one mechanism rather than
+quietly presenting a composed result. `nback` −0.2016 and `craft` −0.0435 are both
+inherited failures.
+
+What is still visible, as C3 reported rather than scored: `nback` in composition
+(0.5893) sits between `episodic_reset_v2` alone (0.5601) and `primacy_v2` alone
+(0.9442), and `variable_mapping` (0.6507) below `episodic_reset_v2` alone (0.6854). So
+the two mechanisms interact rather than add, but with one of them inactive this run
+cannot say how.
+
+### Where iteration 4 should go
+
+The leak closure is now established and creditable, and its remaining cost is localised
+to a single mechanism: silence at n≥2 when the store is nearly full. That is a
+narrower problem than either previous wave faced. `primacy_v2`'s batch condition should
+be dropped rather than repaired, since serial arrival is what the agent actually does
+once writes are admitted; its narrative and A3 gains should be re-derived from the
+key-naming change that actually produced them.
