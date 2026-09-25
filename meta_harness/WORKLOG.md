@@ -18,7 +18,9 @@ vLLM on Torch GPU hours, no paid API calls.
 |---|---|---|
 | 18488082 | FAILED | `Python.h` absent — `/usr/bin/python3.12` ships no dev headers, so Triton cannot build `cuda_utils.c`. Looked like the skill's documented libcuda gotcha; it is not. libcuda.so.1 is in both `/usr/lib64` and `/lib64` and links fine. |
 | 18489568 | FAILED | `FileNotFoundError: 'ninja'`. FlashInfer JIT-compiles sampling kernels via ninja. Ninja *was* installed in the venv, but the job called `$REPO/.venv/bin/python` directly and never put `.venv/bin` on `PATH`. |
-| 18489855 | running | — |
+| 18489855 | FAILED | vLLM **served successfully** ("server ready after 280s"), then bench died: the OpenAI client refuses to construct without an `api_key` even against localhost. Fixed with an explicit dummy, which also guarantees no real key can be picked up from the environment. |
+| 18490375 | FAILED | Served in 160s, plain completion preflight returned "OK", bench started and wrote a JSONL — then every tool call 400'd: `"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser to be set`. |
+| 18491047 | running | — |
 
 All three surfaced as the same generic `RuntimeError: Engine core
 initialization failed`, with the real exception in the EngineCore block *above*
@@ -66,6 +68,49 @@ Axis work, all on released data, no API cost:
 Consequence worth the user's attention: **on qwen3-30b only A2 has headroom.**
 Searching on opus would give headroom on both A2 and A3. That is a real cost of
 the no-spend plan, not an argument to override it.
+
+Pattern worth noting: every one of these was a *different* cause reported
+through the same generic `Engine core initialization failed` or a bench
+traceback, and each one was masked until the previous was fixed. The job script
+now front-loads cheap checks — exception-line grep before the log tail, a plain
+completion preflight, and a tool-call preflight — so the next failure identifies
+itself in seconds rather than costing a queue cycle.
+
+## Two bugs found by reading code, not by running it
+
+Both would have produced plausible-looking but wrong numbers:
+
+1. **`run.repeat` in YAML is inert.** `bench/cli.py:179` only *writes* the CLI
+   `--repeat` into `run_cfg`; nothing reads `run.repeat` back. The gate would
+   have silently used `task_config n_repeat: 5` and compared **5** participants
+   against the released run's 50. Row counts confirm the released runs used
+   `--repeat 50`: word_recognition 50, digit span 19 spans x (2*50) = 1900,
+   story recall 4 stories x 50 = 200, nback 3 levels x 50 = 150.
+2. **Injection cannot patch one module.** `MAX_KEYS` is bound in **10** modules
+   and `WorkingMemoryAgent` in 8, because each `wm_*` task does
+   `from ..core.wm_agent import ...` at import. Rebinding only the defining
+   module would have left every task running the original harness — and every
+   candidate would have scored exactly like the baseline with nothing in the
+   output to reveal it.
+
+## Scaffolding built (all tested offline, no API cost)
+
+- `inject.py` — rebinds a candidate's overrides everywhere they are bound, and
+  reports where, so a result traces to the code that produced it.
+- `verify_interface.py` — offline compliance check against a scripted stub LLM
+  using the OpenAI tool-call shape `wm_agent` actually reads.
+- `candidates/baseline/` — released compactor unmodified; control and plumbing
+  test. **Passes.**
+- `candidates/random_decay/` — the adversary. Seeded from a hash of the stimulus
+  content, not `id(self)`, because an address-derived seed would make the control
+  irreproducible. Its test asserts reproducibility, per-participant variation,
+  and a rate spread of 0.001–0.755 across 30 participants. **Passes.**
+- `run_candidate.py` — runs bench in-process (required for injection to apply).
+- `score_candidate.py` — the whole evaluation contract: per-task humanlikeness
+  vector, mean over search tasks, A2 with CI and the trials covariate, A1/A3
+  guards, deltas with floor violations, and a noise-floor flag. Verified against
+  released data.
+- `cluster/search_set.yaml` — 8 search tasks, digit span cut to ~190 rows.
 
 ## Running notes
 
