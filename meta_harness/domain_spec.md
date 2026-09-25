@@ -6,6 +6,47 @@ All numbers here are measured from released data in this repo; see
 `meta_harness/NOTES.md` for derivations and `baseline_humanlikeness.txt` /
 `error_structure.txt` for the raw tables.
 
+> **READ THIS FIRST — parts of this document have been superseded by measurement.**
+>
+> This spec was written *before* anything was run locally. Wave 0 and iteration 1
+> then invalidated several of its central claims. The superseding record is
+> `meta_harness/WORKLOG.md`; `PROPOSER.md` carries the corrected numbers that a
+> proposer should act on. The original text is kept below rather than quietly
+> rewritten, because what was believed and why it changed is part of the result.
+>
+> What no longer holds:
+>
+> 1. **The released per-model tables are OpenRouter-specific.** They do not
+>    reproduce under local bf16 serving. Every number below drawn from
+>    `runs/compactor/*` is indicative only. The locally measured baseline is
+>    mean humanlikeness **0.7861** on the 8 search tasks.
+> 2. **"Variable Mapping holds 0.569 of the headroom" — unreachable.** The store
+>    is not on its causal path: 674 of 1500 questions ask about a name the 4-slot
+>    store had already evicted, and accuracy there is 0.985. Capacity 4, capacity
+>    10 000 and random decay all produce 0.992.
+> 3. **"A2 is the axis" — badly weakened.** `wm_word_recognition.py` formats the
+>    entire studied list into its recall prompt, so 36 of 50 participants score
+>    ≥ 0.98 by reading it off. A2's value is produced by the ~7 that consult the
+>    store. It is not a clean optimization target.
+> 4. **The absolute guard bands (A1 in [0.05, 0.12], A3 BLEU < 0.02 @ [100,175]
+>    words) were incoherent** — calibrated on OpenRouter numbers, so the local
+>    baseline failed its own guard. Guards are now *relative*: distance from human
+>    must not exceed the baseline's distance plus a tolerance.
+> 5. **The 0.03 per-task floor was below the measurement noise for 6 of 8 tasks.**
+>    Bootstrapped min credible deltas range from 0.011 to **0.140** (digit-span
+>    forward, which resolves to only 10 model participants). Floors are now
+>    `max(0.03, min_credible_delta[task])`.
+> 6. **"N-Back is the sole task where the model is worse"** is still true, but the
+>    "bimodal / episodic collapse" reading was an artifact of scoring granularity,
+>    and the deficit is entirely at n=3 where the model stops *answering*.
+>
+> The through-line: four separate defects in which the human and model sides were
+> not measuring the same thing — digit-span protocol, variable-mapping exposure,
+> N-Back granularity, word-recognition prompt leak. Three of the eight search
+> tasks turn out to bypass the memory module altogether. Any future work on this
+> benchmark should check comparability per task *before* reading a humanlikeness
+> number as a fact about memory.
+
 ## Domain Summary
 
 **Task.** Ten classic psychology memory tasks (digit span forward/reverse,
