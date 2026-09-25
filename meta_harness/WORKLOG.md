@@ -765,3 +765,100 @@ the agent is still 0.737 accurate, so those answers come from the dialogue histo
 `displacement`'s n=3 humanlikeness of 0.9387 is therefore leak-derived, and "n-back
 per level is closed" was never the same claim as "the memory module closed n-back".
 `full_context` is the contrast: 53/53 values carry letters.
+
+### Iteration 2 results — no candidate joins the frontier, and three of the four
+### failed in ways that taught us something
+
+Jobs 18522417 (47m, four arms) and 18523331 (17m), all exit 0.
+
+    arm                        mean     floor   guards   instrument
+    serial_recognition_open  0.8631      ok       ok       YES (partial: 1 task)
+    serial_recognition       0.8134      ok       ok       YES
+    primacy                  0.7945    FAIL       ok        -
+    episodic_reset           0.7892    FAIL       ok        -
+    baseline                 0.7861      ok       ok        -
+    chunk_limit              0.7799    FAIL       ok        -
+
+**The baseline remains the sole frontier member.** Note that the two top rows by mean
+are the instrument rows, on a result their own ablation voided — the self-enforcing
+marking earned its keep on its first real use.
+
+**`primacy` — mechanism confirmed, rejected on two floors.** The ACT-R eviction rule
+did exactly what it claimed. U-shaped survival, the fraction of overflowing story rows
+retaining both the first- and last-written key, went **0.000 → 1.000** where both
+`displacement` and the baseline scored exactly 0.000, with the retention minimum at a
+middle write position as predicted. `semantic_story_recall` recovered 0.8964 → 0.9477,
+inside its pre-registered two-sided band, and it did so while keeping displacement's
+response fix intact (n=3 answered 14.0, keys_held 4.0, accuracy 0.76). Digit span was
+untouched. But `craft_task` fell 0.0451 and `narrative_qa` 0.0309, both past their
+floors, so recovering story recall cost two other gist tasks. 6 PASS / 3 FAIL / 4
+INCONCLUSIVE.
+
+**`episodic_reset` — the strongest mechanism result in the project, and VOID by its
+own pre-registered control.** Closing the history leak worked, unambiguously:
+
+    n=3 store carries letter identity   0.0202 -> 1.0000   (full_context is 1.0)
+    variable_mapping A4 n_errors            12 -> 509      (trustworthy at scale)
+    A4 rc_ratio                         1.1682 -> 1.3170   (ceiling 1.434, normalized 0.7302)
+    vm share at ceiling                 0.9867 -> 0.2733,  2 -> 4 distinct scores
+    vm humanlikeness                    0.3554 -> 0.6764   (+0.3210)
+    vm humanlikeness, matched formula   0.3587 -> 0.7295
+
+That is a +0.32 gain on the task the candidate targeted, the point mass broken, and
+A4 finally trustworthy at 509 errors rather than 12. And it is all VOID, because the
+candidate pre-registered that a failure of its n=1 control invalidates P1–P7
+regardless of their values — and n=1 failed hard: **36 of 50 participants answered
+nothing at all**, mean answered 2.06 of 14, keys_held 0.28. At n=1 a single
+overwritten key suffices, so that can only be broken mechanics, not a capacity limit.
+`nback` fell 0.2939, violating its floor. 1 PASS / 2 FAIL / 2 INCONCLUSIVE / **6
+VOID**.
+
+This is the discipline paying for itself. Without the control the honest-looking
++0.32 would have been bankable. The proposer also pre-committed the diagnosis and the
+fix: a P9 failure localised to buffer-period turns means lost sequence position, whose
+remedy is pinning the instruction turn. That is iteration 3's first move.
+
+**`serial_recognition` — VOID via its own ablation, which is exactly why the ablation
+was required.** The masked arm looked like a triumph: word_recognition +0.2439,
+ceiling group 36 → 0, mean score 0.816 → 0.055. But the **open arm collapsed too** —
+ceiling 1 of 50, mean score 0.177 — and the open arm is identical in every respect
+except that the other 99 trial lines stay visible. So the collapse is caused by the
+serial framing, the call pattern or the stitching, not by removing information.
+Without that arm this wave would have recorded a fake +0.244 as "closing the leak
+works", and the arm cost 105 seconds. 9 PASS / 2 FAIL / 3 INCONCLUSIVE / 3 VOID, with
+P13 and P14 tagged ENTAILED so the mean cannot be cited as a gain.
+
+**`chunk_limit` — the bound worked exactly, and it independently confirmed the leak
+diagnosis that `serial_recognition` could not.** Elements per value went 13.21 → 3.267
+with max exactly 4, store max 99 → 16, and distinct studied words in the store
+17.78 → 4.92. Max elements per value is ≤ 4 on **all eight tasks**. `craft_task` is
+bit-identical to the baseline, as predicted.
+
+The decisive row is P13. After removing 74% of the store's content and 75% of its
+distinct studied words, **word_recognition moved −0.0051**, far inside its 0.121
+floor. The score does not depend on the store at all, because it is read off the
+studied list in the recall prompt. That is the cleanest possible confirmation of the
+leak, obtained from a candidate that was not trying to close it. Rejected on
+`narrative_qa` (−0.0310); P11 failed because the bound cost three spans of digit span
+(best_span 18.4 → 15.4) rather than the predicted one digit, and P12 failed because A2
+moved *away* from the human conservative bias — consistent with P13, since a task read
+off the prompt cannot respond to store content. 11 PASS / 3 FAIL / 1 VOID.
+
+### The serving stack is deterministic, which makes every movement attributable
+
+Worth recording because it licenses reading small deltas at all, and because it
+refutes the obvious objection to `episodic_reset`'s P10 failure. Independent
+candidates reproduce the baseline **bit-exactly**: `digit_span_reverse` in all four
+arms, `craft_task` in two, `digit_span_forward` in two. So there is no run-to-run
+nondeterminism to blame for movement elsewhere, the per-task floors are not too tight,
+and `episodic_reset`'s craft (−0.0280) and narrative (−0.0100) moves are genuine
+effects of its `step()` rewrite. Its claim that the six `encode()`→`recall()` tasks
+would be untouched is empirically wrong.
+
+### The VOID machinery fired three times on real data
+
+It was built because iteration 1 scored FAIL on a prediction that could not move.
+This wave it caught: `primacy` P2 against `displacement` (both-ends retention 0.000 in
+both runs), `chunk_limit` P5 (median 4-gram precision identical to the baseline's
+0.0414 to full precision), and the two precondition cascades above. A checker that can
+only say PASS or FAIL would have reported six false verdicts here.
