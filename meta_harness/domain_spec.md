@@ -49,10 +49,14 @@ the run/JSONL output contract, and the base model weights.
 the human data, and the prompting (non-compactor) conditions C1/C3.
 
 **Base model.** Search: `qwen/qwen3-30b-a3b-instruct-2507`, served locally
-under vLLM on the NYU Torch cluster (free in dollars; GPU hours only). Chosen
-on measured headroom, not price — see the substrate table below. Confirmation:
-`claude-opus-4-6` primary, with `gpt-5.4` and `llama-3.3-70b-instruct` as
-additional held-out models.
+under vLLM on the NYU Torch cluster. Chosen on measured headroom, not price —
+see the substrate table below. Confirmation: **`llama-3.3-70b-instruct`, also
+served locally under vLLM** (headroom 0.164, full 10-task baseline already
+released). **No paid API spend is authorized**, so the whole pipeline — search
+and held-out evaluation — runs on Torch GPU hours and costs $0 in dollars.
+`claude-opus-4-6` and `gpt-5.4` are the models with the most headroom (0.225,
+0.148) and remain the interesting confirmation targets, but they are out of
+scope unless spend is approved later.
 
 **Budget.**
 
@@ -60,11 +64,13 @@ additional held-out models.
   set, ~10-30 min single-GPU each, so **~15-25 GPU-hours, $0 API**.
 - Proposer: Claude Code (Opus) for ~20 iterations, on the existing
   subscription.
-- Confirmation: top 3-5 Pareto finalists x full task set x 3 held-out models.
-  On `claude-opus-4-6` a full evaluation is **~$370** (proxied from 19,940
-  logged LLM turns / 6.6M chars per evaluation), so **~$1,850 for 5 finalists**
-  on opus alone, ~$2-3k including gpt-5.4. **This requires explicit approval
-  before any paid call** and is currently `unknown` / unapproved.
+- Confirmation: top 3-5 Pareto finalists x full 10-task set on
+  `llama-3.3-70b-instruct` under vLLM. Dense 70B, so it needs materially more
+  VRAM than the search model (~140GB at bf16, ~70GB at fp8) — 2x80GB, or 1x80GB
+  with fp8 weights. Budget **~10-20 additional GPU-hours, $0**.
+- **No paid API spend is authorized.** For reference, a full evaluation on
+  `claude-opus-4-6` would be ~$370 (proxied from 19,940 logged LLM turns /
+  6.6M chars), so ~$1,850 for 5 finalists. Not planned, not approved.
 
 ### Why not the cheapest model
 
@@ -202,9 +208,15 @@ Human reference: a fixed random **half** of each task's participants.
 
 **Held-out test.** Both axes, models primary:
 
-- *Models (primary).* The winning harness is evaluated on `claude-opus-4-6`,
-  `gpt-5.4`, and `llama-3.3-70b-instruct`, none of which the search touches.
-  All three already have full 10-task baselines, so the comparison is direct.
+- *Models (primary).* The winning harness is evaluated on
+  `llama-3.3-70b-instruct`, which the search never touches and which already
+  has a full 10-task baseline, so the comparison is direct. It is a different
+  family and a dense rather than MoE architecture, which is the transfer that
+  matters. **n=1 held-out model is the main weakness of the no-spend plan** —
+  it can show a harness fails to transfer, but one success is thin evidence
+  that it generalizes. If a further free model is wanted,
+  `qwen3-next-80b-a3b-instruct` also has a full baseline (headroom 0.122) and
+  costs only GPU hours, though same-family transfer is a weaker test.
 - *Tasks (secondary).* **Map task** and **factual QA** are held out entirely —
   one procedural task and one long-term-memory QA task, headroom 0.221 and
   0.276 on opus. n=2 is weak, so this is a directional check, not a statistical
@@ -304,19 +316,28 @@ hours, and the declared capacity/decay parameters.
 
 ## Open Questions and Unknowns
 
-- **Base branch.** This worktree branches from `origin/main` (431474a) as
-  requested, but `feat-rationales` is **189 commits ahead** and main lacks
-  `encode_streaming` / the `C2-stream` condition, `CLAUDE.md`, and the
-  `application/listening_qa` work. The harness interface above is written
-  against main's `WorkingMemoryAgent`. **Recommend rebasing onto the newer
-  compactor before iteration 1**, so the streaming encode path is inside the
-  search space rather than absent from it. Unresolved.
-- **Torch allocation.** No vLLM env exists yet; setup is the next action.
-  GPU partition, queue wait, and hours available: `unknown`. Proposed default:
-  one A100/H100 for an 8-hour interactive allocation to validate the loop on
-  2 candidates, then batch `sbatch` jobs for the remaining 38.
-- **Confirmation spend.** ~$1,850-3,000 for the finalist evaluations.
-  `unknown` / **not approved**. No paid call until approved.
+- **Base branch: settled.** `origin/main` (431474a) is the head. `feat-rationales`
+  is 189 commits ahead and adds `encode_streaming` / `C2-stream`, but that path
+  is called from exactly one place (`bench/tasks/wm_mcq_common.py`) and the only
+  `C2-stream` rows in `runs/` belong to `wm_application_listening_qa_full_grid`,
+  which is not part of this task set. So main loses nothing here and the
+  streaming encode path is legitimately out of scope.
+- **Spend: settled at $0.** No paid API calls. Search and held-out evaluation
+  both run locally under vLLM.
+- **Torch feasibility: the main open risk, and unverified.** No vLLM env exists
+  yet. Specifically unconfirmed, in rough order of how likely each is to bite:
+  1. whether compute nodes have outbound internet for Hugging Face downloads —
+     on many clusters they do not, so weights must be pre-staged to scratch
+     from a login node;
+  2. scratch quota for ~60GB (qwen3-30b bf16) plus ~140GB (llama-3.3-70b bf16)
+     or ~70GB fp8;
+  3. available GPU partition, VRAM per node, and max wall-clock per job —
+     llama-3.3-70b needs 2x80GB at bf16 or 1x80GB at fp8;
+  4. queue wait, which sets whether 40 candidates is days or weeks.
+  Proposed default once verified: one 80GB GPU, 8-hour interactive allocation to
+  stand the server up and validate the loop on 2 candidates (the random-decay
+  adversary first), then `sbatch` batches for the remainder, with `bench`
+  running on the same node against `--base-url http://localhost:8000/v1`.
 - **`MAX_KEYS != 4` is in scope by the user's choice**, but it breaks the
   Cowan-2001 grounding the compactor is built on. A winning candidate that
   moves capacity needs that argued explicitly in the paper, not silently
