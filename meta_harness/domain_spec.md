@@ -72,6 +72,39 @@ scope unless spend is approved later.
   `claude-opus-4-6` would be ~$370 (proxied from 19,940 logged LLM turns /
   6.6M chars), so ~$1,850 for 5 finalists. Not planned, not approved.
 
+### The released per-model numbers are serving-stack-dependent
+
+**Measured 2026-09-25, and it changes how the table below may be used.** The
+reproduction gate compared local vLLM bf16 against the released
+`runs/compactor/qwen_qwen3-30b-a3b-instruct-2507` on `wm_word_recognition`, with
+identical stimuli (verified per participant), identical `bench` code and the same
+config. They disagree:
+
+| | local vLLM bf16 | released OpenRouter |
+|---|---|---|
+| paired score mean | 71.58 | 86.38 |
+| miss / false-alarm | 0.056 / 0.185 | 0.001 / 0.064 |
+| A2 miss/fa ratio | 0.302 | 0.018 |
+| trials attempted | 72.9 | 87.5 |
+
+`W_1 = 0.149` against a 0.075 noise floor for this task, i.e. twice the level at
+which a difference means anything. Mean paired delta -14.80.
+
+So the released rows describe **OpenRouter's deployment** of each model, not the
+weights served at bf16. Consequences:
+
+- The headroom figures in the table below remain valid *relative to each other*
+  and against the human data, and they were the right basis for choosing a
+  substrate. They are **not** the baseline a locally-served candidate can be
+  compared against.
+- Baseline and candidates must share one serving stack, so the baseline is
+  re-measured locally as candidate 0 on the 8-task search set. Every
+  `delta_vs_baseline` in `score_candidate.py` is against that local run.
+- Humanlikeness itself is unaffected: the human data is fixed, so "how close is
+  this harness to humans" is still the right question.
+- Independently of this project, this is worth knowing about the released data:
+  the per-model rows are not reproducible from the model weights alone.
+
 ### Why not the cheapest model
 
 Measured mean humanlikeness and headroom above the split-half human noise
@@ -245,6 +278,13 @@ distribution by dropping items stochastically will look exactly like that. So
 A1 enters as a **constraint**: sub-span leak must stay within [0.05, 0.12], and
 a candidate that buys ceiling agreement with excess leakage is rejected rather
 than ranked.
+
+**Baseline.** Candidate 0 is the unmodified compactor measured **locally**
+(`meta_harness/cluster/baseline.sbatch`), not a released run — see the
+serving-stack finding above. Its per-task vector is what every candidate's
+`delta_vs_baseline` and per-task floor are computed against, and it also serves
+as an end-to-end test of the injection path: if it does not reproduce the
+unmodified harness's behaviour, the plumbing is wrong rather than the harness.
 
 **Search set.** 8 tasks: digit span forward, digit span reverse, n-back,
 **word recognition**, variable mapping, narrative QA, semantic story recall,
