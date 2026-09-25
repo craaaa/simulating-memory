@@ -35,6 +35,7 @@ sys.path.insert(0, str(ROOT))
 import score as S  # noqa: E402
 
 from meta_harness import error_structure as ES  # noqa: E402
+from meta_harness import interference as IF  # noqa: E402
 from meta_harness import protocol_match as PM  # noqa: E402
 
 HUMAN_A2_RATIO = 6.094
@@ -42,6 +43,28 @@ HUMAN_A3_BLEU = 0.002
 HUMAN_A3_WORDS = 137.2
 
 FLOOR = 0.03                      # max allowed per-task regression vs baseline
+
+# Two task families, and the distinction matters more than any single number
+# here. `reset_messages` is never called by any task, and `WorkingMemoryAgent`
+# maintains conversation history across `step()` calls -- but `recall()` builds a
+# fresh single prompt from the KV store alone. So:
+#
+#   BOTTLENECKED  encode() then recall(): the 4-slot store is the only route from
+#                 stimulus to answer. The bottleneck genuinely binds.
+#   LEAKY         answers via step(): the full study history is still in context,
+#                 so the store can be bypassed entirely.
+#
+# Measured consequence on variable_mapping (leaky): 674 of 1500 questions ask
+# about a name the store had already evicted, and accuracy there is 0.985. When
+# the store holds a STALE value contradicting the truth, accuracy is still 0.935 --
+# the model overrides its own memory. That is why capacity 4, capacity 10 000 and
+# random decay all produce exactly 0.992.
+#
+# This is why a leaky task's humanlikeness must not be treated as a memory-module
+# score: no change to the store can move it.
+BOTTLENECKED_TASKS = ["digit_span_forward", "digit_span_reverse", "word_recognition",
+                      "semantic_story_recall", "craft_task", "narrative_qa"]
+LEAKY_TASKS = ["nback", "variable_mapping"]
 
 # Guards are expressed as distance-from-human, not as absolute bands.
 #
@@ -55,17 +78,33 @@ FLOOR = 0.03                      # max allowed per-task regression vs baseline
 # FURTHER from humans than the baseline already is. So the rule is relative --
 # |candidate - human| must not exceed |baseline - human| + tolerance.
 HUMAN_A1_LEAK = 0.087
+HUMAN_BEST_SPAN = 6.88            # humans stop here; baseline reaches 18.4
 A1_LEAK_TOLERANCE = 0.03
 A3_BLEU_TOLERANCE = 0.02          # absolute; human BLEU is ~0 so this is a cap
 A3_WORD_TOLERANCE = 40.0          # words, around the human 137.2
 
-# Split-half human noise floor per task; a delta under this is not a result.
+# Smallest per-task delta that is not sampling noise: 2 x the bootstrap SE of a
+# DIFFERENCE between two runs. From `metric_noise.py`, which resamples the model
+# side because that is what actually varies between two candidates.
+#
+# These replace the earlier human split-half figures, which captured uncertainty
+# in the reference distribution only and so understated the real imprecision by up
+# to 4x. The worst case is digit_span_forward: `search_set.yaml` cuts it to 190
+# rows, which score.py resolves into just **10** model participants, giving a
+# min credible delta of 0.140. A floor of 0.03 there was measuring nothing.
+#
+# The mean is much better conditioned than any single task -- sqrt(sum of squares)/8
+# gives SE(mean delta) = 0.013, so a mean delta of ~0.026 is credible. That is why
+# the primary objective stays the mean and no re-run was needed to fix precision.
 NOISE_FLOOR = {
-    "digit_span_forward": 0.036, "digit_span_reverse": 0.026, "nback": 0.025,
-    "word_recognition": 0.075, "variable_mapping": 0.041, "factual_qa": 0.061,
-    "narrative_qa": 0.053, "semantic_story_recall": 0.042, "map_task": 0.054,
-    "craft_task": 0.041,
+    "digit_span_forward": 0.140, "digit_span_reverse": 0.059, "nback": 0.060,
+    "word_recognition": 0.121, "variable_mapping": 0.017,
+    "narrative_qa": 0.030, "semantic_story_recall": 0.011, "craft_task": 0.025,
+    # Held-out tasks were not bootstrapped (no local run yet); keep the old
+    # split-half values, which are known to be optimistic.
+    "factual_qa": 0.061, "map_task": 0.054,
 }
+MIN_CREDIBLE_MEAN_DELTA = 0.026
 
 SEARCH_TASKS = [
     "digit_span_forward", "digit_span_reverse", "nback", "word_recognition",
@@ -107,11 +146,23 @@ def axes(run_dir: Path) -> dict[str, Any]:
         if recs:
             summ = PM.summarize("candidate", recs)
             leak = summ["sub_span_fail"]
+            # Caveat, so a future reader does not mistake a small A1 distance for
+            # reassurance: sub_span_leak is only defined where the staircase
+            # actually fails. `full_context` reached best_span 20.0 on a 19-span
+            # schedule -- it never terminated, so there were no failures to leak
+            # and A1 read 0.032, closer to human than the baseline's 0.130 purely
+            # by being uninformative. best_span is reported alongside for exactly
+            # this reason, and unlike the W_1 delta it is a scalar over all 190
+            # trials rather than 10 pseudo-participants, so it is the sensitive
+            # digit-span regression signal (it caught random_decay at 18.4 -> 2.0).
             res["A1"] = {
                 "sub_span_leak": round(leak, 4),
                 "best_span": round(summ["best_span"], 2),
                 "human_leak": HUMAN_A1_LEAK,
+                "human_best_span": HUMAN_BEST_SPAN,
+                "best_span_distance": round(abs(summ["best_span"] - HUMAN_BEST_SPAN), 2),
                 "distance": round(abs(leak - HUMAN_A1_LEAK), 4),
+                "at_ceiling": bool(summ["best_span"] >= 19.0),
             }
 
     sr = run_dir / "tasks/wm_semantic_story_recall.jsonl"
@@ -126,6 +177,12 @@ def axes(run_dir: Path) -> dict[str, Any]:
                 "bleu_distance": round(abs(bleu - HUMAN_A3_BLEU), 4),
                 "word_distance": round(abs(words - HUMAN_A3_WORDS), 1),
             }
+
+    # A4 closes the one cell a candidate could otherwise win by pure noise:
+    # variable_mapping has the largest headroom and the best precision, and A1/A2/A3
+    # do not touch it. See meta_harness/interference.py for the human reference.
+    if (run_dir / "tasks/wm_variable_mapping.jsonl").exists():
+        res["A4"] = IF.a4(run_dir)
     return res
 
 
@@ -152,8 +209,13 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
                 continue
             d = round(val - bv, 4)
             deltas[task] = d
-            if task in SEARCH_TASKS and d < -FLOOR:
-                violations.append({"task": task, "delta": d, "floor": -FLOOR})
+            # A regression cannot be charged against a candidate if it is smaller
+            # than the precision with which the task can be measured at all --
+            # otherwise digit_span_forward (min credible delta 0.140) would reject
+            # candidates for noise. So the effective floor is whichever is larger.
+            eff = max(FLOOR, NOISE_FLOOR.get(task, 0.05))
+            if task in SEARCH_TASKS and d < -eff:
+                violations.append({"task": task, "delta": d, "floor": -eff})
             if abs(d) < NOISE_FLOOR.get(task, 0.05):
                 noise.append(task)
         rec["delta_vs_baseline"] = deltas
@@ -181,6 +243,27 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
                 f"{key} {field}: {cd} vs baseline {bd} (tolerance {tol}) -- "
                 f"drifted further from human"
             )
+    # A4 is conditional, unlike the others. variable_mapping is leaky -- the store
+    # can be bypassed -- so a candidate that does not move it owes no explanation.
+    # But a candidate that DOES move it has manufactured errors, and then the
+    # question is whether those errors are interference-shaped like a human's
+    # (rc_ratio 1.386) or rate-like a noise injector's (rc_ratio -> 1.0).
+    vm_delta = (rec.get("delta_vs_baseline") or {}).get("variable_mapping")
+    a4 = rec["axes"].get("A4") or {}
+    if vm_delta is not None and vm_delta > NOISE_FLOOR["variable_mapping"]:
+        if not a4.get("trustworthy"):
+            guards.append(
+                f"A4: variable_mapping improved by {vm_delta} but only "
+                f"{a4.get('n_errors')} errors were produced, too few to tell "
+                f"interference from noise (need >=30)"
+            )
+        elif a4.get("rc_ratio") is not None and a4["rc_ratio"] < 1.15:
+            guards.append(
+                f"A4: variable_mapping improved by {vm_delta} with rc_ratio "
+                f"{a4['rc_ratio']} -- errors are independent of interference load "
+                f"(human 1.386, pure noise 1.0), so the gain is unstructured"
+            )
+
     rec["guard_violations"] = guards
     rec["passes_guards"] = not guards
     rec["guards_enforced"] = baseline_dir is not None

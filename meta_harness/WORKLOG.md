@@ -239,8 +239,8 @@ Five of eight tasks are already at 0.89–0.97 on the baseline and have nothing 
 to win. What is actually open:
 
 - `variable_mapping` **0.355** — flat across all three candidates (0.347–0.355).
-  Nothing tried so far moves it at all, which makes it the most interesting cell
-  in the table: it is not a capacity problem.
+  I first read this as "an interesting non-capacity problem". That reading was
+  wrong; see *The leak* below. It is not reachable from the memory module at all.
 - `word_recognition` **0.495**, and it carries A2, the one axis with headroom
   (distance 5.754 from the human miss/FA ratio of 6.09).
 - `nback` **0.791** — and `full_context` takes it to **0.948**. N-Back is the task
@@ -265,6 +265,122 @@ Pass condition, written before the run: mean humanlikeness ≥ baseline + 0.05
 setup and it must be redesigned before any iteration is spent; failing the first
 again is evidence that matching the human distribution with pure noise is harder
 than assumed, which is the result in the metric's favour.
+
+## The leak: two of the eight tasks do not test the memory module
+
+Found while checking whether `variable_mapping`'s flatness was a real mechanism or
+an artifact. It was an artifact, and a structural one.
+
+`WorkingMemoryAgent` keeps conversation history across `step()` calls.
+`reset_messages()` exists but **no task ever calls it**. `recall()`, by contrast,
+calls `llm.generate` with a single fresh prompt built from the KV store alone. So
+tasks split into two regimes by which method they answer through:
+
+| regime | route | tasks | mean HL |
+|---|---|---|---|
+| bottlenecked | `encode()` → `recall()`, KV only | ds_fwd .886, ds_rev .967, word_rec .495, story .947, craft .891, narr .957 | **0.854** |
+| leaky | answers via `step()`, full study history in context | nback .791, variable_mapping .355 | **0.573** |
+
+(`craft_task` and `narrative_qa` reach `recall()` through `run_wm_mcq_trial`.)
+
+**The two least humanlike tasks are exactly the two where the 4-slot bottleneck is
+bypassed.** Measured directly on `variable_mapping`, conditioning each question on
+what the store actually held at the time:
+
+| store state at question time | n | accuracy |
+|---|---|---|
+| queried name present, value correct | 795 | 1.000 |
+| queried name present but value **stale** | 31 | 0.935 |
+| queried name **absent** — store had evicted it | 674 | 0.985 |
+
+45% of questions ask about a name the store no longer holds, and the model answers
+them at 0.985. When the store actively contradicts the truth, the model overrides
+it and is still right 93.5% of the time. The store is decorative here; the answer
+comes from the dialogue history.
+
+That fully explains the flatness: capacity 4, capacity 10 000 and random decay all
+give 0.992, because none of them are on the causal path. It also means
+**`variable_mapping`'s apparent 0.645 of headroom — the largest single block in the
+table, 0.081 of the 8-task mean — is unreachable by any change to the memory
+module.** A proposer aiming there would burn a budgeted iteration for nothing, or
+worse, discover that the only way to move it is to manufacture failures.
+
+Two further protocol facts about `variable_mapping`, which compound the above:
+
+- The human task terminates at **3 strikes**; the model answers all 10 questions.
+  Humans answered a mean of **4.93** questions (95% fewer than 10), but score is
+  `correct/10` either way. So the human 0.394 mixes lower accuracy with shorter
+  exposure. Accuracy *among answered* questions is **0.731** against the model's
+  0.992 — a real gap, but much smaller than the score gap implies.
+- Protocol-matching the 3-strike rule onto model trials changes the model's score
+  by nothing (0.992 → 0.992), because at 0.8% error it almost never accumulates 3
+  strikes. So unlike the digit-span case, protocol-matching does not rescue this
+  comparison; the gap genuinely requires the model to fail.
+
+### A4, and why it had to exist before any iteration was spent
+
+`variable_mapping` had the largest headroom, the *best* measurement precision
+(min credible delta 0.017), and no error-structure axis touching it — A1 is digit
+span, A2 word recognition, A3 story recall. That is precisely the shape of a cell
+that gets gamed, and the adversary control had no teeth there.
+
+`meta_harness/interference.py` closes it, using two facts about human errors:
+
+- **Humans make interference errors.** Of 152 human errors: 23.0% picked a city
+  previously assigned to *that same name* (stale binding), 46.1% a city belonging
+  to *another* name, 30.9% a city never assigned. So 69.1% are intrusions against a
+  57.7% chance rate from option composition — a real but modest +0.114, ~3 SE.
+- **Human errors concentrate on high-interference items.** `relationCount` averages
+  **6.18 on errors vs 4.46 on correct**, a ratio of **1.386**.
+
+The ratio is the primary statistic because it is the one noise cannot fake: random
+key-dropping produces errors independent of interference load, so its ratio tends
+to 1.0. The guard is conditional — a candidate that leaves `variable_mapping` alone
+owes nothing, but one that improves it past the noise floor must show either ≥30
+errors with `rc_ratio ≥ 1.15`, or it is rejected as an unstructured gain.
+
+At baseline the model makes 12 errors in 1500 questions, so its own A4 is
+unmeasurable and reports `trustworthy: false`. That is by design: A4 says nothing
+about the baseline and everything about any candidate that starts failing.
+
+## Measurement precision was wrong, and it mattered
+
+The `NOISE_FLOOR` table was human split-half only — uncertainty in the reference
+distribution, nothing about the model side being a finite sample too.
+`meta_harness/metric_noise.py` bootstraps both and reports the SE of a *difference*
+between two runs, which is what a per-task floor actually has to respect:
+
+| task | n_model | min credible \|Δ\| | old floor |
+|---|---|---|---|
+| digit_span_forward | **10** | **0.140** | 0.036 |
+| word_recognition | 50 | **0.121** | 0.075 |
+| nback | 150 | 0.060 | 0.025 |
+| digit_span_reverse | 10 | 0.059 | 0.026 |
+| narrative_qa | 50 | 0.030 | 0.053 |
+| craft_task | 150 | 0.025 | 0.041 |
+| variable_mapping | 150 | 0.017 | 0.041 |
+| semantic_story_recall | 200 | 0.011 | 0.042 |
+
+The digit-span figure is the bad one: `search_set.yaml` cuts those tasks to 190
+rows for a 4x throughput win, and `score.py` resolves 190 rows into **10** model
+participants. A floor of 0.03 on a quantity with a 0.140 noise band was measuring
+nothing. Effective floor is now `max(FLOOR, min_credible_delta[task])`.
+
+Deliberately **not** fixed by re-running at larger n. The primary objective is the
+8-task mean, and averaging already fixes it: `sqrt(Σ SE²)/8 = 0.013`, so a mean
+delta of **0.026** is credible — inside the existing 0.03 floor. Re-measuring the
+baseline at 3.5x cost would have bought precision the objective does not need.
+Instead, digit-span regressions are watched via `best_span`, a scalar over all 190
+trials rather than 10 pseudo-participants, which caught `random_decay` at 18.4 → 2.0.
+
+That last number is worth stating on its own: **the baseline reaches span 18.4
+where humans stop at 6.88.** Digit-span humanlikeness reads 0.886 because the
+marginal score distributions happen to line up, while the underlying staircase
+behaviour does not. Digit span is less closed than 0.886 suggests, and A1's
+`sub_span_leak` cannot see it — `full_context` hit best_span 20.0, never
+terminated, had no failures to leak, and so scored *closer* to human on A1 than the
+baseline purely by being uninformative. A1 now reports `at_ceiling` and
+`best_span_distance` so that cannot be misread again.
 
 ### Bug found while scoring wave 0
 

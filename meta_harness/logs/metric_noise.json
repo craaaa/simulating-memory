@@ -1,0 +1,114 @@
+[
+  {
+    "task": "digit_span_forward",
+    "n_human": 52,
+    "n_model": 10,
+    "humanlikeness": 0.886,
+    "se_both": 0.0498,
+    "se_model_only": 0.0494,
+    "se_of_delta": 0.0698,
+    "min_credible_delta": 0.1396,
+    "ci95": [
+      0.765,
+      0.957
+    ]
+  },
+  {
+    "task": "digit_span_reverse",
+    "n_human": 49,
+    "n_model": 10,
+    "humanlikeness": 0.9666,
+    "se_both": 0.0215,
+    "se_model_only": 0.0208,
+    "se_of_delta": 0.0294,
+    "min_credible_delta": 0.0588,
+    "ci95": [
+      0.8979,
+      0.9805
+    ]
+  },
+  {
+    "task": "nback",
+    "n_human": 53,
+    "n_model": 150,
+    "humanlikeness": 0.7909,
+    "se_both": 0.0226,
+    "se_model_only": 0.0212,
+    "se_of_delta": 0.03,
+    "min_credible_delta": 0.0599,
+    "ci95": [
+      0.7445,
+      0.8319
+    ]
+  },
+  {
+    "task": "word_recognition",
+    "n_human": 53,
+    "n_model": 50,
+    "humanlikeness": 0.4948,
+    "se_both": 0.055,
+    "se_model_only": 0.0429,
+    "se_of_delta": 0.0607,
+    "min_credible_delta": 0.1213,
+    "ci95": [
+      0.3842,
+      0.6006
+    ]
+  },
+  {
+    "task": "variable_mapping",
+    "n_human": 152,
+    "n_model": 150,
+    "humanlikeness": 0.3554,
+    "se_both": 0.0196,
+    "se_model_only": 0.006,
+    "se_of_delta": 0.0085,
+    "min_credible_delta": 0.017,
+    "ci95": [
+      0.3195,
+      0.3952
+    ]
+  },
+  {
+    "task": "narrative_qa",
+    "n_human": 52,
+    "n_model": 50,
+    "humanlikeness": 0.9572,
+    "se_both": 0.016,
+    "se_model_only": 0.0106,
+    "se_of_delta": 0.015,
+    "min_credible_delta": 0.03,
+    "ci95": [
+      0.9176,
+      0.9783
+    ]
+  },
+  {
+    "task": "semantic_story_recall",
+    "n_human": 53,
+    "n_model": 200,
+    "humanlikeness": 0.9473,
+    "se_both": 0.0117,
+    "se_model_only": 0.0039,
+    "se_of_delta": 0.0056,
+    "min_credible_delta": 0.0111,
+    "ci95": [
+      0.9194,
+      0.9651
+    ]
+  },
+  {
+    "task": "craft_task",
+    "n_human": 54,
+    "n_model": 150,
+    "humanlikeness": 0.8907,
+    "se_both": 0.018,
+    "se_model_only": 0.0089,
+    "se_of_delta": 0.0126,
+    "min_credible_delta": 0.0253,
+    "ci95": [
+      0.8559,
+      0.9242
+    ]
+  }
+]
