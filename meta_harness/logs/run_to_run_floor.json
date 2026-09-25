@@ -1,0 +1,31 @@
+{
+  "measured": "2026-09-25",
+  "job": 18536738,
+  "run_a": "meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "run_b": "meta_harness/runs/iter3rep/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "what_this_is": "Two runs of the SAME harness, config and seed, so every per-task delta is pure run-to-run variation. This is what metric_noise.py structurally cannot see: it bootstraps by resampling the model side of a FIXED set of rows, capturing sampling noise but not generation variation between runs. vLLM with continuous batching at max_parallel_participants=50 is not reproducible at temperature 0, because batch composition changes reduction order.",
+  "headline": "The enforced floors are CONSERVATIVE, not too tight. The largest run-to-run movement across the eight search tasks is 0.0152, on digit_span_forward, whose floor is 0.140. The 8-task mean moves +0.0001 against a min credible mean delta of 0.026.",
+  "per_task": {
+    "craft_task":            {"a": 0.8907, "b": 0.8907, "delta":  0.0000, "rows_differing": "0 of 150",   "bootstrap_floor": 0.025, "enforced_floor": 0.030},
+    "digit_span_reverse":    {"a": 0.9666, "b": 0.9666, "delta":  0.0000, "rows_differing": "0 of 190",   "bootstrap_floor": 0.059, "enforced_floor": 0.059},
+    "word_recognition":      {"a": 0.4948, "b": 0.4948, "delta":  0.0000, "rows_differing": "0 of 50",    "bootstrap_floor": 0.121, "enforced_floor": 0.121},
+    "semantic_story_recall": {"a": 0.9473, "b": 0.9461, "delta": -0.0012, "rows_differing": "156 of 200", "bootstrap_floor": 0.011, "enforced_floor": 0.030},
+    "nback":                 {"a": 0.7909, "b": 0.7886, "delta": -0.0023, "rows_differing": null,         "bootstrap_floor": 0.060, "enforced_floor": 0.060},
+    "variable_mapping":      {"a": 0.3554, "b": 0.3510, "delta": -0.0044, "rows_differing": "1 of 150",   "bootstrap_floor": 0.017, "enforced_floor": 0.030},
+    "narrative_qa":          {"a": 0.9572, "b": 0.9507, "delta": -0.0065, "rows_differing": "13 of 50",   "bootstrap_floor": 0.030, "enforced_floor": 0.030},
+    "digit_span_forward":    {"a": 0.8860, "b": 0.9012, "delta":  0.0152, "rows_differing": null,         "bootstrap_floor": 0.140, "enforced_floor": 0.140}
+  },
+  "mean_humanlikeness_search": {"a": 0.7861, "b": 0.7862, "delta": 0.0001},
+  "findings": [
+    "Generation variation does NOT propagate to the score uniformly, and that is the durable lesson. semantic_story_recall has 156 of 200 rows differing for a delta of -0.0012, because the score is a continuous embedding similarity and the variation averages out. craft_task and word_recognition have ZERO rows differing, because a coarse multiple-choice score cannot register a rewording. narrative_qa is the sensitive cell: 13 of 50 rows differ for -0.0065, the largest scored effect per differing row in the set.",
+    "narrative_qa's real run-to-run noise is 0.0065, not the 0.030 its floor asserts. So primacy's -0.0309 is about five times the measured noise and is a genuine effect. It violates the floor by only 0.0009 because 0.030 is conservative, not because the effect is marginal. The earlier reading -- that a 0.0009 violation is unsupportable by the instrument -- was half right: the violation is real, the threshold is the arbitrary part.",
+    "craft_task is fully reproducible at the score level, 0 of 150 rows and delta exactly 0.0000. So primacy's -0.0451 and episodic_reset's -0.0280 on this task are both real effects, and iteration 3a's second-order claim that craft's floor understates run-to-run variation is refuted.",
+    "digit_span_forward's +0.0152 is the largest run-to-run movement measured, and it is EXACTLY the value primacy reported for that task (chunk_limit reported +0.0183). Those digit-span moves were run-to-run variation, not mechanism -- which confirms primacy's P4 no-change claim, for the right reason rather than the one it gave.",
+    "The 8-task mean is stable to +0.0001, so the 0.026 min credible mean delta is amply conservative and a mean movement above it remains meaningful."
+  ],
+  "consequences_for_the_contract": [
+    "No floor needs loosening. All eight enforced floors exceed the measured run-to-run variation, most by a wide margin.",
+    "A no-change prediction may NOT demand bit-identity of generated content -- content varies on every task. It MAY reasonably demand a scored delta under about 0.007 on craft_task, word_recognition, digit_span_reverse, semantic_story_recall, nback and variable_mapping, and under about 0.016 on digit_span_forward.",
+    "A differing-row count remains a far more sensitive mechanism-confirmation quantity than a scored delta, but it must be compared against this table's row counts rather than against zero: 156 of 200 differing rows on story recall is the NO-CHANGE baseline there, not evidence of anything."
+  ]
+}

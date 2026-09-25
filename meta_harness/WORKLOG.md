@@ -897,6 +897,42 @@ off the prompt cannot respond to store content. 11 PASS / 3 FAIL / 1 VOID.
 > `primacy`'s craft regression is real — 57 differing rows against a no-op band of 7–12,
 > and a scored move of −0.0451 against 0.0000.
 >
+> **MEASURED, job 18536738 — and it settles the question in the conservative
+> direction.** A repeat baseline, same harness, config and seed, so every per-task
+> delta is pure run-to-run variation. Full table in `logs/run_to_run_floor.json`:
+>
+>     craft_task              0.0000    0 of 150 rows differ    floor 0.030
+>     digit_span_reverse      0.0000    0 of 190                floor 0.059
+>     word_recognition        0.0000    0 of 50                 floor 0.121
+>     semantic_story_recall  -0.0012  156 of 200                floor 0.030
+>     nback                  -0.0023                            floor 0.060
+>     variable_mapping       -0.0044    1 of 150                floor 0.030
+>     narrative_qa           -0.0065   13 of 50                 floor 0.030
+>     digit_span_forward     +0.0152                            floor 0.140
+>     8-task mean            +0.0001                     min credible 0.026
+>
+> **No floor needs loosening.** Every enforced floor exceeds the measured variation,
+> most by a wide margin. My worry that the instrument was too tight, and iteration 3a's
+> second-order claim that craft's floor understates run-to-run variation, are both
+> refuted — craft is exactly reproducible at the score level.
+>
+> The durable lesson is that **generation variation does not propagate to the score
+> uniformly.** Story recall has 156 of 200 rows differing for −0.0012, because a
+> continuous embedding similarity averages the variation out. Craft and word recognition
+> have ZERO rows differing, because a coarse multiple-choice score cannot register a
+> rewording. `narrative_qa` is the sensitive cell: 13 of 50 rows for −0.0065, the largest
+> scored effect per differing row in the set. So a differing-row count is still the more
+> sensitive mechanism signal, but it must be compared against this table — 156 of 200 is
+> the *no-change* baseline on story recall, not evidence of anything.
+>
+> Two attributions change. `narrative_qa`'s real noise is 0.0065, so `primacy`'s −0.0309
+> is about five times it and is a genuine effect; it violates the floor by 0.0009 only
+> because 0.030 is conservative, not because the effect is marginal. And
+> `digit_span_forward`'s +0.0152 run-to-run is **exactly** the value `primacy` reported
+> there, with `chunk_limit` at +0.0183 — so those digit-span movements were variation,
+> not mechanism, which confirms `primacy`'s P4 no-change claim for a better reason than
+> the one it gave.
+>
 > **A separate arithmetic error of mine, also caught by 3b:** the enforced floor is
 > `max(FLOOR=0.03, NOISE_FLOOR[task])`, so **craft's is 0.030, not the 0.025 I quoted
 > throughout.** Consequences: `displacement`'s craft −0.0280 *passed* and I reported it
