@@ -171,7 +171,7 @@ expose:
 |---|---|---|---|
 | A2 word recognition | miss rate / false-alarm rate | 0.272 / 0.045 = **6.09** | 0.000 / 0.533 = **0.00** |
 | A3 story recall | BLEU vs transcript @ recall words | 0.002 @ 137 | **0.199 @ 366** |
-| A1 digit span | sub-span failure / supra-span hit | 0.087 / 0.000 | 0.000 / **0.574** |
+| A1 digit span | sub-span leak, protocol-matched | 0.087 | 0.077 (already human-like) |
 
 A2 is the existence proof: opus scores 0.760 humanlikeness on word recognition
 with a *fully inverted* error structure — humans are conservative, opus
@@ -189,11 +189,40 @@ without fixing the asymmetry.** So A2 is scored jointly with trials-attempted,
 which is recorded as a covariate on every candidate, and the proposer cannot
 bank an A2 gain that came from surviving longer.
 
-**A1 is not yet usable.** The human digit-span protocol is adaptive and
-terminates (~12 trials, ~2 per span) while the model protocol runs all 19 span
-lengths, inflating the model's supra-threshold opportunities. `protocol_match.py`
-must land before A1 becomes an axis; until then A1 is reported but not
-optimized against.
+**A1 is resolved, and it changed shape — it is a guard, not a target.**
+`meta_harness/protocol_match.py` recovers the human schedule from the released
+data: 2 trials per span, ascending from 2, stop when both trials at a span fail
+(every one of the 52 participants terminates on a 2-trial/0-correct span). The
+model instead runs all 19 span lengths, so it received supra-ceiling trials no
+human was ever administered. Emulating the staircase on model trials by pairing
+adjacent `sequence_index` values (100 sequences -> 50 participants, no
+resampling) gives:
+
+| source | best span | trials | sub-span leak |
+|---|---|---|---|
+| humans | 6.88 | 13.8 | **0.087** |
+| claude-opus-4-6 | 18.24 | 35.4 | **0.077** |
+| qwen3-30b-a3b | 15.54 | 30.9 | 0.105 |
+| qwen3-8b | 8.28 | 16.6 | **0.165** |
+
+Two consequences:
+
+1. **The earlier "supra-span hit 0.574 vs 0.000" finding was a schedule
+   artifact and is withdrawn.** Under a matched staircase, supra-ceiling trials
+   are 0 on *both* sides by construction, because the run stops at the first
+   double failure. That statistic cannot be an axis.
+2. **Opus's sub-threshold error structure already matches humans** (0.077 vs
+   0.087). The digit-span humanlikeness gap is purely a *ceiling* gap, which the
+   primary metric already captures, so A1 has no headroom to offer as an
+   optimization target.
+
+What A1 is good for is catching the failure mode the search is most likely to
+find: qwen3-8b reaches a near-human ceiling (8.28 vs 6.88) while leaking twice
+as much below it (0.165 vs 0.087). A harness that hits the right span
+distribution by dropping items stochastically will look exactly like that. So
+A1 enters as a **constraint**: sub-span leak must stay within [0.05, 0.12], and
+a candidate that buys ceiling agreement with excess leakage is rejected rather
+than ranked.
 
 **Search set.** 8 tasks: digit span forward, digit span reverse, n-back,
 **word recognition**, variable mapping, narrative QA, semantic story recall,

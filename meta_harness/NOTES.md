@@ -62,14 +62,30 @@ So error structure must be a hard Pareto axis. See `error_structure.txt`.
 - **A3 story recall, verbatim vs gist.** Humans BLEU 0.002 at 137 words;
   `claude-opus-4-6` BLEU 0.199 at 366 words (verbatim regurgitation, 2.7x too
   long). qwen3-30b BLEU 0.003 at 128 words is already human-like here.
-- **A1 digit span, threshold sharpness.** Humans fail at a clean threshold
-  (sub-span failure 0.087). Models fail raggedly: supra-threshold hit rate
-  0.574 (opus), 0.551 (qwen3-30b).
-  **Caveat:** not yet apples-to-apples. The human protocol is adaptive and
-  terminates (~12 trials, ~2 per span), while the model protocol runs all 19
-  span lengths, which inflates the model's supra-threshold opportunities. A1
-  needs a protocol-matched version (subsample model trials onto the human
-  adaptive schedule) before it can serve as a Pareto axis.
+- **A1 digit span, sub-span leak.** Resolved by
+  `meta_harness/protocol_match.py`, and the first version of this finding was
+  **wrong**. The human protocol is an adaptive staircase (2 trials per span,
+  ascending, stop on a double failure; all 52 participants terminate that way)
+  while the model runs all 19 spans, so the model received supra-ceiling trials
+  no human ever saw. The "supra-threshold hit rate 0.574 vs 0.000" reported
+  earlier was that schedule difference, not a psychological one, and is
+  withdrawn: under a matched staircase supra-ceiling trials are 0 on both sides
+  by construction.
+
+  Protocol-matched (model sequences paired into 2-trial blocks, no resampling):
+
+  | source | best span | trials | sub-span leak |
+  |---|---|---|---|
+  | humans | 6.88 | 13.8 | 0.087 |
+  | claude-opus-4-6 | 18.24 | 35.4 | 0.077 |
+  | qwen3-30b-a3b | 15.54 | 30.9 | 0.105 |
+  | qwen3-8b | 8.28 | 16.6 | 0.165 |
+
+  Opus already matches human sub-threshold leakage (0.077 vs 0.087), so the
+  digit-span gap is purely a ceiling gap and A1 offers no headroom as a target.
+  It earns its place as a **constraint** instead: qwen3-8b shows that a
+  near-human ceiling (8.28) can coexist with double the human leakage (0.165),
+  which is precisely what a stochastic-dropping harness would produce.
 
 ## 4. Cost and wall-clock per candidate
 

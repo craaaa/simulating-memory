@@ -1,0 +1,10 @@
+A1  DIGIT SPAN, protocol-matched staircase (2 trials/span, stop on double failure)
+    source                                          n  best_span  trials  sub_span_fail  supra_hit
+    HUMANS                                         52       6.88    13.8          0.087      0.000
+    claude-opus-4-6                                50      18.24    35.4          0.077      0.000
+    qwen_qwen3-30b-a3b-instruct-2507               50      15.54    30.9          0.105      0.000
+    qwen_qwen3-8b_false                            50       8.28    16.6          0.165      0.000
+
+    * supra-ceiling trials are 0 by construction under the matched
+      staircase, on both sides -- so sub_span_fail is the axis, and
+      the earlier 0.574-vs-0.000 gap was a schedule artifact.
