@@ -3,9 +3,13 @@
 #
 # Run this INSIDE a GPU compute node allocation, never on a login node:
 #
-#   srun --pty --constraint=h100 --gres=gpu:2 --mem=64G -c 16 \
-#        --account=torch_pr_287_general --time=8:00:00 /bin/bash
+#   srun --pty --gres=gpu:h200:1 --mem=96G -c 16 \
+#        --account=torch_pr_287_cds --time=8:00:00 /bin/bash
 #   bash meta_harness/cluster/serve_vllm.sh search
+#
+# GRES is typed here, and h100/a100 are unreachable for both of this user's
+# accounts.  h200 (141GB) via the torch_pr_287_cds account schedules fastest --
+# see the notes in gate.sbatch for measured queue times.
 #
 # Models are already cached under /scratch/cl5625/.cache/huggingface, so this
 # does not download anything.  bf16 only -- quantization changes model
@@ -17,15 +21,16 @@ ROLE="${1:-search}"
 
 case "$ROLE" in
   search)
-    # ~61GB weights.  1x H100 works (~11GB left for KV); 2x is preferred so the
-    # released max_parallel_participants: 50 is actually achievable.
+    # ~61GB weights.  One H200 (141GB) leaves ~80GB for KV cache, enough for the
+    # released max_parallel_participants: 50.  On l40s instead, use TP=2 (92GB).
     MODEL="Qwen/Qwen3-30B-A3B-Instruct-2507"
-    TP="${TP:-2}"
+    TP="${TP:-1}"
     ;;
   holdout)
-    # ~141GB weights: does not fit one H100.  2x minimum, 4x comfortable.
+    # ~141GB weights: exactly one H200's capacity, so no room for KV.  Use 2x
+    # H200 (282GB).  On l40s that would be 4x (184GB), but l40s x4 queues ~15h.
     MODEL="meta-llama/Llama-3.3-70B-Instruct"
-    TP="${TP:-4}"
+    TP="${TP:-2}"
     ;;
   *)
     echo "usage: $0 [search|holdout]" >&2

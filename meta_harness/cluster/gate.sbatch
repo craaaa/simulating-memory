@@ -4,12 +4,24 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=96G
-# GRES on this cluster is TYPED (sinfo shows gpu:h100:4), so the GPU type goes
-# in --gres and no --constraint is needed; a plain --gres=gpu:2 is rejected with
+# GRES here is TYPED (sinfo: gpu:h200:8, gpu:l40s:4), so the GPU type belongs in
+# --gres and --constraint is unnecessary; a plain --gres=gpu:2 is rejected with
 # "No partition fits this job request".
-#SBATCH --gres=gpu:h100:2
+#
+# Neither account can reach h100 or a100 (those partitions are _tandon / _cds
+# /_cilvr with no _public equivalent, and both accounts fail --test-only on
+# them).  Reachable GPUs are l40s (46GB) and h200 (141GB), and the h200_cds
+# partition -- available only on the torch_pr_287_cds account -- was the fastest
+# to schedule by a wide margin when this was measured 2026-09-24:
+#   h200 x1/x2/x4 on cds      -> ~30 min
+#   l40s x2 on general        -> ~1 h
+#   l40s x4 on general        -> ~15 h
+#   h200 x2 on general/public -> ~20 h
+# One H200 holds qwen3-30b (~61GB) with ~80GB left for KV, which beats the 2x
+# H100 plan this replaces.
+#SBATCH --gres=gpu:h200:1
 #SBATCH --time=04:00:00
-#SBATCH --account=torch_pr_287_general
+#SBATCH --account=torch_pr_287_cds
 #SBATCH --output=/scratch/cl5625/meta-harness-compactor/meta_harness/logs/%j.out
 #SBATCH --error=/scratch/cl5625/meta-harness-compactor/meta_harness/logs/%j.err
 #SBATCH --mail-type=END,FAIL
@@ -50,7 +62,7 @@ echo "=== HEAD: $(git rev-parse HEAD)"
 "$PY" -m vllm.entrypoints.openai.api_server \
   --model "$MODEL" \
   --served-model-name "$MODEL" \
-  --tensor-parallel-size 2 \
+  --tensor-parallel-size 1 \
   --dtype bfloat16 \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.90 \
