@@ -129,9 +129,21 @@ def cmd_frontier(args: argparse.Namespace) -> int:
         return 0
     # Derive it if the file is not written yet: maximize mean humanlikeness,
     # minimize A2 distance, and only among candidates that pass the guards.
+    #
+    # Instrument candidates are excluded. A candidate that changes what a task
+    # MEASURES, rather than how well the harness does on it, is incomparable on
+    # both frontier axes at once: its mean is computed against a reference the
+    # candidate itself invalidated, and A2 -- the second axis -- no longer means
+    # what it means for every other row. `serial_recognition` is the case that
+    # forced this: closing the word-recognition leak moves that task from a
+    # mixture of 36 prompt-readers and 7 store-consulters to store-consulters
+    # only, so its word_recognition humanlikeness rises arithmetically (a point
+    # mass at zero already scores ~0.685 against a baseline of 0.816 and a human
+    # 0.315) without the harness having become more humanlike at anything.
     rows = [r for r in load_rows()
             if _mean(r) is not None and _a2(r) is not None
-            and r.get("passes_guards", True) and r.get("passes_floor", True)]
+            and r.get("passes_guards", True) and r.get("passes_floor", True)
+            and not r.get("instrument", False)]
     front = []
     for r in rows:
         if not any(o is not r and _mean(o) >= _mean(r) and _a2(o) <= _a2(r)

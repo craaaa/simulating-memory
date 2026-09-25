@@ -44,6 +44,21 @@ ROWS = [
      "floor_violations": [{"task": "nback", "delta": -0.0355, "floor": -0.03}],
      "guard_violations": ["A1 sub-span leak 0.21 outside (0.05, 0.12)"],
      "run_dir": "x"},
+    # An instrument: it would dominate cand_a and cand_b on BOTH axes and pass
+    # every guard, so only the instrument flag can keep it off the frontier.
+    # This is the serial_recognition shape -- a candidate that changes what a
+    # task measures, whose mean is therefore computed against a reference it
+    # invalidated. Deliberately the strongest row in the set, because a filter
+    # that only excludes already-dominated rows would pass a weaker fixture.
+    {"iteration": 2, "id": "cand_instrument", "parent": "baseline",
+     "mean_humanlikeness_search": 0.9000,
+     "humanlikeness_by_task": {"word_recognition": 0.9000, "nback": 0.8400,
+                               "digit_span_forward": 0.8610},
+     "axes": {"A2": {"distance": 1.000}}, "passes_floor": True,
+     "passes_guards": True, "instrument": True,
+     "instrument_reason": "closes the word-recognition leak, so word_recognition "
+                          "humanlikeness rises arithmetically and A2 changes meaning",
+     "run_dir": "x"},
 ]
 
 backup = SUMMARY.read_text() if SUMMARY.exists() else None
@@ -72,6 +87,8 @@ try:
         "cand_b on frontier (trade-off)": "cand_b" in out,
         "baseline dominated, excluded": "baseline" not in out,
         "cand_c guard-failing, excluded": "cand_c" not in out,
+        # Would top the frontier on both axes if the flag were ignored.
+        "cand_instrument excluded despite dominating": "cand_instrument" not in out,
     }
     print("\n=== frontier assertions")
     for k, v in checks.items():

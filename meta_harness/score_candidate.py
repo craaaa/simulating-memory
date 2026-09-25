@@ -289,6 +289,15 @@ def main() -> int:
                          "history.py and the proposer read")
     ap.add_argument("--id", default=None, help="candidate id for the record")
     ap.add_argument("--iteration", type=int, default=0)
+    ap.add_argument("--instrument", default=None, metavar="REASON",
+                    help="record the candidate but exclude it from the Pareto "
+                         "frontier, giving the reason. For a candidate that "
+                         "changes what a task MEASURES rather than how well the "
+                         "harness does on it: its mean is then computed against "
+                         "a reference it invalidated, and A2 -- the frontier's "
+                         "second axis -- stops meaning what it means elsewhere. "
+                         "The record is kept in full so the run is still "
+                         "evidence; it just cannot win.")
     args = ap.parse_args()
 
     run_dir = Path(args.run_dir)
@@ -320,6 +329,9 @@ def main() -> int:
     else:
         rec["id"] = args.id or run_dir.name
     rec["iteration"] = args.iteration
+    if args.instrument:
+        rec["instrument"] = True
+        rec["instrument_reason"] = args.instrument
 
     text = json.dumps(rec, indent=2)
     print(text)
