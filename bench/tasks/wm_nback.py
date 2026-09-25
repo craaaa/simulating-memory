@@ -257,6 +257,20 @@ def evaluate(
                     "model_parsed": block_result["trial_map"],
                     "model_parsed_buffer": block_result["buffer_map"],
                     "final_kv": block_result["final_kv"],
+                    # Per-turn record: what the agent saw (`user_message`), what it
+                    # replied (`text`), whether it called a tool, and the store after
+                    # each turn. `run_nback_block` already computes this and it was
+                    # being dropped here, which made n-back the only working-memory
+                    # task with no per-turn trace -- variable_mapping persists
+                    # `step_logs` and craft persists `encoding_log` + `recall_raw`.
+                    #
+                    # Diagnosing a harness that suppresses responses needs exactly
+                    # these two fields: an n=1 failure where 36 of 50 participants
+                    # answered nothing had to be reconstructed from `model_parsed`
+                    # positions and a 661-presentation letter-frequency table,
+                    # because the replies and the prompts they answered were
+                    # generated and discarded.
+                    "step_log": block_result["step_log"],
                     "slot_utilization": block_result["slot_utilization"],
                     "answered": scored["answered"],
                     "correct": scored["correct"],
@@ -390,6 +404,11 @@ def evaluate_summarizer(
                     "model_parsed": block_result["trial_map"],
                     "model_parsed_buffer": block_result["buffer_map"],
                     "final_summary": block_result["final_summary"],
+                    # Same omission on the summarizer path, kept in step with the
+                    # working-memory path above so the two ablation arms stay
+                    # comparable. Shape differs -- this agent logs `raw`,
+                    # `summary_after` and `answer` rather than tool calls and a store.
+                    "step_log": block_result["step_log"],
                     "summary_length_words": block_result["summary_length_words"],
                     "answered": scored["answered"],
                     "correct": scored["correct"],
