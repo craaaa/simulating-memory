@@ -97,6 +97,16 @@ def diagnostics(run_dir: Path) -> dict[int, dict[str, float]]:
     out: dict[int, dict[str, float]] = {}
     if not path.exists():
         return out
+    def _nan(v):
+        """None -> nan. These keys are present-but-null when undefined, so the
+        default of `.get(k, np.nan)` never fires."""
+        return np.nan if v is None else float(v)
+
+    def _round_or_none(v, nd=4):
+        """All-nan input means the quantity is undefined for every row here, which
+        is a fact to report rather than a 0.0 to average into something."""
+        return None if v is None or np.isnan(v) else round(float(v), nd)
+
     rows = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
     for n in LEVELS:
         sel = [r for r in rows if r.get("n_level") == n]
@@ -110,12 +120,28 @@ def diagnostics(run_dir: Path) -> dict[int, dict[str, float]]:
             mb = r.get("model_parsed_buffer") or {}
             buf.extend(str(v) for v in
                        (mb.values() if isinstance(mb, dict) else mb))
+        # `.get(k, np.nan)` is not enough: these keys EXIST with an explicit null
+        # when the quantity is undefined, and `None` is what comes back, which
+        # np.nanmean cannot sum. That is not a corrupt row -- `acc_over_answered` is
+        # null exactly when `answered` is 0, so a candidate that suppresses
+        # responses entirely produces nulls legitimately. episodic_reset is the
+        # first run to do so: at n=1, 36 of its 50 rows answered nothing.
+        # Coercing to nan keeps those rows in the `answered` mean, where they
+        # belong, while excluding them from the accuracy means, where they are
+        # genuinely undefined.
+        def _vals(key):
+            return [_nan(r.get(key)) for r in sel]
+
+        n_undefined = sum(1 for r in sel if r.get("acc_over_answered") is None)
         out[n] = {
-            "answered": round(float(np.mean([r.get("answered", np.nan) for r in sel])), 2),
-            "acc_over_answered": round(
-                float(np.nanmean([r.get("acc_over_answered", np.nan) for r in sel])), 4),
-            "acc_over_14": round(
-                float(np.nanmean([r.get("acc_over_14", np.nan) for r in sel])), 4),
+            "answered": round(float(np.nanmean(_vals("answered"))), 2),
+            "acc_over_answered": _round_or_none(np.nanmean(_vals("acc_over_answered"))),
+            "acc_over_14": _round_or_none(np.nanmean(_vals("acc_over_14"))),
+            # How many participants answered nothing at all. Without this an
+            # acc_over_answered averaged over the few who did respond looks healthy
+            # while most of the sample was silent.
+            "n_rows": len(sel),
+            "n_no_answers": n_undefined,
             "keys_held": round(
                 float(np.mean([len(r.get("final_kv") or {}) for r in sel])), 2),
             # Compliance with the instruction to stay silent during the buffer
