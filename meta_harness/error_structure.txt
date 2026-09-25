@@ -1,0 +1,20 @@
+A1  DIGIT SPAN threshold sharpness
+    source                                          n  sub_span_fail  supra_span_hit
+    HUMANS                                         52          0.087           0.000
+    claude-opus-4-6                               100          0.000           0.574
+    qwen_qwen3-30b-a3b-instruct-2507              100          0.000           0.551
+    qwen_qwen3-8b_false                           100          0.000           0.183
+
+A2  WORD RECOGNITION error asymmetry
+    source                                          n  miss_rate  fa_rate  miss/fa
+    HUMANS                                         53      0.272    0.045    6.094
+    claude-opus-4-6                                50      0.000    0.533    0.000
+    qwen_qwen3-30b-a3b-instruct-2507               50      0.001    0.064    0.018
+    qwen_qwen3-8b_false                            50      0.194    0.146    1.329
+
+A3  STORY RECALL verbatim vs gist
+    source                                          n     BLEU  embed_sim   words
+    HUMANS                                         53    0.002      0.604 137.208
+    claude-opus-4-6                               200    0.199      0.737 365.685
+    qwen_qwen3-30b-a3b-instruct-2507              200    0.003      0.582 128.155
+    qwen_qwen3-8b_false                           199    0.003      0.572 117.246

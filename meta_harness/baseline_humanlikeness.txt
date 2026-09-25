@@ -1,0 +1,239 @@
+# model: claude-opus-4-6
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.343  [0.297,0.389]   0.307
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.132  [0.092,0.179]   0.106
+N-Back                        53   150     0.025  [0.010,0.051]     0.275  [0.235,0.323]   0.250
+Word Recognition              53    50     0.075  [0.031,0.154]     0.240  [0.192,0.309]   0.164
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.610  [0.565,0.655]   0.569
+Factual QA                    53    50     0.061  [0.024,0.125]     0.337  [0.286,0.388]   0.276
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.170  [0.120,0.221]   0.118
+Narrative Free Recall         53   200     0.042  [0.021,0.081]     0.132  [0.097,0.170]   0.090
+Map Task                      56   150     0.054  [0.027,0.096]     0.275  [0.238,0.315]   0.221
+Craft Task                    54   150     0.040  [0.019,0.073]     0.187  [0.152,0.218]   0.147
+
+mean humanlikeness (1-W1)      : 0.730
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.225
+
+tasks ranked by headroom above the noise floor:
+  Variable Mapping             0.569
+  Digit Span                   0.307
+  Factual QA                   0.276
+  N-Back                       0.250
+  Map Task                     0.221
+  Word Recognition             0.164
+  Craft Task                   0.147
+  Narrative QA                 0.118
+  Reverse Digit Span           0.106
+  Narrative Free Recall        0.090
+
+# model: gpt-5.4
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.126  [0.092,0.163]   0.090
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.122  [0.090,0.153]   0.096
+N-Back                        53   150     0.025  [0.010,0.051]     0.092  [0.067,0.118]   0.067
+Word Recognition              53    50     0.075  [0.031,0.154]     0.214  [0.176,0.274]   0.139
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.502  [0.449,0.555]   0.461
+Factual QA                    53    50     0.061  [0.024,0.125]     0.273  [0.216,0.330]   0.212
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.078  [0.046,0.117]   0.026
+Narrative Free Recall         53   200     0.042  [0.021,0.081]     0.052  [0.030,0.087]   0.010
+Map Task                      56   150     0.054  [0.027,0.096]     0.292  [0.248,0.331]   0.238
+Craft Task                    54   150     0.040  [0.019,0.073]     0.184  [0.148,0.215]   0.143
+
+mean humanlikeness (1-W1)      : 0.806
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.148
+
+tasks ranked by headroom above the noise floor:
+  Variable Mapping             0.461
+  Map Task                     0.238
+  Factual QA                   0.212
+  Craft Task                   0.143
+  Word Recognition             0.139
+  Reverse Digit Span           0.096
+  Digit Span                   0.090
+  N-Back                       0.067
+  Narrative QA                 0.026
+  Narrative Free Recall        0.010
+
+# model: meta-llama_llama-3.3-70b-instruct
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.126  [0.094,0.164]   0.090
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.122  [0.096,0.148]   0.096
+N-Back                        53   150     0.025  [0.010,0.051]     0.131  [0.100,0.169]   0.106
+Word Recognition              53    50     0.075  [0.031,0.154]     0.197  [0.154,0.254]   0.122
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.648  [0.610,0.686]   0.606
+Factual QA                    53    50     0.061  [0.024,0.125]     0.231  [0.158,0.319]   0.170
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.232  [0.151,0.307]   0.179
+Narrative Free Recall         53   200     0.042  [0.021,0.081]     0.101  [0.067,0.138]   0.059
+Map Task                      56   150     0.054  [0.027,0.096]     0.193  [0.158,0.234]   0.139
+Craft Task                    54   150     0.040  [0.019,0.073]     0.109  [0.081,0.143]   0.069
+
+mean humanlikeness (1-W1)      : 0.791
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.164
+
+tasks ranked by headroom above the noise floor:
+  Variable Mapping             0.606
+  Narrative QA                 0.179
+  Factual QA                   0.170
+  Map Task                     0.139
+  Word Recognition             0.122
+  N-Back                       0.106
+  Reverse Digit Span           0.096
+  Digit Span                   0.090
+  Craft Task                   0.069
+  Narrative Free Recall        0.059
+
+# model: meta-llama_llama-3-8b-instruct
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.305  [0.278,0.337]   0.269
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.263  [0.244,0.290]   0.236
+N-Back                        53   150     0.025  [0.010,0.051]     0.237  [0.199,0.282]   0.212
+Word Recognition              53    50     0.075  [0.031,0.154]     0.155  [0.093,0.239]   0.080
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.504  [0.448,0.548]   0.462
+Factual QA                    53    50     0.061  [0.024,0.125]     0.050  [0.024,0.121]  -0.011
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.135  [0.072,0.194]   0.082
+Narrative Free Recall         53   200     0.042  [0.021,0.081]     0.033  [0.025,0.060]  -0.009
+Map Task                      56   150     0.054  [0.027,0.096]     0.177  [0.119,0.206]   0.123
+Craft Task                    54   150     0.040  [0.019,0.073]     0.165  [0.129,0.202]   0.124
+
+mean humanlikeness (1-W1)      : 0.798
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.157
+
+tasks ranked by headroom above the noise floor:
+  Variable Mapping             0.462
+  Digit Span                   0.269
+  Reverse Digit Span           0.236
+  N-Back                       0.212
+  Craft Task                   0.124
+  Map Task                     0.123
+  Narrative QA                 0.082
+  Word Recognition             0.080
+  Narrative Free Recall       -0.009
+  Factual QA                  -0.011
+
+# model: qwen_qwen3-next-80b-a3b-instruct
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.041  [0.030,0.064]   0.005
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.039  [0.025,0.067]   0.012
+N-Back                        53   150     0.025  [0.010,0.051]     0.111  [0.081,0.147]   0.086
+Word Recognition              53    50     0.075  [0.031,0.154]     0.211  [0.171,0.270]   0.136
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.628  [0.586,0.668]   0.587
+Factual QA                    53    50     0.061  [0.024,0.125]     0.126  [0.067,0.201]   0.065
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.066  [0.029,0.120]   0.013
+Narrative Free Recall         53   200     0.042  [0.021,0.081]     0.049  [0.028,0.080]   0.007
+Map Task                      56   150     0.054  [0.027,0.096]     0.276  [0.231,0.316]   0.222
+Craft Task                    54   150     0.040  [0.019,0.073]     0.131  [0.105,0.164]   0.091
+
+mean humanlikeness (1-W1)      : 0.832
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.122
+
+tasks ranked by headroom above the noise floor:
+  Variable Mapping             0.587
+  Map Task                     0.222
+  Word Recognition             0.136
+  Craft Task                   0.091
+  N-Back                       0.086
+  Factual QA                   0.065
+  Narrative QA                 0.013
+  Reverse Digit Span           0.012
+  Narrative Free Recall        0.007
+  Digit Span                   0.005
+
+# model: qwen_qwen3-30b-a3b-instruct-2507
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.140  [0.093,0.191]   0.104
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.041  [0.022,0.064]   0.015
+N-Back                        53   150     0.025  [0.010,0.051]     0.164  [0.134,0.202]   0.140
+Word Recognition              53    50     0.075  [0.031,0.154]     0.550  [0.447,0.641]   0.475
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.650  [0.613,0.687]   0.609
+Factual QA                    53    50     0.061  [0.024,0.125]     0.170  [0.106,0.236]   0.109
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.044  [0.027,0.093]  -0.009
+Narrative Free Recall         53   200     0.042  [0.021,0.081]     0.042  [0.024,0.071]  -0.000
+Map Task                      56   150     0.054  [0.027,0.096]     0.179  [0.146,0.209]   0.125
+Craft Task                    54   150     0.040  [0.019,0.073]     0.145  [0.108,0.179]   0.105
+
+mean humanlikeness (1-W1)      : 0.788
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.167
+
+tasks ranked by headroom above the noise floor:
+  Variable Mapping             0.609
+  Word Recognition             0.475
+  N-Back                       0.140
+  Map Task                     0.125
+  Factual QA                   0.109
+  Craft Task                   0.105
+  Digit Span                   0.104
+  Reverse Digit Span           0.015
+  Narrative Free Recall       -0.000
+  Narrative QA                -0.009
+
+# model: qwen_qwen3-30b-a3b-thinking-2507
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.060  [0.031,0.093]   0.024
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.031  [0.023,0.054]   0.005
+N-Back                        53   150     0.025  [0.010,0.051]     0.042  [0.031,0.068]   0.017
+Word Recognition              53    50     0.075  [0.031,0.154]     0.248  [0.186,0.324]   0.172
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.646  [0.610,0.682]   0.604
+Factual QA                    53    50     0.061  [0.024,0.125]     0.197  [0.136,0.259]   0.136
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.082  [0.041,0.137]   0.029
+Narrative Free Recall         53   199     0.042  [0.021,0.081]     0.099  [0.067,0.134]   0.057
+Map Task                      56   150     0.054  [0.027,0.096]     0.224  [0.178,0.269]   0.170
+Craft Task                    54   150     0.041  [0.019,0.073]     0.127  [0.094,0.163]   0.086
+
+mean humanlikeness (1-W1)      : 0.825
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.130
+
+tasks ranked by headroom above the noise floor:
+  Variable Mapping             0.604
+  Word Recognition             0.172
+  Map Task                     0.170
+  Factual QA                   0.136
+  Craft Task                   0.086
+  Narrative Free Recall        0.057
+  Narrative QA                 0.029
+  Digit Span                   0.024
+  N-Back                       0.017
+  Reverse Digit Span           0.005
+
+# model: qwen_qwen3-8b_false
+task                       n_hum n_mod  floor_W1        floor_ci  model_W1        model_ci     gap
+--------------------------------------------------------------------------------------------------
+Digit Span                    52   100     0.036  [0.018,0.062]     0.062  [0.034,0.099]   0.027
+Reverse Digit Span            49   100     0.026  [0.015,0.047]     0.046  [0.033,0.066]   0.020
+N-Back                        53   150     0.025  [0.010,0.051]     0.138  [0.107,0.180]   0.113
+Word Recognition              53    50     0.075  [0.031,0.154]     0.162  [0.114,0.256]   0.086
+Variable Mapping             152   150     0.041  [0.016,0.088]     0.180  [0.139,0.229]   0.138
+Factual QA                    53    50     0.061  [0.024,0.125]     0.124  [0.064,0.189]   0.063
+Narrative QA                  52    50     0.053  [0.025,0.106]     0.074  [0.036,0.129]   0.021
+Narrative Free Recall         53   199     0.042  [0.021,0.081]     0.051  [0.031,0.079]   0.009
+Map Task                      56   150     0.054  [0.027,0.096]     0.208  [0.162,0.256]   0.154
+Craft Task                    54   150     0.041  [0.019,0.073]     0.123  [0.095,0.161]   0.082
+
+mean humanlikeness (1-W1)      : 0.883
+mean attainable ceiling        : 0.955
+mean recoverable headroom      : 0.071
+
+tasks ranked by headroom above the noise floor:
+  Map Task                     0.154
+  Variable Mapping             0.138
+  N-Back                       0.113
+  Word Recognition             0.086
+  Craft Task                   0.082
+  Factual QA                   0.063
+  Digit Span                   0.027
+  Narrative QA                 0.021
+  Reverse Digit Span           0.020
+  Narrative Free Recall        0.009
