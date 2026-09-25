@@ -2,19 +2,34 @@ A1  DIGIT SPAN threshold sharpness
     source                                          n  sub_span_fail  supra_span_hit
     HUMANS                                         52          0.087           0.000
     claude-opus-4-6                               100          0.000           0.574
+    gpt-5.4                                       100          0.000           0.506
+    meta-llama_llama-3.3-70b-instruct             100          0.000           0.265
+    meta-llama_llama-3-8b-instruct                100          0.000           0.228
+    qwen_qwen3-next-80b-a3b-instruct              100          0.000           0.268
     qwen_qwen3-30b-a3b-instruct-2507              100          0.000           0.551
+    qwen_qwen3-30b-a3b-thinking-2507              100          0.000           0.345
     qwen_qwen3-8b_false                           100          0.000           0.183
 
 A2  WORD RECOGNITION error asymmetry
     source                                          n  miss_rate  fa_rate  miss/fa          ratio_ci  trials
     HUMANS                                         53      0.272    0.045    6.094  [3.79,11.39]    34.5
     claude-opus-4-6                                50      0.000    0.533    0.000  [0.00,0.00]    40.2
+    gpt-5.4                                        50      0.037    0.790    0.046  [0.00,0.13]    19.2
+    meta-llama_llama-3.3-70b-instruct              50      0.003    0.643    0.004  [0.00,0.01]    30.7
+    meta-llama_llama-3-8b-instruct                 50      0.161    0.325    0.496  [0.30,0.78]    18.9
+    qwen_qwen3-next-80b-a3b-instruct               50      0.100    0.504    0.198  [0.06,0.40]    33.4
     qwen_qwen3-30b-a3b-instruct-2507               50      0.001    0.064    0.018  [0.00,0.07]    87.5
+    qwen_qwen3-30b-a3b-thinking-2507               50      0.295    0.613    0.481  [0.28,0.71]     9.8
     qwen_qwen3-8b_false                            50      0.194    0.146    1.329  [0.78,2.77]    44.8
 
 A3  STORY RECALL verbatim vs gist
     source                                          n     BLEU  embed_sim   words
     HUMANS                                         53    0.002      0.604 137.208
     claude-opus-4-6                               200    0.199      0.737 365.685
+    gpt-5.4                                       200    0.017      0.656 184.605
+    meta-llama_llama-3.3-70b-instruct             200    0.002      0.503  86.440
+    meta-llama_llama-3-8b-instruct                200    0.000      0.602  82.795
+    qwen_qwen3-next-80b-a3b-instruct              200    0.001      0.568  96.665
     qwen_qwen3-30b-a3b-instruct-2507              200    0.003      0.582 128.155
+    qwen_qwen3-30b-a3b-thinking-2507              200    0.000      0.509  82.365
     qwen_qwen3-8b_false                           199    0.003      0.572 117.246

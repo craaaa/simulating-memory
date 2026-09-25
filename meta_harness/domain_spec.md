@@ -167,11 +167,33 @@ distribution while being scientifically empty, and decay is *inside* the
 search space. Each axis is scored as |model - human| on a statistic both sides
 expose:
 
-| axis | statistic | humans | opus-4-6 compactor |
-|---|---|---|---|
-| A2 word recognition | miss rate / false-alarm rate | 0.272 / 0.045 = **6.09** | 0.000 / 0.533 = **0.00** |
-| A3 story recall | BLEU vs transcript @ recall words | 0.002 @ 137 | **0.199 @ 366** |
-| A1 digit span | sub-span leak, protocol-matched | 0.087 | 0.077 (already human-like) |
+| axis | statistic | humans | opus-4-6 | **qwen3-30b (search substrate)** |
+|---|---|---|---|---|
+| A2 word recognition | miss/false-alarm ratio | **6.09** | 0.00 | **0.018** |
+| A3 story recall | BLEU @ recall words | 0.002 @ 137 | 0.199 @ 366 | 0.003 @ 128 (matched) |
+| A1 digit span | sub-span leak, protocol-matched | 0.087 | 0.077 (matched) | 0.105 (near) |
+
+Measured across all eight models with full baselines, which changes how these
+should be used:
+
+**A2 is universal, and is the axis.** Every model over-false-alarms by a wide
+margin -- miss/FA ratio 0.000 (opus) to 1.329 (qwen3-8b) against humans' 6.09,
+so even the closest model is 4.6x off. Humans are conservative and say "new"
+when unsure; the compactor says "old". This is a systematic property of the
+harness on recognition, not a quirk of one model, which is what makes it a sound
+optimization target.
+
+**A3 and A1 are guards, not targets, on this substrate.** Only opus (BLEU
+0.199) and mildly gpt-5.4 (0.017) regurgitate verbatim; qwen3-30b is already at
+human BLEU and near human recall length, as are llama-3.3-70b, llama-3-8b and
+qwen3-next-80b (which all *under*-recall at 82-97 words vs 137). So A3 has
+almost no headroom on the search model and enters as a constraint against the
+search *introducing* verbatim behaviour -- BLEU must stay below 0.02 and recall
+length within [100, 175] words. A1 likewise: leak must stay in [0.05, 0.12].
+
+A consequence worth stating: searching on qwen3-30b means A3 contributes no
+gradient. Searching on opus instead would put real headroom on both A2 and A3,
+and that is a genuine argument for the paid-API plan if spend is ever approved.
 
 A2 is the existence proof: opus scores 0.760 humanlikeness on word recognition
 with a *fully inverted* error structure — humans are conservative, opus

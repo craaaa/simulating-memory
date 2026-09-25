@@ -48,6 +48,28 @@ decay rate matches the human distribution while being scientifically empty.
 With `MAX_KEYS` and decay inside the search space, that candidate is reachable.
 So error structure must be a hard Pareto axis. See `error_structure.txt`.
 
+Measured across all eight models with full baselines (`error_structure.txt`),
+the three axes are not equally useful, and which is useful depends on the
+substrate:
+
+| model | A2 miss/fa | A3 BLEU @ words |
+|---|---|---|
+| **humans** | **6.09** | **0.002 @ 137** |
+| claude-opus-4-6 | 0.000 | 0.199 @ 366 |
+| gpt-5.4 | 0.046 | 0.017 @ 185 |
+| llama-3.3-70b | 0.004 | 0.002 @ 86 |
+| llama-3-8b | 0.496 | 0.000 @ 83 |
+| qwen3-next-80b | 0.198 | 0.001 @ 97 |
+| qwen3-30b-a3b | 0.018 | 0.003 @ 128 |
+| qwen3-30b-thinking | 0.481 | 0.000 @ 82 |
+| qwen3-8b | 1.329 | 0.003 @ 117 |
+
+A2 separates every model from humans by a wide margin, so it is the real axis.
+A3 only catches opus (and mildly gpt-5.4); on qwen3-30b -- the search substrate
+-- A3 is already at human values and offers no gradient, so it degrades to a
+guard. Note also that most models *under*-recall (82-97 words vs 137); opus's
+verbatim over-recall at 366 is the outlier, not the norm.
+
 - **A2 word recognition, error asymmetry.** Humans are conservative:
   miss 0.272, false-alarm 0.045, ratio **6.09** (bootstrap CI [3.79, 11.39]).
   `claude-opus-4-6`: miss 0.000, false-alarm 0.533, ratio **0.00** (CI

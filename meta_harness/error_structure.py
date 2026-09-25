@@ -131,13 +131,21 @@ def a3_human():
     return out
 
 
+def _num(v):
+    """Some rows carry an explicit null for a judge metric (e.g. the judge
+    failed or was skipped), so `.get(k, nan)` is not enough."""
+    return np.nan if v is None else float(v)
+
+
 def a3_model(model_dir):
     out = []
     for line in open(ROOT / model_dir / "tasks/wm_semantic_story_recall.jsonl"):
-        m = json.loads(line).get("metrics", {})
+        row = json.loads(line)
+        m = row.get("metrics") or {}
         if m.get("bleuScore") is not None:
-            out.append((float(m["bleuScore"]), float(m.get("embeddingSimilarity", np.nan)),
-                        len(str(json.loads(line).get("recall_text", "")).split())))
+            out.append((_num(m["bleuScore"]),
+                        _num(m.get("embeddingSimilarity")),
+                        len(str(row.get("recall_text") or "").split())))
     return out
 
 
