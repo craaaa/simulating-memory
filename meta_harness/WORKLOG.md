@@ -20,7 +20,46 @@ vLLM on Torch GPU hours, no paid API calls.
 | 18489568 | FAILED | `FileNotFoundError: 'ninja'`. FlashInfer JIT-compiles sampling kernels via ninja. Ninja *was* installed in the venv, but the job called `$REPO/.venv/bin/python` directly and never put `.venv/bin` on `PATH`. |
 | 18489855 | FAILED | vLLM **served successfully** ("server ready after 280s"), then bench died: the OpenAI client refuses to construct without an `api_key` even against localhost. Fixed with an explicit dummy, which also guarantees no real key can be picked up from the environment. |
 | 18490375 | FAILED | Served in 160s, plain completion preflight returned "OK", bench started and wrote a JSONL — then every tool call 400'd: `"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser to be set`. |
-| 18491047 | running | — |
+| 18491047 | **COMPLETED** | Full pipeline ran: server, both preflights, bench exit 0, 50 rows. Needed `--enable-auto-tool-choice --tool-call-parser hermes`. |
+
+## GATE RESULT: FAIL — and it caught something real
+
+`check_gate.py` on job 18491047's output:
+
+| | local vLLM bf16 | released OpenRouter |
+|---|---|---|
+| paired score mean | **71.58** | **86.38** |
+| miss rate | 0.056 | 0.001 |
+| false-alarm rate | 0.185 | 0.064 |
+| A2 miss/fa ratio | 0.302 | 0.018 |
+| trials attempted | 72.9 | 87.5 |
+
+W_1(local, released) = **0.149**, against a human split-half noise floor of
+0.075 for this task. Mean paired delta -14.80; local worse on 16/50 participants,
+better on 10, tied on 24.
+
+Ruled out first, because it would have been the boring explanation: **the stimuli
+are identical for all 50 paired participants.** An earlier version of this
+diagnosis claimed they differed, which was my bug — rows are written in
+completion order under 50-way parallelism, so index 0 in one file is not the same
+participant as index 0 in the other. Paired by `id`, the stimuli match exactly,
+`words.json` and the task code each have a single commit, and `generate_one_game`
+is seeded deterministically. So the difference is in the model's **responses**.
+
+**Conclusion:** the released `runs/compactor/qwen_qwen3-30b-a3b-instruct-2507`
+numbers describe *OpenRouter's deployment* of that model — plausibly quantized or
+with a different chat template — not the model served at bf16. The 0.167 headroom
+figure for qwen3-30b therefore does not transfer to local serving.
+
+**This does not sink the plan.** The human data is fixed, so humanlikeness
+against humans stays meaningful. What breaks is using the *released* run as the
+baseline. The fix is to re-measure the baseline locally, so baseline and
+candidates share one serving stack. That is candidate 0 on the 8-task search set:
+GPU hours, $0.
+
+Worth noting for the paper independently of this project: released per-model
+numbers are serving-stack-dependent, and the OpenRouter-served rows are not
+reproducible from the model weights alone.
 
 All three surfaced as the same generic `RuntimeError: Engine core
 initialization failed`, with the real exception in the EngineCore block *above*

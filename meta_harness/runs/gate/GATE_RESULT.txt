@@ -1,0 +1,19 @@
+REPRODUCTION GATE -- local vLLM vs released OpenRouter baseline
+  model: qwen3-30b-a3b-instruct-2507, task: wm_word_recognition
+
+  metric                           local    released       delta
+  --------------------------------------------------------------
+  n participants                      50          50            
+  mean score                       0.716       0.864      -0.148
+  miss rate                        0.056       0.001       0.055
+  false-alarm rate                 0.185       0.064       0.121
+  miss/fa ratio (A2)               0.302       0.018       0.284
+  trials attempted                  72.9        87.5       -14.6
+
+  W_1(local, released) = 0.149  95% CI [0.046, 0.290]
+  human split-half noise floor for this task = 0.075
+
+  FAIL: local vLLM differs from the released run by more than the
+        human noise floor. Do NOT start the search -- the baseline
+        and therefore the headroom figures do not carry over.
+        Check sampling params, chat template, tokenizer revision.
