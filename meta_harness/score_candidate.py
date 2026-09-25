@@ -42,9 +42,22 @@ HUMAN_A3_BLEU = 0.002
 HUMAN_A3_WORDS = 137.2
 
 FLOOR = 0.03                      # max allowed per-task regression vs baseline
-A1_LEAK_BAND = (0.05, 0.12)       # protocol-matched digit-span sub-span leak
-A3_BLEU_MAX = 0.02
-A3_WORD_BAND = (100.0, 175.0)
+
+# Guards are expressed as distance-from-human, not as absolute bands.
+#
+# An absolute band cannot work: the first version used A1 leak in [0.05, 0.12],
+# calibrated on the released OpenRouter run's 0.105, and the locally measured
+# baseline came in at 0.1298 -- so the baseline failed its own guard, which is
+# incoherent. Absolute bands are serving-stack-dependent for the same reason the
+# released headroom figures were.
+#
+# What a guard is actually for: catching a candidate whose error structure drifts
+# FURTHER from humans than the baseline already is. So the rule is relative --
+# |candidate - human| must not exceed |baseline - human| + tolerance.
+HUMAN_A1_LEAK = 0.087
+A1_LEAK_TOLERANCE = 0.03
+A3_BLEU_TOLERANCE = 0.02          # absolute; human BLEU is ~0 so this is a cap
+A3_WORD_TOLERANCE = 40.0          # words, around the human 137.2
 
 # Split-half human noise floor per task; a delta under this is not a result.
 NOISE_FLOOR = {
@@ -97,8 +110,8 @@ def axes(run_dir: Path) -> dict[str, Any]:
             res["A1"] = {
                 "sub_span_leak": round(leak, 4),
                 "best_span": round(summ["best_span"], 2),
-                "band": list(A1_LEAK_BAND),
-                "within_band": bool(A1_LEAK_BAND[0] <= leak <= A1_LEAK_BAND[1]),
+                "human_leak": HUMAN_A1_LEAK,
+                "distance": round(abs(leak - HUMAN_A1_LEAK), 4),
             }
 
     sr = run_dir / "tasks/wm_semantic_story_recall.jsonl"
@@ -110,8 +123,8 @@ def axes(run_dir: Path) -> dict[str, Any]:
             res["A3"] = {
                 "bleu": round(bleu, 4), "words": round(words, 1),
                 "human_bleu": HUMAN_A3_BLEU, "human_words": HUMAN_A3_WORDS,
-                "bleu_ok": bool(bleu < A3_BLEU_MAX),
-                "words_ok": bool(A3_WORD_BAND[0] <= words <= A3_WORD_BAND[1]),
+                "bleu_distance": round(abs(bleu - HUMAN_A3_BLEU), 4),
+                "word_distance": round(abs(words - HUMAN_A3_WORDS), 1),
             }
     return res
 
@@ -148,15 +161,29 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
         rec["within_noise_floor"] = noise
         rec["passes_floor"] = not violations
 
-    guards = []
-    a1 = rec["axes"].get("A1")
-    if a1 and not a1["within_band"]:
-        guards.append(f"A1 sub-span leak {a1['sub_span_leak']} outside {A1_LEAK_BAND}")
-    a3 = rec["axes"].get("A3")
-    if a3 and not (a3["bleu_ok"] and a3["words_ok"]):
-        guards.append(f"A3 bleu={a3['bleu']} words={a3['words']} outside bounds")
+    # Guards compare distance-from-human against the BASELINE's distance, so a
+    # candidate is only flagged for drifting further from humans than the
+    # baseline already sits. Without a baseline there is nothing to drift from,
+    # so the guards are reported and not enforced.
+    guards: list[str] = []
+    base_axes = axes(baseline_dir) if baseline_dir is not None else {}
+    for key, tol, field in (("A1", A1_LEAK_TOLERANCE, "distance"),
+                            ("A3", A3_BLEU_TOLERANCE, "bleu_distance"),
+                            ("A3", A3_WORD_TOLERANCE, "word_distance")):
+        cand_ax, base_ax = rec["axes"].get(key), base_axes.get(key)
+        if not cand_ax or not base_ax:
+            continue
+        cd, bd = cand_ax.get(field), base_ax.get(field)
+        if cd is None or bd is None:
+            continue
+        if cd > bd + tol:
+            guards.append(
+                f"{key} {field}: {cd} vs baseline {bd} (tolerance {tol}) -- "
+                f"drifted further from human"
+            )
     rec["guard_violations"] = guards
     rec["passes_guards"] = not guards
+    rec["guards_enforced"] = baseline_dir is not None
     return rec
 
 

@@ -1,0 +1,50 @@
+{
+  "run_dir": "meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "humanlikeness_by_task": {
+    "digit_span_forward": 0.886,
+    "digit_span_reverse": 0.9666,
+    "nback": 0.7909,
+    "word_recognition": 0.4948,
+    "variable_mapping": 0.3554,
+    "narrative_qa": 0.9572,
+    "semantic_story_recall": 0.9473,
+    "craft_task": 0.8907,
+    "map_task": null,
+    "factual_qa": null
+  },
+  "mean_humanlikeness_search": 0.7861,
+  "n_search_tasks_scored": 8,
+  "axes": {
+    "A2": {
+      "miss_rate": 0.0432,
+      "fa_rate": 0.1269,
+      "ratio": 0.34,
+      "ratio_ci": [
+        0.007,
+        0.71
+      ],
+      "human_ratio": 6.094,
+      "distance": 5.754,
+      "trials_attempted": 82.92
+    },
+    "A1": {
+      "sub_span_leak": 0.1298,
+      "best_span": 18.4,
+      "human_leak": 0.087,
+      "distance": 0.0428
+    },
+    "A3": {
+      "bleu": 0.0031,
+      "words": 121.4,
+      "human_bleu": 0.002,
+      "human_words": 137.2,
+      "bleu_distance": 0.0011,
+      "word_distance": 15.8
+    }
+  },
+  "guard_violations": [],
+  "passes_guards": true,
+  "guards_enforced": false,
+  "id": "baseline",
+  "iteration": 0
+}

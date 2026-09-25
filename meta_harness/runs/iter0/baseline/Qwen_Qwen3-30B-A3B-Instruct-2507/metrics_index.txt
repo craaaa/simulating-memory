@@ -1,0 +1,8 @@
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_digit_span_forward.txt
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_digit_span_reverse.txt
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_nback.txt
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_word_recognition.txt
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_variable_mapping.txt
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_narrative_qa.txt
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_semantic_story_recall.txt
+meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507/metrics_wm_craft_task.txt
