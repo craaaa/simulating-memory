@@ -5,6 +5,29 @@
   "run_b": "meta_harness/runs/iter3rep/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
   "what_this_is": "Two runs of the SAME harness, config and seed, so every per-task delta is pure run-to-run variation. This is what metric_noise.py structurally cannot see: it bootstraps by resampling the model side of a FIXED set of rows, capturing sampling noise but not generation variation between runs. vLLM with continuous batching at max_parallel_participants=50 is not reproducible at temperature 0, because batch composition changes reduction order.",
   "headline": "The enforced floors are CONSERVATIVE, not too tight. The largest run-to-run movement across the eight search tasks is 0.0152, on digit_span_forward, whose floor is 0.140. The 8-task mean moves +0.0001 against a min credible mean delta of 0.026.",
+  "headline_amended": "PARTLY REVISED by a second measurement, see second_measurement below. One repeat of the BASELINE was not enough: a harness that overflows is noisier than one that refuses, and narrative_qa reaches 0.0160 rather than the 0.0065 measured here -- over half its 0.030 floor. The floors are still all above the measured noise, but narrative's margin is thin and no narrative effect below about 0.02 should be claimed.",
+  "second_measurement": {
+    "what": "primacy (iter2) and primacy_v2 (iter3) were the SAME harness, discovered after the fact, which makes the pair a second run-to-run measurement -- and a better one than the repeat baseline, because this harness OVERFLOWS and the baseline does not.",
+    "why_identical": [
+      "primacy_v2's batch rule never fired: craft's overflowing rows settled at occupancy 4.0, primacy's value.",
+      "For a SINGLE eviction primacy_v2's tool-result string is byte-identical to primacy's; the plural form exists only for a double eviction, which therefore never occurred.",
+      "Replaying the real write sequences from both live runs through both memory classes under serial arrival: ZERO divergences over 874 rows and 3610 write calls, comparing store contents and returned strings at every call."
+    ],
+    "spreads": {
+      "narrative_qa":          {"primacy": 0.9263, "primacy_v2": 0.9423, "spread": 0.0160, "floor": 0.030},
+      "digit_span_forward":    {"primacy": 0.9012, "primacy_v2": 0.8860, "spread": 0.0152, "floor": 0.140},
+      "A3_precision_distance": {"primacy": 0.0196, "primacy_v2": 0.0082, "spread": 0.0114, "note": "the sharpest illustration: 'closest to the human median any candidate reached' described nothing at all"},
+      "word_recognition":      {"primacy": 0.4706, "primacy_v2": 0.4637, "spread": 0.0069, "floor": 0.121},
+      "craft_task":            {"primacy": 0.8456, "primacy_v2": 0.8487, "spread": 0.0031, "floor": 0.030},
+      "mean_humanlikeness_search": {"primacy": 0.7945, "primacy_v2": 0.7944, "spread": 0.0001}
+    },
+    "consequences": [
+      "narrative_qa's noise is up to 0.0160, not 0.0065. primacy's -0.0309 violation is about twice the observed spread rather than five times it -- still probably real, but the margin is much thinner than previously stated.",
+      "craft_task's near-exactness is confirmed by a second, independent pair: 0.0031 here against 0.0000 from the repeat baseline. So craft remains the most trustworthy gist cell.",
+      "The 8-task mean is stable to 0.0001 across BOTH measurements, so the 0.026 min credible mean delta holds.",
+      "METHODOLOGICAL: one measurement of run-to-run variation does not license reading a delta. Noise must be measured on a harness of the same family as the candidate, not on the baseline."
+    ]
+  },
   "per_task": {
     "craft_task":            {"a": 0.8907, "b": 0.8907, "delta":  0.0000, "rows_differing": "0 of 150",   "bootstrap_floor": 0.025, "enforced_floor": 0.030},
     "digit_span_reverse":    {"a": 0.9666, "b": 0.9666, "delta":  0.0000, "rows_differing": "0 of 190",   "bootstrap_floor": 0.059, "enforced_floor": 0.059},

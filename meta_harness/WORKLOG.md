@@ -1031,12 +1031,44 @@ A mechanism conditioned on simultaneous arrival therefore cannot engage on the o
 it was designed to repair. The premise was measured on a minority pattern, on a
 different task.
 
-Two genuine gains survive, neither the headline. `narrative_qa` recovered from
-`primacy`'s −0.0309 to **−0.0149**, inside its floor, so the contiguity cost is roughly
-halved. And A3 `precision_distance` is **0.0082**, the closest to the human median any
-candidate has reached (baseline 0.0221, `primacy` 0.0196). Both are attributable to the
-key-naming change visible above — `A+B→D` instead of `rule1` — which is a side effect
-rather than the mechanism, and should be isolated deliberately rather than inherited.
+~~Two genuine gains survive, neither the headline.~~ `narrative_qa` came in at −0.0149
+against `primacy`'s −0.0309, and A3 `precision_distance` at 0.0082 against `primacy`'s
+0.0196 and the baseline's 0.0221.
+
+> **RETRACTED within the hour, and this one was mine.** I wrote those up as gains
+> attributable to a key-naming side effect and proposed a control run to confirm the
+> tool-result string was responsible. The control was unnecessary, because **`primacy`
+> and `primacy_v2` were the same harness in this run.**
+>
+> Two facts settle it. For a *single* eviction `primacy_v2`'s tool-result string is
+> byte-identical to `primacy`'s — the plural form only exists for a double eviction, and
+> the batch rule never fired, so a double eviction never happened. And replaying the
+> real write sequences from both live runs through both memory classes under serial
+> arrival gives **zero divergences over 874 rows and 3610 write calls**, comparing store
+> contents and returned strings at every call.
+>
+> So every difference between the two arms is run-to-run variation, which makes the pair
+> a free second measurement of it — and a more useful one than the repeat baseline,
+> because this harness overflows and the baseline does not:
+>
+>     narrative_qa            0.9263 vs 0.9423    0.0160
+>     digit_span_forward      0.9012 vs 0.8860    0.0152
+>     A3 precision_distance   0.0196 vs 0.0082    0.0114
+>     word_recognition        0.4706 vs 0.4637    0.0069
+>     craft_task              0.8456 vs 0.8487    0.0031
+>     8-task mean             0.7945 vs 0.7944    0.0001
+>
+> **This revises the earlier claim that every floor is amply conservative.** narrative's
+> noise reaches **0.0160**, over half its 0.030 floor, not the 0.0065 the repeat baseline
+> showed. So one measurement of run-to-run variation was not enough, and a harness that
+> overflows is noisier than one that refuses. `primacy`'s narrative violation of −0.0309
+> is about twice the observed spread rather than five times it — still probably real, but
+> the margin is much thinner than I stated, and no narrative effect below about 0.02
+> should be claimed by anything.
+>
+> The A3 figure is the sharpest illustration: `precision_distance` moved 0.0196 → 0.0082
+> between two runs of identical code, so "closest to the human median any candidate has
+> reached" described nothing at all.
 
 ### `episodic_primacy` — the composition could not be evaluated, by design
 
@@ -1055,8 +1087,19 @@ cannot say how.
 ### Where iteration 4 should go
 
 The leak closure is now established and creditable, and its remaining cost is localised
-to a single mechanism: silence at n≥2 when the store is nearly full. That is a
-narrower problem than either previous wave faced. `primacy_v2`'s batch condition should
-be dropped rather than repaired, since serial arrival is what the agent actually does
-once writes are admitted; its narrative and A3 gains should be re-derived from the
-key-naming change that actually produced them.
+to a single mechanism: silence at n≥2 when the store is nearly full. That is a narrower
+problem than either previous wave faced, and `episodic_reset_v2`'s own P7 failure points
+at the cause — 38 unparseable answers and a mean reply of 15.91 characters against the
+baseline's 13.10, from prepending four lines to a prompt that demands one line of output.
+That is iteration 4.
+
+`primacy_v2`'s batch condition should be **dropped rather than repaired**: serial arrival
+is what the agent actually does once writes are admitted, so a rule conditioned on
+simultaneous arrival can never engage. And there are no narrative or A3 gains to
+re-derive — see the retraction above.
+
+The methodological lesson, which has now cost three separate claims of mine: **a single
+measurement of run-to-run variation is not enough to license reading a delta.** The
+repeat baseline gave narrative 0.0065 and the primacy pair gave 0.0160 on the same task.
+Any future floor argument needs the noise measured on a harness of the same family as the
+candidate, not on the baseline.
