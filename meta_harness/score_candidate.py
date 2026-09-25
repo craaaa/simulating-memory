@@ -151,6 +151,37 @@ def humanlikeness_by_task(run_dir: Path, tasks: list[str]) -> dict[str, float | 
     return out
 
 
+def variable_mapping_matched(run_dir: Path) -> dict[str, Any] | None:
+    """variable_mapping humanlikeness with the two sides on the SAME formula.
+
+    The released comparison is not one: the human score is a correct-count out of
+    10 while the model score is the saturating `relation_count` of the last
+    consecutively correct question, so model errors after question 5 never reach
+    its score. See protocol_match.variable_mapping_scores for the measurements.
+    Reported beside the raw figure rather than replacing it, because every earlier
+    record used the raw one and silently redefining it would make the history
+    incomparable.
+    """
+    p = run_dir / "tasks/wm_variable_mapping.jsonl"
+    if not p.exists():
+        return None
+    model = np.asarray(PM.variable_mapping_scores(p), dtype=float)
+    human = S.human_scores("variable_mapping")
+    if not model.size or not human.size:
+        return None
+    vals, counts = np.unique(model, return_counts=True)
+    return {
+        "humanlikeness_matched": round(S.humanlikeness(human, model), 4),
+        "n_model": int(model.size),
+        "mean_score": round(float(model.mean()), 4),
+        "share_at_ceiling": round(float((model >= 1.0).mean()), 4),
+        "n_unique_values": int(vals.size),
+        "score_distribution": {str(round(float(v), 2)): int(c)
+                               for v, c in zip(vals, counts)},
+        "formula": "sum(q.correct)/10, matching src/score.py:180",
+    }
+
+
 def axes(run_dir: Path) -> dict[str, Any]:
     res: dict[str, Any] = {}
 
@@ -229,6 +260,13 @@ def axes(run_dir: Path) -> dict[str, Any]:
     # do not touch it. See meta_harness/interference.py for the human reference.
     if (run_dir / "tasks/wm_variable_mapping.jsonl").exists():
         res["A4"] = IF.a4(run_dir)
+
+    # variable_mapping scored with both sides on the same formula. A diagnostic,
+    # not an axis: it replaces a comparison that was never valid, so it has no
+    # human-distance target of its own beyond the humanlikeness it reports.
+    vm = variable_mapping_matched(run_dir)
+    if vm is not None:
+        res["variable_mapping_matched"] = vm
     return res
 
 

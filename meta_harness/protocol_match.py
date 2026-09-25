@@ -114,6 +114,70 @@ def model_participants(jsonl_path: Path, condition: str = "C2") -> list[dict]:
     return out
 
 
+LETTERS = "ABCDEFGH"
+
+
+def variable_mapping_scores(jsonl_path: Path, condition: str = "C2") -> list[float]:
+    """Model-side variable_mapping scores recomputed with the HUMAN formula.
+
+    The two sides do not compute the same quantity. They are not merely on
+    different protocols, as digit span was -- they are different formulas sharing
+    a denominator of 10:
+
+      human  (src/score.py:180)  sum(1 for q in questions if q["correct"]) / 10
+                                 -- a correct COUNT.
+      model  (bench/tasks/variable_mapping.py:265-280)  iterate the questions,
+                                 break on the first error, and score
+                                 q["relation_count"] of the last consecutively
+                                 correct question, / 10.
+
+    `relation_count` is `len(mapping)`, the number of distinct people introduced so
+    far, and it saturates at TARGET_RELATIONS = 10 by question 5. So once a run
+    answers the first five questions correctly it has banked the maximum, and every
+    later error is INVISIBLE to its score. Measured on the released runs:
+
+      baseline      first_error_at {3: 2, 8: 4, 9: 2, 10: 4}; 10 of the 12 runs
+                    with an error still score 1.0.
+                    scored {1.0: 148, 0.4: 2}  ->  human formula {1.0: 138, 0.9: 12}
+      displacement  25 runs erred and 24 of them still score 1.0.
+                    scored {1.0: 149, 0.8: 1}  ->  human formula
+                    {1.0: 125, 0.9: 18, 0.8: 4, 0.7: 3}
+
+    So the "99% at 1.0, two unique values" point mass that made this task look like
+    a ceiling with no headroom is substantially a SCORING artifact. The errors are
+    there -- displacement made 25 of them -- and the formula discards them.
+
+    This is an analysis-side correction and deliberately not a harness one: a
+    harness must not know the scoring protocol. It also does not touch the human
+    side, which already uses this formula.
+    """
+    out: list[float] = []
+    for line in Path(jsonl_path).read_text().splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if (row.get("condition_id") or row.get("condition")) != condition:
+            continue
+        answers = row.get("parsed_answers") or {}
+        questions = row.get("questions") or []
+        if not questions:
+            continue
+        correct = 0
+        for q in questions:
+            idx = q.get("question_index")
+            letter = answers.get(str(idx), answers.get(idx))
+            options = q.get("options") or []
+            if isinstance(letter, str) and letter in LETTERS:
+                j = LETTERS.index(letter)
+                # A malformed or out-of-range answer is simply not correct, which
+                # matches the human formula: it counts correct answers and says
+                # nothing about how a wrong one was expressed.
+                if j < len(options) and options[j] == q.get("correct_city"):
+                    correct += 1
+        out.append(min(correct, 10) / 10.0)
+    return out
+
+
 def summarize(label: str, recs: Iterable[dict]) -> dict:
     recs = list(recs)
     return {
