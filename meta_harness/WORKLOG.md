@@ -464,11 +464,39 @@ rather than a guess.**
     all 8 search tasks                     0.7861 -> 0.8122   +0.0261
     excluding word_recognition             0.8277 -> 0.8378   +0.0100
     the 5 tasks that measure the store     0.9296 -> 0.9148   -0.0148
+    the 3-task gist subgroup               0.9317 -> 0.9025   -0.0293
 
 The headline +0.0261 — which only just clears the 0.026 min credible mean delta — is
-bought entirely by the two leaky tasks. On the five tasks that actually measure the
-memory module it is a small *regression*. It also fails the per-task floor on
-semantic_story_recall (−0.0509) and fires the A3 guard.
+bought entirely by the two leaky tasks. It fails the per-task floor on
+semantic_story_recall (−0.0509).
+
+> **CORRECTED in iteration 2, twice.** Two of the three rejection grounds stated
+> here were wrong, though the verdict stands.
+>
+> **The −0.0148 is not a finding.** That subgroup's mean delta has
+> SE = sqrt(ΣSE²)/5 = 0.0157 from `logs/metric_noise.json`, so its min credible
+> delta is **0.0314** and −0.0148 is comfortably inside noise. Worse, **93.3% of
+> that subgroup's variance is the two digit-span cells** (SE 0.0698 and 0.0294),
+> which displacement moved by 0.0000 and +0.0138 — so the subgroup was mostly
+> measuring the two tasks the candidate provably did not touch. Drop them and the
+> 3-task gist subgroup (story, craft, narrative_qa) has min credible delta 0.0136,
+> against which **−0.0293 is credible**. That is the defensible version of the
+> claim. Found by iteration 2a's proposer; verified here.
+>
+> **The A3 guard firing was an artifact.** BLEU's brevity penalty made A3's
+> enforced quantity a length proxy: pooled over 1000 story-recall rows,
+> Spearman(recall length, BLEU) = 0.822, and all 121 rows under 60 words score
+> exactly 0.0000, min and max alike. So the BLEU guard punished lengthening toward
+> the human mean while the A3 *word* guard rewarded it — the two halves of A3
+> contradicted each other, and displacement tripped that contradiction. Under the
+> replacement axis (clipped 4-gram precision, no brevity penalty, medians)
+> displacement **passes all guards**, at distance 0.0153 against the baseline's
+> 0.0221 — it is closer to the human median than the baseline is. `full_context` is
+> still rejected, now doubly, at precision 1.0000.
+>
+> **What the rejection actually rests on:** the semantic_story_recall floor
+> violation (−0.0509 against −0.03) and the credible 3-task gist regression
+> (−0.0293 against 0.0136). Both survive. Nothing else cited here does.
 
 **word_recognition's +0.1388 is a fake gain, and the axes caught it.** This is the
 clearest vindication of building error-structure axes at all:
@@ -514,6 +542,30 @@ asserted displacement "cannot cause regurgitation — it strictly reduces what i
 retained." That was wrong, and why is not yet established. Likeliest reading: chunks
 kept by recency are later and less abstracted than chunks kept by primacy, so what
 survives is closer to surface form. Iteration 2 must account for it.
+
+> **RESOLVED in iteration 2, and my "likeliest reading" above was wrong.** It is
+> not that recency-kept chunks are less abstracted. Measured 4-gram precision of
+> each chunk against the story by write position is flat — 0.066, 0.068, 0.045,
+> 0.073, 0.029, 0.113 for positions 1–6 — so position 5 is the *least* verbatim and
+> position 1 is as verbatim as position 6. There is no primacy/recency gradient in
+> verbatimness to appeal to.
+>
+> The rise is a **brevity-penalty artifact of recall length**, i.e. a defect in the
+> axis rather than a fact about the candidate. Holding displacement's own written
+> value text fixed and varying only which subset is retained gives a 7× BLEU swing
+> from identical sentences: refuse 0.0048 @ 122 words, LRU 0.0335 @ 141, ACT-R
+> 0.0087 @ 124. Within a single row, adding chunks: 39 words → 3.5e-9, 58 → 5.7e-6,
+> 95 → 0.0034, 119 → 0.0282. Across runs the relation is monotone in length alone:
+> 65 → 0.0001, 121 → 0.0031, 146 → 0.0413, 411 → 0.3047.
+>
+> Verified independently within runs rather than only between them: pooled
+> Spearman(length, BLEU) = 0.822 over 1000 rows, and in the 0–60 word bin all 121
+> participants score exactly 0.0000, min and max alike — BLEU cannot represent a
+> verbatim short recall at all. A3's enforced field is now brevity-penalty-free
+> 4-gram precision, on which the human within-record Spearman(length, precision) is
+> 0.128, i.e. humans vary in length and verbatimness independently. Found by
+> iteration 2a's proposer; the independent within-run check and the axis replacement
+> are mine.
 
 **Net:** the search's first real mechanism result is a confirmed diagnosis of a
 harness defect — a capacity limit implemented as refusal produces response omission,
@@ -572,3 +624,144 @@ candidate. With `--record` replacing rows by id, scoring a second candidate woul
 silently overwrite the first. It was masked until now only because the earlier two
 rows happened to be written with an explicit `--id`. Fixed to check both
 locations; all three wave-0 rows re-scored so each carries manifest provenance.
+
+---
+
+## Iteration 2 — four candidates, four disjoint surfaces, and five corrections to
+## the evaluation contract
+
+The wave is four candidates plus one ablation arm, each owning one mechanism
+surface, partitioned in advance so single-mechanism attribution survives. All four
+are built on the plain baseline rather than on `displacement`, so exactly one method
+body separates each from the control.
+
+| candidate | surface | what it tests |
+|---|---|---|
+| `primacy` | `WorkingMemory.write_key` eviction order | recovers displacement's story-recall loss; evicts by lowest ACT-R base-level activation, so the middle dies first and eviction proceeds outward |
+| `chunk_limit` | within-slot content | bounds enumerated elements per value at `MAX_KEYS`, so a slot is a chunk rather than a list |
+| `serial_recognition` | `recall()` trial-list presentation | closes leak 1 — the studied list is visible at recall |
+| `episodic_reset` | `step()` conversation history | closes leaks 2 and 3 — full history retained, so the store is decorative on nback and variable_mapping |
+| `serial_recognition_open` | ablation of the above | same source, mask off: distinguishes memory from framing |
+
+Jobs 18522417 (four arms) and 18523331 (`chunk_limit`). `primacy` completed in
+859.9s with all row counts correct.
+
+### Two candidates are not scoreable in the ordinary way, and that is recorded in code
+
+`serial_recognition` is recorded with `--instrument`, which keeps the row in full
+but excludes it from frontier derivation. Closing the word-recognition leak makes
+that task's humanlikeness rise **arithmetically**: with the baseline at 0.816
+against a human 0.315, even a point mass at zero scores about 0.685. Both frontier
+axes break at once — the mean is measured against a reference the candidate
+invalidated, and A2 stops meaning for that row what it means for every other row,
+because pre-closure A2 is a mixture of two populations doing different tasks
+(ceiling group miss 0.001 / fa 0.011, floor group miss 0.400 / fa 0.767). The
+candidate's own author asked that its headline not be quoted as a gain.
+
+The exclusion is validated in both directions in `test_history.py`, against a
+fixture that is deliberately the strongest row in the set: it beats every other row
+on mean *and* on A2 and passes all guards, so only the flag can exclude it. With the
+flag it is absent from the frontier; with the flag stripped it is the sole frontier
+member, dominating all three others.
+
+`chunk_limit` is the **control** for it. The ceiling group was measured to be
+reading the studied list off the prompt — 36 of 50 participants score a perfect
+100/100 while their own store decides at most 0.640 of old trials, mean 0.226 — so
+removing 74% of the store's content should leave word_recognition unmoved. Its P13
+asserts exactly that at the same 0.121 threshold iteration 1 failed.
+
+### Five defects in my own evaluation contract, all found by the proposers and all
+### verified here before acceptance
+
+**1. A3 guarded recall length, not verbatimness.** See the correction inline above.
+Enforced field is now brevity-penalty-free clipped 4-gram precision on medians;
+BLEU is retained with `bleu_enforced: false` because five runs are scored against it
+and `full_context`'s 0.3047 is real regurgitation.
+
+**2. The 5-task "store-measuring" subgroup claim was inside noise.** See above.
+
+**3. A4's assignment window was undercounted about twofold.** `model_trials`
+computed `turn = q.get("turn", q.get("question_index", 0))` and filtered assignments
+by `a["turn"] < turn`. Model question records carry no `turn` field, so it always
+fell back to `question_index` (1–10) and compared it against assignment turns
+(1–20). Assignments are interleaved, not front-loaded: `variable_mapping.py:145`
+emits a question every `TURNS_PER_QUESTION = 2` assignments, so question *k* follows
+assignment turn 2*k* and the participant has seen all of 1..2*k*. The filter kept
+*k*−1, so intrusions from the unseen half were misclassified as `novel_guess`.
+`TURNS_PER_QUESTION` is now imported from the task so the assumption cannot drift.
+The proposer's suggested fix was itself off by one pair.
+
+Fixing it showed raw `intrusion_share` is not comparable between sides at all: it
+saturated at 1.000 for the baseline against a human 0.691, which reads as the model
+being more intrusion-prone when it is only more exposed. Model chance is 0.889
+against the humans' 0.577. Above chance the sides agree — model +0.111, human
++0.114 — so `intrusion_above_chance` is now the comparable quantity.
+
+**4. A4's `rc_ratio` has an error-count-dependent ceiling, so the old guard could
+never have rejected anything.** `relation_count` is `len(mapping)` and saturates at
+10, so the attainable maximum rises with the error count: 1.2525 at 12 errors,
+1.2575 at 35, 1.2857 at 150, 1.3750 at 400. `displacement` scored **exactly** 1.2575
+at **exactly** 35 errors — its arithmetic maximum, `rc_mean_error` 10.000 — and
+`full_context` scored exactly 1.2525 at exactly 12. A fixed 1.15 threshold on the
+raw ratio is therefore not scale-free. A4 now reports `rc_ratio_ceiling` from the
+run's own distribution and `rc_ratio_normalized` between noise (0.0) and that
+ceiling, and the guard compares the normalized value.
+
+Recomputing the human reference on the same footing **inverts the interpretation**:
+humans score 1.3867 against a ceiling of 2.0372 over 152 errors, i.e. normalized
+**0.3728**. Humans sit at 37% of their attainable interference structure, not near
+it. `displacement` sits at 1.0 and the baseline at 0.67 — so the model's errors are
+*more* load-ordered than humans', the opposite of what the raw ratios suggested.
+"Approaching the human 1.386" is withdrawn as a target for any single model run.
+
+Also withdrawn: my brief to iteration 2c claimed A4 had never fired on a real run.
+False — `displacement` produced 35 errors with `trustworthy: true`.
+
+**5. variable_mapping's two sides are scored by different formulas.** The fifth
+comparability defect and the most severe kind: not a protocol mismatch but two
+different quantities sharing a denominator. Human is `sum(q.correct)/10`, a correct
+count; model is `relation_count` of the last consecutively correct question, which
+saturates by question 5, so **every error after question 5 is invisible to the
+model's score**. `displacement` erred on 25 runs and 24 of them still score 1.0.
+
+This reframes what the task was telling us. The "99% at 1.0, two unique values"
+point mass, recorded earlier as evidence the store is off the causal path, is
+substantially a **scoring** artifact — the errors exist and the formula discards
+them. On the human formula: baseline {1.0: 138, 0.9: 12}, displacement
+{1.0: 125, 0.9: 18, 0.8: 4, 0.7: 3}. Reported as
+`axes()["variable_mapping_matched"]` beside the raw figure, since redefining the
+raw one would make the history incomparable. Analysis-side, not in the harness: a
+harness must not know the scoring protocol.
+
+### A premise of mine that a proposer disproved: the chunk defect is not task-general
+
+I briefed `chunk_limit` that unbounded value length was "task-general rather than
+specific to one leak", and that digit-span values were "exactly the kind of list
+your bound would cut". Measured elements per value on the baseline's `final_kv`,
+reproduced independently here:
+
+| task | elements/value (max) | elements/store (max) | can the bound bite? |
+|---|---|---|---|
+| word_recognition | **13.21 (99)** | **44.90 (180)** | extreme |
+| semantic_story_recall | 3.89 (9) | 13.98 (23) | already at the bound |
+| narrative_qa | 3.76 (9) | 13.54 (25) | already at the bound |
+| digit span fwd/rev | 1.94 (13) | 6.75 (25) | weak, about one digit at spans ≥15 |
+| nback | 1.13 (**2**) | 2.45 (6) | **no** |
+| variable_mapping | 1.00 (**1**) | 3.51 (4) | **no** |
+| craft_task | 1.00 (**1**) | 3.33 (4) | **no** |
+
+One extreme task, two already at the bound, one weak, three that cannot move — and
+the extreme one is exactly the leaky task whose score is uncreditable. So the
+8-task mean is not expected to move credibly, which the candidate states *before*
+the run. Digit span is disqualified as its control by measurement; `craft_task` is
+the derived control, with 0 of 150 rows touched and store and tool results
+byte-identical.
+
+### The n-back leak is worse than recorded
+
+Share of n-back `final_kv` values containing a bare capital letter, baseline:
+n=1 50/50, n=2 77/77, **n=3 4/198**. At n=3 the store holds no letters at all and
+the agent is still 0.737 accurate, so those answers come from the dialogue history.
+`displacement`'s n=3 humanlikeness of 0.9387 is therefore leak-derived, and "n-back
+per level is closed" was never the same claim as "the memory module closed n-back".
+`full_context` is the contrast: 53/53 values carry letters.
