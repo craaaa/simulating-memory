@@ -254,7 +254,49 @@ demand-sensitive — interference or displacement rather than a hard slot count 
 could in principle get both, and that is a psychological claim with a literature
 behind it rather than a knob-twiddle.
 
-**Axis validation is still open**, pending `random_decay_v2` (job 18494067).
+### Verdict: the axes discriminate. Search is meaningful. Proceeding.
+
+Both controls turned out to be threats of different kinds, and a different guard
+caught each one.
+
+**`random_decay_v2` — the calibrated-noise threat, caught by A1.** This is the
+textbook case the error-structure axes were built for:
+
+| | best_span | A1 sub-span leak | mean HL |
+|---|---|---|---|
+| human | **6.88** | **0.087** | — |
+| baseline | 18.4 | 0.130 | 0.7861 |
+| random_decay v1 (uniform 0–0.9) | 2.0 | 0.500 | 0.6977 |
+| **random_decay v2 (uniform 0–0.35)** | **8.2** | **0.249** | 0.7727 |
+
+Calibrated noise got the *aggregate* statistic nearly right — best_span 18.4 → 8.2
+against a human 6.88, far better than the baseline — while making the *error
+structure* twice as wrong, leaking 0.249 below its own span against a human 0.087.
+That is the signature of stochastic dropping, and A1 fired on it precisely.
+
+The mean tells the rest of the story: v2 is at 0.7727 against the baseline's
+0.7861, a delta of −0.013, which is **inside** the 0.026 min credible mean delta.
+So on humanlikeness alone v2 is indistinguishable from the baseline, while on A1 it
+is clearly distinguishable and clearly worse. Had the evaluation been mean
+humanlikeness only, this candidate would have passed as a wash and its broken error
+structure would have been invisible. It also failed the per-task floor on
+digit_span_reverse (−0.070 against a 0.059 threshold).
+
+It failed its own pass condition (needed mean ≥ 0.836) for the third time across
+two dial settings, so **no v3.** Two calibrations bracketing the human distribution
+were enough: undirected noise does not match a human score distribution, because
+the noise has to be the right size on every task simultaneously.
+
+**`full_context` — the non-noise threat, caught by A3.** The more convincing of the
+two validations, and I under-claimed it initially. This was not a metric attack at
+all: it is a legitimately *better* harness that genuinely improved a real task
+(N-Back +0.157, to 0.948 against a human 0.866) — and the axes rejected it anyway,
+on A3 BLEU 0.3047 against a human 0.002 and 411 recall words against 137. An axis
+doing discriminating work against a serious candidate is stronger evidence than an
+axis rejecting deliberate noise.
+
+So: humanlikeness alone is gameable and was gamed; the axes caught both threats by
+different routes; the search can proceed.
 `random_decay` v1 failed as an adversary in the informative direction: it did not
 game the metric, it overshot the human distribution badly (digit-span best span
 18.4 → 2.0 against a human 6.88, A1 leak 0.500 against 0.087) and *lost* 0.088 of
