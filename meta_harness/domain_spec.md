@@ -340,11 +340,22 @@ hours, and the declared capacity/decay parameters.
      3.9/3.12 venv mismatch trap does not apply.
   Remaining caveat: a plain `--gres=gpu:1` routed to an **L40S with 46GB**,
   which is *not* enough for qwen3-30b at bf16 (~61GB). GPU quota is 24 per
-  user, so request multiple GPUs rather than quantizing:
-  - search model: `--gres=gpu:2` on L40S (92GB) or `--constraint=h100
-    --gres=gpu:1` (80GB), `--tensor-parallel-size` to match;
-  - held-out model: llama-3.3-70b bf16 needs ~141GB, so `--gres=gpu:4` on
-    L40S (184GB) or 2x H100.
+  user, so request H100s and more of them rather than quantizing. Sizing at
+  bf16, against vLLM's default `gpu_memory_utilization=0.9`:
+
+  | model | weights | allocation | KV headroom | verdict |
+  |---|---|---|---|---|
+  | qwen3-30b-a3b | ~61GB | `--constraint=h100 --gres=gpu:1` | ~11GB | works, ~25-30 concurrent |
+  | qwen3-30b-a3b | ~61GB | `--constraint=h100 --gres=gpu:2` | ~83GB | **preferred**, full 50 concurrency |
+  | llama-3.3-70b | ~141GB | 1x H100 (80GB) | — | does not fit |
+  | llama-3.3-70b | ~141GB | 2x H100 (160GB) | ~19GB | minimum, reduced concurrency |
+  | llama-3.3-70b | ~141GB | 4x H100 (320GB) | ample | comfortable |
+  | llama-3.3-70b | ~141GB | 2x H200 (282GB) | ample | easiest if reachable |
+
+  Use `--constraint` and `--tensor-parallel-size` to match; never set
+  `--partition`. The search model's allocation is the one that matters for
+  throughput, since per-candidate wall-clock compounds over 40 candidates;
+  the 70B allocation is needed only for 3-5 finalist evaluations.
   **fp8 is rejected for both.** Quantization changes model behavior, and
   behavior is exactly what is being compared to human data, so an fp8 run
   would not be comparable to the released bf16 baselines that define the
