@@ -1,0 +1,93 @@
+# Held-out evaluation set: all 10 tasks, on a model the search never saw.
+#
+# Two independent axes of generalization are tested at once, which is the point:
+#
+#   held-out MODEL  llama-3.3-70b-instruct instead of qwen3-30b-a3b. Everything in
+#                   the search was measured on qwen, so a candidate could have
+#                   fitted that substrate's quirks rather than a memory mechanism.
+#   held-out TASKS  wm_map_task and wm_factual_qa, deliberately absent from
+#                   search_set.yaml and never scored during the search.
+#
+# A finalist that holds up on the 8 search tasks under a new model but collapses on
+# the 2 unseen tasks has overfitted the task set; one that holds on the unseen tasks
+# but not the new model has overfitted the substrate. Reporting both separately is
+# the only way to tell those apart, so score_candidate.py keeps them separate.
+#
+# Digit span is restored to FULL repeats here. During the search it was cut to 190
+# rows for a 4x throughput win, which left only 10 model participants and a min
+# credible delta of 0.140 (see metric_noise.py). That imprecision is tolerable when
+# comparing many candidates against one baseline on a mean, and not tolerable for a
+# final reported number.
+model:
+  backend: openai
+  name: meta-llama/Llama-3.3-70B-Instruct
+  base_url: http://127.0.0.1:8000/v1
+  temperature: 0.0
+  max_tokens: 2048
+  top_p: 1.0
+
+run:
+  out_dir: meta_harness/runs/heldout/{date}
+  seed: 42
+  max_parallel_participants: 24    # 70B on 2 GPUs: far less KV headroom than 30B
+  max_parallel_tasks: 1
+
+task_config:
+  # --- working memory ------------------------------------------------------
+  # Full schedule restored: 19 spans x 100 sequences = 1900 rows, as released.
+  wm_digit_span_forward:
+    min_span: 2
+    max_span: 20
+    sequences_per_span: 100
+    stimuli_seed: 42
+    temperature: 0.0
+  wm_digit_span_reverse:
+    min_span: 2
+    max_span: 20
+    sequences_per_span: 100
+    stimuli_seed: 42
+    temperature: 0.0
+  wm_nback:
+    n_repeat: 50
+    n_repeats_per_participant: 1
+    stimuli_seed: 123
+    temperature: 0
+  wm_word_recognition:            # carries axis A2
+    words_json_path: data/words.json
+    n_repeat: 150                 # 3x the search size; A2 is the reported axis
+    max_trials_per_game: 100
+    stimuli_seed: 42
+    temperature: 0.0
+  wm_variable_mapping:            # carries axis A4
+    names_json_path: data/names.json
+    city_json_path: data/city.json
+    n_repeat: 50
+    n_runs_per_participant: 3
+    stimuli_seed: 42
+
+  # --- longer-horizon memory ----------------------------------------------
+  wm_narrative_qa:
+    data_json_path: data/narrative_QA.json
+    n_participants: 50
+    stimuli_seed: 42
+  wm_semantic_story_recall:       # carries axis A3
+    repeats_per_stimulus: 50
+    stimuli_seed: 42
+    use_judge: true
+    recall_max_tokens: 16384
+  wm_craft_task:
+    data_json_path: data/craft_task.json
+    n_participants: 50
+    stimuli_seed: 42
+
+  # --- held out from the search entirely ----------------------------------
+  # Keys verified against each task's closure signature in bench/tasks/, not
+  # guessed: both take data_json_path / n_participants / stimuli_seed.
+  wm_map_task:
+    data_json_path: data/maps.json
+    n_participants: 50
+    stimuli_seed: 42
+  wm_factual_qa:
+    data_json_path: data/wikipedia_10docs_questions.json
+    n_participants: 50
+    stimuli_seed: 42
