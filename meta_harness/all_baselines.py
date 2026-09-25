@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path("/Users/cl5625/simulating-memory/.claude/worktrees/meta-harness-compactor")
+ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = Path(__file__).with_name("noise_floor.py")
 MODELS = [
     "claude-opus-4-6",

@@ -27,7 +27,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path("/Users/cl5625/simulating-memory/.claude/worktrees/meta-harness-compactor")
+ROOT = Path(__file__).resolve().parents[1]
 HUMAN = ROOT / "runs/human"
 
 

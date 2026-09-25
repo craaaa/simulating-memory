@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path("/Users/cl5625/simulating-memory/.claude/worktrees/meta-harness-compactor")
+ROOT = Path(__file__).resolve().parents[1]
 SUMMARY = ROOT / "meta_harness/logs/evolution_summary.jsonl"
 
 ROWS = [

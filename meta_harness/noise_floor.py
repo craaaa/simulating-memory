@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path("/Users/cl5625/simulating-memory/.claude/worktrees/meta-harness-compactor")
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 import score as S  # noqa: E402
 

@@ -6,7 +6,7 @@ stored encoding logs instead and multiply by a per-turn token estimate.
 import json
 from pathlib import Path
 
-ROOT = Path("/Users/cl5625/simulating-memory/.claude/worktrees/meta-harness-compactor")
+ROOT = Path(__file__).resolve().parents[1]
 TASKS_DIR = ROOT / "runs/compactor/claude-opus-4-6/tasks"
 
 # character counts of everything the log stored, as a stand-in for context size
