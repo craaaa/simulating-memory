@@ -53,11 +53,32 @@ this repo. Read this before proposing anything.
 > narrative sit at ~3.8, already at a 4-element bound; `nback` maxes at 2;
 > `variable_mapping` and `craft_task` at exactly 1 and cannot move at all.
 >
-> **6. The serving stack is deterministic.** Independent candidates reproduce the
-> baseline bit-exactly — `digit_span_reverse` across all four iteration-2 arms,
-> `craft_task` in two, `digit_span_forward` in two. So a no-change prediction may
-> legitimately demand bit-identity, small deltas are attributable, and you cannot
-> excuse movement as nondeterminism.
+> **6. The serving stack is NOT bit-deterministic — do not demand bit-identity.**
+> An earlier version of this preface said the opposite, on the grounds that several
+> candidates reproduced the baseline's scored humanlikeness exactly. That was my
+> error: humanlikeness is a Wasserstein distance over a score *distribution*, so it is
+> invariant to which participant got which score and to any generation change that
+> does not move a score. Measured on `craft_task` with server-assigned tool-call ids
+> stripped, against the baseline:
+>
+>     chunk_limit         provable no-op    7 of 150 rows differ   scored delta  0.0000
+>     serial_recognition  provable no-op   12 of 150 rows differ   scored delta  0.0000
+>     episodic_reset                      24 of 150 rows differ   scored delta -0.0280
+>     primacy                             57 of 150 rows differ   scored delta -0.0451
+>
+> Real differences — the model writes `"rule1": "A and B make D"` in one run and
+> `"A + B -> E"` in another. vLLM with continuous batching at 50-way concurrency is
+> not reproducible at temperature 0, because batch composition changes reduction
+> order.
+>
+> Two things follow for your predictions. **A differing-row count is a far more
+> sensitive mechanism-confirmation quantity than a scored delta** — use it where you
+> can compute it, and compare it against the 7–12 band two provable no-ops produced
+> rather than against zero. And **`NOISE_FLOOR` understates the truth**, because
+> `metric_noise.py` resamples the model side of a fixed set of rows and so cannot see
+> generation-level variation between runs; a no-op moved `craft_task` past its 0.025
+> floor. Do not threshold anything within about 0.03 of zero on a gist task without
+> saying why it is safe.
 >
 > **7. Predictions are checked mechanically with four verdicts**, not two: PASS,
 > FAIL, INCONCLUSIVE, and VOID. VOID fires when a quantity your row documents as

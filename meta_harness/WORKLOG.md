@@ -844,7 +844,44 @@ leak, obtained from a candidate that was not trying to close it. Rejected on
 moved *away* from the human conservative bias — consistent with P13, since a task read
 off the prompt cannot respond to store content. 11 PASS / 3 FAIL / 1 VOID.
 
-### The serving stack is deterministic, which makes every movement attributable
+### ~~The serving stack is deterministic, which makes every movement attributable~~
+
+> **WRONG. Retracted in iteration 3, and this was my error, not a proposer's.** The
+> claim below rests on scored humanlikeness agreeing exactly, and that does not
+> establish determinism: humanlikeness is a Wasserstein distance over a score
+> *distribution*, so it is invariant both to which participant got which score and to
+> any generation change that does not alter the score. Two runs can differ in content
+> on dozens of rows and produce an identical statistic.
+>
+> Iteration 3a challenged it and was right. Comparing generated text with the
+> server-assigned tool-call ids stripped — `chatcmpl-tool-<hex>`, minted fresh per
+> call, which differ between any two runs and are not generation content — on
+> `craft_task` against the baseline:
+>
+>     chunk_limit         provable no-op on craft    7 of 150 rows differ   delta  0.0000
+>     serial_recognition  provable no-op on craft   12 of 150 rows differ   delta  0.0000
+>     episodic_reset                               24 of 150 rows differ   delta -0.0280
+>     primacy                                      57 of 150 rows differ   delta -0.0451
+>
+> The divergences are real: the model writes `"rule1": "A and B make D"` in one run and
+> `"A + B -> E"` in another. vLLM with continuous batching at
+> `max_parallel_participants: 50` is not bitwise reproducible at temperature 0, because
+> batch composition shifts reduction order.
+>
+> **Consequences.** (1) `episodic_reset`'s craft −0.0280 and narrative −0.0100 are NOT
+> safely attributable to its `step()` rewrite; a provable no-op produced a comparable
+> craft move. Its structural claim that the six `encode()`→`recall()` tasks are
+> untouched stands, and its P10 failed on a threshold I would now call miscalibrated
+> rather than on a wrong mechanism. (2) `primacy`'s craft regression is still probably
+> real, but on different grounds: 57 differing rows sits well outside the 7–12 band two
+> no-ops produced. (3) **`metric_noise.py` structurally understates the floor.** It
+> bootstraps by resampling the model side of a FIXED set of rows, so it captures
+> sampling noise but not generation-level variation between runs — and a no-op moved
+> craft past its 0.025 floor. A repeat baseline run (job 18536738) is measuring the
+> real per-task run-to-run floor.
+>
+> The original text is kept below because the error and its correction are both part of
+> the record.
 
 Worth recording because it licenses reading small deltas at all, and because it
 refutes the obvious objection to `episodic_reset`'s P10 failure. Independent
