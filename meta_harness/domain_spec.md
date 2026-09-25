@@ -396,17 +396,23 @@ hours, and the declared capacity/decay parameters.
 
   | model | weights | allocation | KV headroom | verdict |
   |---|---|---|---|---|
-  | qwen3-30b-a3b | ~61GB | `--constraint=h100 --gres=gpu:1` | ~11GB | works, ~25-30 concurrent |
-  | qwen3-30b-a3b | ~61GB | `--constraint=h100 --gres=gpu:2` | ~83GB | **preferred**, full 50 concurrency |
+  | qwen3-30b-a3b | 56.93GB **measured** | `--gres=gpu:h200:1` | 67.15GB **measured** | **89.54x concurrency measured** |
   | llama-3.3-70b | ~141GB | 1x H100 (80GB) | — | does not fit |
   | llama-3.3-70b | ~141GB | 2x H100 (160GB) | ~19GB | minimum, reduced concurrency |
   | llama-3.3-70b | ~141GB | 4x H100 (320GB) | ample | comfortable |
   | llama-3.3-70b | ~141GB | 2x H200 (282GB) | ample | easiest if reachable |
 
-  Use `--constraint` and `--tensor-parallel-size` to match; never set
-  `--partition`. The search model's allocation is the one that matters for
-  throughput, since per-candidate wall-clock compounds over 40 candidates;
-  the 70B allocation is needed only for 3-5 finalist evaluations.
+  The single-H200 row is no longer an estimate. Measured on `gh117`
+  (job 18489568): model 56.93 GiB, **available KV cache 67.15 GiB, GPU KV cache
+  733,488 tokens, maximum concurrency 89.54x** at 8192 tokens per request. That
+  is comfortably above the `max_parallel_participants: 50` the released configs
+  use, so one H200 with `--tensor-parallel-size 1` is sufficient and the earlier
+  "~25-30 concurrent" figure (an H100 estimate I derived) is superseded.
+
+  Set the GPU type in `--gres`; never set `--partition`. The search model's
+  allocation is the one that matters for throughput, since per-candidate
+  wall-clock compounds over 40 candidates; the 70B allocation is needed only for
+  3-5 finalist evaluations.
   **fp8 is rejected for both.** Quantization changes model behavior, and
   behavior is exactly what is being compared to human data, so an fp8 run
   would not be comparable to the released bf16 baselines that define the

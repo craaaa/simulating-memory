@@ -61,6 +61,20 @@ export LD_LIBRARY_PATH=/usr/lib64:${LD_LIBRARY_PATH:-}
 
 REPO=/scratch/cl5625/meta-harness-compactor
 PY="$REPO/.venv/bin/python"
+
+# The venv's bin MUST be on PATH, not just used via $PY.  FlashInfer JIT-compiles
+# its sampling kernels and shells out to `ninja`; ninja is installed in the venv,
+# but with only $PY invoked directly, shutil.which("ninja") returns None and
+# engine startup dies with FileNotFoundError: 'ninja' (job 18489568).
+export PATH="$REPO/.venv/bin:$PATH"
+
+# Keep FlashInfer's JIT artifacts off $HOME, which has a 30k inode limit that
+# compile output would exhaust.
+export FLASHINFER_WORKSPACE_BASE=/scratch/cl5625/.cache/flashinfer
+export FLASHINFER_CACHE_DIR=/scratch/cl5625/.cache/flashinfer
+export TORCHINDUCTOR_CACHE_DIR=/scratch/cl5625/.cache/torchinductor
+export TRITON_CACHE_DIR=/scratch/cl5625/.cache/triton
+mkdir -p "$FLASHINFER_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$TRITON_CACHE_DIR"
 MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507
 PORT=8000
 LOGS="$REPO/meta_harness/logs"
@@ -105,8 +119,16 @@ for i in $(seq 1 180); do
     break
   fi
   if ! kill -0 "$VLLM_PID" 2>/dev/null; then
-    echo "!!! vLLM exited before becoming ready; last 40 lines:"
-    tail -40 "$VLLM_LOG"
+    echo "!!! vLLM exited before becoming ready."
+    # The APIServer traceback is generic ("Engine core initialization failed")
+    # and the real cause is in the EngineCore block ABOVE it, so a short tail
+    # hides it -- that cost a debugging round on job 18489568.  Surface the
+    # actual exception lines first, then a long tail.
+    echo "--- exception lines:"
+    grep -E "^\(EngineCore.*(Error|Exception|error:)" "$VLLM_LOG" | tail -5
+    grep -E "(FileNotFoundError|ImportError|RuntimeError|OSError|CalledProcessError|AssertionError):" "$VLLM_LOG" | tail -5
+    echo "--- last 200 lines:"
+    tail -200 "$VLLM_LOG"
     exit 1
   fi
   sleep 10
