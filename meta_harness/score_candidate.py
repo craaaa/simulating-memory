@@ -165,13 +165,57 @@ def main() -> int:
     ap.add_argument("run_dir")
     ap.add_argument("--baseline", default=None)
     ap.add_argument("--json-out", default=None)
+    ap.add_argument("--record", action="store_true",
+                    help="append to logs/evolution_summary.jsonl, which is what "
+                         "history.py and the proposer read")
+    ap.add_argument("--id", default=None, help="candidate id for the record")
+    ap.add_argument("--iteration", type=int, default=0)
     args = ap.parse_args()
 
-    rec = evaluate(Path(args.run_dir), Path(args.baseline) if args.baseline else None)
+    run_dir = Path(args.run_dir)
+    rec = evaluate(run_dir, Path(args.baseline) if args.baseline else None)
+
+    # Pull identity and provenance from the manifest the runner wrote, so a
+    # record cannot disagree with the code that produced it.
+    manifest_path = run_dir / "manifest.json"
+    if manifest_path.exists():
+        man = json.loads(manifest_path.read_text())
+        rec["id"] = args.id or man.get("id") or run_dir.name
+        rec["parent"] = man.get("parent")
+        rec["capacity"] = man.get("capacity")
+        rec["decay"] = man.get("decay")
+        rec["role"] = man.get("role")
+        rec["candidate_summary"] = man.get("summary")
+        rec["injection"] = man.get("injection")
+        rec["elapsed_seconds"] = man.get("elapsed_seconds")
+    else:
+        rec["id"] = args.id or run_dir.name
+    rec["iteration"] = args.iteration
+
     text = json.dumps(rec, indent=2)
     print(text)
     if args.json_out:
         Path(args.json_out).write_text(text)
+
+    if args.record:
+        summary = ROOT / "meta_harness/logs/evolution_summary.jsonl"
+        summary.parent.mkdir(parents=True, exist_ok=True)
+        # Replace any existing row for this id rather than appending a duplicate,
+        # so re-scoring a candidate does not create two conflicting records.
+        rows = []
+        if summary.exists():
+            for line in summary.read_text().splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    r = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if str(r.get("id")) != str(rec["id"]):
+                    rows.append(r)
+        rows.append(rec)
+        summary.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+        print(f"\nrecorded {rec['id']} -> {summary}")
     return 0
 
 
