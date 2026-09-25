@@ -20,5 +20,9 @@
     "serial_recognition",
     "serial_recognition_open"
   ],
+  "instrument_reasons": {
+    "serial_recognition": "Changes what word_recognition MEASURES rather than how well the harness does on it, so both frontier axes break at once: the mean is computed against a reference this candidate invalidated, and A2 stops meaning for this row what it means for every other row, because pre-closure A2 is a mixture of 36 prompt-readers (miss 0.001, fa 0.011) and 7 store-consulters (miss 0.400, fa 0.767). Its word_recognition humanlikeness rises arithmetically -- with the baseline at 0.816 against a human 0.315, even a point mass at zero scores about 0.685 -- so the headline is entailed, not evidence. Recorded in full; it just cannot win.",
+    "serial_recognition_open": "Ablation arm, and it ran wm_word_recognition alone, so seven of eight per-task values are absent and mean_humanlikeness_search is its word_recognition score by itself rather than a mean. It exists to distinguish memory from framing in the masked arm, not to be compared against anything on the frontier."
+  },
   "notes": "Four disjoint mechanism surfaces, one process each: primacy owns WorkingMemory.write_key eviction order, chunk_limit owns within-slot content, serial_recognition owns recall()'s trial-list presentation, episodic_reset owns step()'s conversation history. All four are built on the plain baseline, so one method body separates each from the control. serial_recognition is recorded as an instrument and excluded from the frontier: closing the word-recognition leak makes that task's humanlikeness rise arithmetically, and A2 changes meaning for that row alone. chunk_limit doubles as the control for it -- the ceiling group was measured to be reading the studied list off the prompt, so gutting the store by 74% of its content should leave word_recognition unmoved (its P13)."
 }

@@ -109,7 +109,37 @@ A3_PRECISION_TOLERANCE = 0.02     # on length-free 4-gram precision
 #   baseline      median precision 0.0414, distance 0.0221
 #   displacement  median precision 0.0345, distance 0.0153  -> now CLEARS, and is
 #                 in fact closer to the human median than the baseline is
-A3_ENFORCED_FIELDS = ("precision_distance", "word_distance")
+# The A3 fields the guard loop actually enforces, with their tolerances. This is the
+# single source of truth: the loop reads it rather than repeating the tuple, so it
+# cannot drift from what is documented here. `bleu_distance` is deliberately absent.
+A3_ENFORCED_FIELDS = (
+    ("precision_distance", A3_PRECISION_TOLERANCE),
+    ("word_distance", A3_WORD_TOLERANCE),
+)
+
+
+def _pending_instrument_reason(cand_id: str) -> str | None:
+    """Whether pending_eval.json lists this candidate as an instrument.
+
+    Keeps the marking in the wave's own manifest rather than in whoever happens to
+    type the scoring command. Absent or malformed file means no marking, because a
+    missing manifest must not silently promote a row onto the frontier.
+    """
+    p = ROOT / "meta_harness/logs/pending_eval.json"
+    if not p.exists():
+        return None
+    try:
+        spec = json.loads(p.read_text())
+    except json.JSONDecodeError:
+        return None
+    if cand_id not in (spec.get("instrument") or []):
+        return None
+    reasons = spec.get("instrument_reasons") or {}
+    arm = (spec.get("arms") or {}).get(cand_id) or {}
+    return (reasons.get(cand_id)
+            or arm.get("note")
+            or f"listed as an instrument in pending_eval.json for iteration "
+               f"{spec.get('iteration')}")
 
 # Smallest per-task delta that is not sampling noise: 2 x the bootstrap SE of a
 # DIFFERENCE between two runs. From `metric_noise.py`, which resamples the model
@@ -313,9 +343,9 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
     # so the guards are reported and not enforced.
     guards: list[str] = []
     base_axes = axes(baseline_dir) if baseline_dir is not None else {}
-    for key, tol, field in (("A1", A1_LEAK_TOLERANCE, "distance"),
-                            ("A3", A3_PRECISION_TOLERANCE, "precision_distance"),
-                            ("A3", A3_WORD_TOLERANCE, "word_distance")):
+    enforced = [("A1", A1_LEAK_TOLERANCE, "distance")]
+    enforced += [("A3", tol, field) for field, tol in A3_ENFORCED_FIELDS]
+    for key, tol, field in enforced:
         cand_ax, base_ax = rec["axes"].get(key), base_axes.get(key)
         if not cand_ax or not base_ax:
             continue
@@ -376,6 +406,9 @@ def main() -> int:
                          "history.py and the proposer read")
     ap.add_argument("--id", default=None, help="candidate id for the record")
     ap.add_argument("--iteration", type=int, default=0)
+    ap.add_argument("--no-instrument", action="store_true",
+                    help="force a normal record even if pending_eval.json lists "
+                         "this candidate as an instrument")
     ap.add_argument("--instrument", default=None, metavar="REASON",
                     help="record the candidate but exclude it from the Pareto "
                          "frontier, giving the reason. For a candidate that "
@@ -416,9 +449,37 @@ def main() -> int:
     else:
         rec["id"] = args.id or run_dir.name
     rec["iteration"] = args.iteration
-    if args.instrument:
+
+    # Instrument marking must not depend on remembering a CLI flag. pending_eval.json
+    # already lists which candidates are instruments and why; read it as the default
+    # so the marking is self-enforcing. --instrument still overrides, and
+    # --no-instrument forces a normal record.
+    #
+    # This matters most for an ablation arm run over a subset of tasks.
+    # serial_recognition_open ran wm_word_recognition alone, so seven of its eight
+    # per-task values are None and its mean_humanlikeness_search is its
+    # word_recognition score BY ITSELF -- which, post-leak-closure, would top the
+    # frontier outright on a number that is not a mean at all.
+    reason = args.instrument
+    if reason is None and not args.no_instrument:
+        reason = _pending_instrument_reason(rec["id"])
+    if reason:
         rec["instrument"] = True
-        rec["instrument_reason"] = args.instrument
+        rec["instrument_reason"] = reason
+    # An arm that did not run every search task cannot report a comparable mean, so
+    # say so in the record rather than leaving a partial mean to be read as a full one.
+    ran = [t for t in SEARCH_TASKS if rec["humanlikeness_by_task"].get(t) is not None]
+    if len(ran) < len(SEARCH_TASKS):
+        rec["partial_search_set"] = True
+        rec["search_tasks_run"] = ran
+        rec["search_tasks_missing"] = [t for t in SEARCH_TASKS if t not in ran]
+        if not rec.get("instrument"):
+            rec["instrument"] = True
+            rec["instrument_reason"] = (
+                f"ran only {len(ran)} of {len(SEARCH_TASKS)} search tasks "
+                f"({', '.join(ran)}), so mean_humanlikeness_search is not a "
+                f"comparable mean"
+            )
 
     text = json.dumps(rec, indent=2)
     print(text)
