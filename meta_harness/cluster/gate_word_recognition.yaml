@@ -22,8 +22,11 @@ run:
   out_dir: meta_harness/runs/gate/{date}
   seed: 42
   max_parallel_participants: 50
+  # repeat: 100 is what the released run used; it yields the 50 rows in the
+  # released wm_word_recognition.jsonl, so row count is itself a check that the
+  # protocol matched.
+  repeat: 100
   max_parallel_tasks: 1
-  repeat: 50
 
 task_config:
   wm_word_recognition:
@@ -31,3 +34,6 @@ task_config:
     n_repeat: 5
     max_trials_per_game: 100
     stimuli_seed: 42
+    # Present in the released task_config; omitting it would be a second
+    # difference on top of the serving stack, which is the one thing under test.
+    temperature: 0.0
