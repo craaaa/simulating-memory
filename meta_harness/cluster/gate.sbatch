@@ -4,8 +4,10 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=96G
-#SBATCH --gres=gpu:2
-#SBATCH --constraint=h100
+# GRES on this cluster is TYPED (sinfo shows gpu:h100:4), so the GPU type goes
+# in --gres and no --constraint is needed; a plain --gres=gpu:2 is rejected with
+# "No partition fits this job request".
+#SBATCH --gres=gpu:h100:2
 #SBATCH --time=04:00:00
 #SBATCH --account=torch_pr_287_general
 #SBATCH --output=/scratch/cl5625/meta-harness-compactor/meta_harness/logs/%j.out
