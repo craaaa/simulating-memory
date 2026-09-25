@@ -1,0 +1,209 @@
+{
+  "candidate": "episodic_reset",
+  "iteration": 2,
+  "parent": "baseline",
+  "baseline_run": "meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "registered_at": "2026-09-25",
+  "note": "Written before the run. Shape follows check_predictions.displacement_checks: each entry becomes one add(name, verdict, observed, threshold, note) row. The dispatch entry in CHECKS is deliberately NOT added here -- the coordinator wires `episodic_reset` -> episodic_reset_checks after all three iteration-2 candidates land, to avoid a collision with proposers 2a and 2b.",
+  "brief_corrections": [
+    "The brief's claim that A4 has never fired is false: displacement (iter1) produced n_errors=35, trustworthy=true, rc_ratio=1.2575. The A4 bar is therefore raised from n_errors>=30 to n_errors>=150.",
+    "rc_ratio is bounded by the model's relation_count distribution at a given error count (max 1.2525 at 12 errors, 1.2575 at 35, 1.2879 at 150, 1.3750 at 400). displacement's 1.2575 was exactly its ceiling (rc_mean_error = 10.000), so it carries no information beyond 'all errors were late'. 1.386 needs several hundred errors.",
+    "variable_mapping is scored by DIFFERENT FORMULAS on the two sides: human = correct-count/10, model = relation_count of the last correct question before the first error, /10. relation_count = min(2q,10) saturates at q5, so errors at q6-q10 are invisible to the model's score. This is a fifth comparability defect and is not in the audit table.",
+    "interference.py:model_trials under-counts assigned_before by ~2x (assignment turns run 1..20 against question_index 1..10, two assignments per question, but the filter keeps only k-1), biasing intrusion_share downward. No threshold is registered on intrusion_share for that reason."
+  ],
+  "predictions": [
+    {
+      "id": "P1",
+      "name": "variable_mapping A4 n_errors >= 150",
+      "quantity": "n_errors",
+      "source": "meta_harness.interference.a4(run_dir)['n_errors']",
+      "baseline": 12,
+      "reference": {"displacement": 35},
+      "comparator": ">=",
+      "threshold": 150,
+      "point_estimate": [225, 600],
+      "disconfirm_if": {"comparator": "<", "value": 75},
+      "role": "primary",
+      "note": "674/1500 questions (45%) ask about a name the store has evicted and are answered at 0.985 from history. With the store as the only route those must fall toward the 4-option chance rate of 0.25, giving an expected error rate near 0.34; threshold set well below at 0.10. Below 75 errors the store was never needed and the leak reading is wrong."
+    },
+    {
+      "id": "P2",
+      "name": "variable_mapping A4 rc_ratio > 1.15 (interference-structured, not noise)",
+      "quantity": "rc_ratio",
+      "source": "meta_harness.interference.a4(run_dir)['rc_ratio']",
+      "baseline": 1.1682,
+      "baseline_trustworthy": false,
+      "reference": {"displacement": 1.2575, "human": 1.386, "pure_noise": 1.0},
+      "comparator": ">",
+      "threshold": 1.15,
+      "point_estimate": [1.2, 1.3],
+      "conditional_on": "P1",
+      "disconfirm_if": {"comparator": "<=", "value": 1.15},
+      "role": "primary",
+      "note": "ACCEPTED AS DISCONFIRMING: 150+ errors with rc_ratio <= 1.15 means errors are uniform over question index -- the model was made noisy, not memory-limited. Honest reading of a pass: for the model, relation_count is collinear with question index, so this says errors are concentrated late, which is necessary but not sufficient for an interference account. Attainable ceiling at 150 errors is 1.2879."
+    },
+    {
+      "id": "P3",
+      "name": "share of variable_mapping runs with first_error_at <= 5 rises above 0.25",
+      "quantity": "fraction of rows with metrics.first_error_at is not None and <= 5",
+      "source": "tasks/wm_variable_mapping.jsonl -> metrics.first_error_at",
+      "baseline": 0.0133,
+      "baseline_detail": "2 of 150; histogram {3: 2, 8: 4, 9: 2, 10: 4}",
+      "reference": {"displacement": 0.0067, "displacement_detail": "1 of 150; histogram {5:1, 6:9, 7:3, 8:7, 9:3, 10:2}"},
+      "comparator": ">",
+      "threshold": 0.25,
+      "point_estimate": 0.87,
+      "point_estimate_basis": "1 - 0.66^5 at a per-question error rate of 0.34; the 0.25 threshold is a deliberate lower bound and will not discriminate a strong result from a marginal one -- read the observed value against the point estimate",
+      "disconfirm_if": {"comparator": "<=", "value": 0.10},
+      "role": "primary",
+      "note": "This is the quantity the model's variable_mapping score actually depends on, because score = relation_count of the last correct question and relation_count = min(2q,10) saturates at q5. It cannot be bought by late errors, which is what distinguishes this candidate from displacement."
+    },
+    {
+      "id": "P4",
+      "name": "variable_mapping ceiling point mass breaks up",
+      "quantity": ["fraction of rows with metrics.score == 10", "count of unique metrics.score values"],
+      "source": "tasks/wm_variable_mapping.jsonl -> metrics.score",
+      "baseline": [0.9867, 2],
+      "baseline_detail": "148 rows at score 10, 2 at score 4",
+      "reference": {"displacement": [0.9933, 2]},
+      "comparator": ["<", ">="],
+      "threshold": [0.8, 5],
+      "disconfirm_if": "point mass intact (fraction at 1.0 >= 0.95), which would contradict P1 and P3",
+      "role": "primary",
+      "note": "Weaker proxy for P3; retained because the brief asked for a point-mass prediction explicitly. Direction: downward in the share at ceiling, upward in distinct values."
+    },
+    {
+      "id": "P5",
+      "name": "variable_mapping humanlikeness rises by at least 0.05",
+      "quantity": "humanlikeness_by_task['variable_mapping'] delta vs baseline",
+      "source": "meta_harness.score_candidate.evaluate -> delta_vs_baseline",
+      "baseline": 0.3554,
+      "comparator": ">=",
+      "threshold": 0.05,
+      "point_estimate": [0.45, 0.55],
+      "noise_floor": 0.017,
+      "disconfirm_if": {"either": [{"comparator": "<", "value": 0.05, "reads_as": "with P1 passing, the score formula is absorbing the errors -- apply protocol_match_rule before interpreting"}, {"comparator": ">", "value": 0.6, "reads_as": "overshot the human mean of 0.394; the model is now WORSE than humans on this task, which is overshoot, not calibration"}]},
+      "role": "primary",
+      "note": "Triggers the A4 conditional guard in score_candidate.py; P1 and P2 are the pre-commitment to pass it. The 0.05 threshold is nine times below the point estimate and is a floor, not a forecast."
+    },
+    {
+      "id": "P6",
+      "name": "n=3 store starts carrying letter identity",
+      "quantity": "share of n=3 final_kv values containing a bare capital letter, regex (?<![A-Za-z])[A-Z](?![A-Za-z])",
+      "source": "tasks/wm_nback.jsonl -> rows with n_level == 3 -> final_kv.values()",
+      "baseline": 0.0202,
+      "baseline_detail": "4 of 198 values; n=1 is 50/50 = 1.000 and n=2 is 77/77 = 1.000",
+      "reference": {"displacement": 0.0201, "displacement_detail": "4 of 199", "full_context": 1.0, "full_context_detail": "53 of 53, key position_3_back in 49/50 blocks"},
+      "comparator": ">",
+      "threshold": 0.4,
+      "disconfirm_if": {"comparator": "<=", "value": 0.2},
+      "role": "primary",
+      "note": "The decisive mechanism test on nback and the strongest single number in the diagnosis: at baseline the n=3 store holds NO letters (0.020) while acc_over_answered is 0.7372, which a 4-slot store cannot support -- so those answers came from history. Cannot be bought by guessing or by breaking output parsing. Same 0.020 under displacement, so displacement's n=3 HL of 0.9387 is leak-derived and is about response production, not a load-bearing store."
+    },
+    {
+      "id": "P7",
+      "name": "n=3 keys_held direction (branch discriminator, reported not thresholded)",
+      "quantity": "keys_held at n=3, read jointly with P6 and with answered",
+      "source": "meta_harness.nback_levels.report(run_dir)['diagnostics'][3]",
+      "baseline": {"keys_held": 3.96, "answered": 6.82, "acc_over_answered": 0.7372},
+      "reference": {"displacement": {"keys_held": 3.98, "answered": 14.0, "acc_over_answered": 0.7443}, "full_context": {"keys_held": 1.06, "answered": 14.0, "acc_over_answered": 0.77}},
+      "comparator": "report",
+      "threshold": null,
+      "role": "diagnostic",
+      "note": "Branches stated in advance. (a) P6 passes and keys_held falls toward 1 => the agent adopted full_context's rolling single-key strategy, which never overflows and so never meets the refusal; nback may improve, for the right reason. Considered most likely. (b) P6 passes but keys_held stays ~4 and answered falls => the refuse-on-full jam dominates; nback regresses and closing the leak needs proposer 2a's overflow fix to be viable. Informative either way, not a refutation."
+    },
+    {
+      "id": "P8",
+      "name": "variable_mapping output format intact (parse-integrity guard)",
+      "quantity": "count of questions whose parsed answer is missing or not a valid option letter",
+      "source": "tasks/wm_variable_mapping.jsonl -> parsed_answers vs questions[].options; equals interference.py's selected is None case",
+      "baseline": 0,
+      "baseline_detail": "0 of 1500; displacement also 0 of 1500",
+      "comparator": "<",
+      "threshold": 30,
+      "role": "guard",
+      "note": "interference.py counts an unparsed answer as a novel_guess ERROR, so a candidate that reached P1 by emitting garbage would inflate n_errors while failing here. Replaces an intrusion_share threshold, which is unsafe given the assigned_before bug reported in brief_corrections."
+    },
+    {
+      "id": "P9",
+      "name": "n=1 nback unaffected (the confusion / parsing test)",
+      "quantity": ["acc_over_answered at n=1", "answered at n=1"],
+      "source": "meta_harness.nback_levels.report(run_dir)['diagnostics'][1]",
+      "baseline": [0.9943, 13.98],
+      "comparator": [">=", ">="],
+      "threshold": [0.9, 13.0],
+      "role": "guard",
+      "note": "THE KEY TEST. At n=1 a single overwritten key suffices and the baseline already uses exactly that (previous_letter in 50/50 blocks, keys_held 1.00). One item in four slots cannot be a capacity failure, so a drop here can only mean the reset broke instruction-following, phase tracking or output parsing. A P9 FAILURE INVALIDATES P1-P7 REGARDLESS OF THEIR VALUES."
+    },
+    {
+      "id": "P10",
+      "name": "six tasks byte-identical (no-change control)",
+      "quantity": "per-task humanlikeness delta, and the A1/A2/A3 axis values",
+      "source": "meta_harness.score_candidate.evaluate",
+      "tasks": ["word_recognition", "digit_span_forward", "digit_span_reverse", "semantic_story_recall", "craft_task", "narrative_qa"],
+      "baseline": {
+        "word_recognition": 0.4948,
+        "digit_span_forward": 0.886,
+        "digit_span_reverse": 0.9666,
+        "semantic_story_recall": 0.9473,
+        "craft_task": 0.8907,
+        "narrative_qa": 0.9572,
+        "A1.sub_span_leak": 0.1298,
+        "A1.best_span": 18.4,
+        "A2.ratio": 0.34,
+        "A2.trials_attempted": 82.92,
+        "A3.bleu": 0.0031,
+        "A3.words": 121.4
+      },
+      "comparator": "abs_delta <=",
+      "threshold": {"humanlikeness_each": 0.005, "A1.sub_span_leak": 0.01, "A1.best_span": 0.5, "A2.ratio": 0.02, "A3.bleu": 0.005, "A3.words": 5.0},
+      "role": "no-change control",
+      "note": "Structural, not statistical, and VERIFIED OFFLINE: encode() calls step() exactly once and all six tasks build a fresh agent per trial (wm_digit_span_forward.py:209, wm_digit_span_reverse.py:110, wm_semantic_story_recall.py:165, wm_mcq_common.py:52, wm_word_recognition.py:94), so on that single step there is no history to drop and the store is empty, so no state block is prepended. A stub-LLM test confirms the encode()->recall() request stream is byte-for-byte equal to baseline's. Expected delta is EXACTLY 0; any nonzero movement is serving nondeterminism and must not be narrated as a mechanism effect. Corollary: the mean can only move via nback and variable_mapping."
+    },
+    {
+      "id": "P11",
+      "name": "mean humanlikeness (not the primary claim)",
+      "quantity": "mean_humanlikeness_search delta vs baseline",
+      "source": "meta_harness.score_candidate.evaluate",
+      "baseline": 0.7861,
+      "comparator": "in_range",
+      "conditional_on": "P7 branch",
+      "threshold": {"branch_a": [0.05, 0.10], "branch_b": [-0.04, 0.05]},
+      "min_credible_mean_delta": 0.026,
+      "role": "reported",
+      "derivation": "Conditioned rather than guessed, because P5's point estimate of +0.45 to +0.55 on variable_mapping is worth +0.056 to +0.069 on the 8-task mean by itself (divide by 8). Branch (a) of P7 adds roughly a further +0.019 from nback. An unconditional range would have been miscalibrated the way iteration 1's word_recognition threshold was.",
+      "note": "This candidate is not proposed as a score improvement. It is proposed as the run that makes nback and variable_mapping measure the memory module. A branch-(a) mean gain would be the largest in the search so far and must NOT be read as a capability result -- it is what happens when two tasks stop being scored on a leak, and its variable_mapping component is not interpretable until protocol_match_rule is applied."
+    }
+  ],
+  "accepted_costs": [
+    {
+      "task": "nback",
+      "baseline": 0.7909,
+      "effective_floor": -0.06,
+      "statement": "No improvement is predicted and a floor violation is a live possibility. Refuse-on-full is still in place and proposer 2a owns that surface. The baseline's n=3 acc_over_answered of 0.7372 is leak-derived (see P6), so a fall there is the leak closing, not the model breaking; P9 is the test that distinguishes the two."
+    }
+  ],
+  "protocol_match_rule": {
+    "task": "variable_mapping",
+    "needed": true,
+    "where": "analysis side only -- protocol_match.py, NOT the harness; a harness must not know the scoring protocol",
+    "rule": "Recompute each model run's variable_mapping score as (number of questions answered correctly) / 10, i.e. the same formula src/score.py:_score_human_record applies to humans, replacing metrics['score'] = relation_count of the last question answered correctly before the first error. Score both sides that way and recompute humanlikeness.",
+    "why": "The two sides currently use different formulas that share a denominator. relation_count = min(2q,10) saturates at q5, so an error at q6-q10 is invisible to the model's score: the baseline's first_error_at histogram is {3:2, 8:4, 9:2, 10:4} and 10 of the 12 runs with an error still score 1.0.",
+    "measured_effect_model_side_only": {
+      "baseline": {"as_scored": "148 @ 1.0, 2 @ 0.4", "as_correct_count": "138 @ 1.0, 12 @ 0.9"},
+      "displacement": {"as_scored": "149 @ 1.0, 1 @ 0.8", "as_correct_count": "125 @ 1.0, 18 @ 0.9, 4 @ 0.8, 1 @ 0.6, 2 @ 0.5"}
+    },
+    "three_strike_rule": "INERT, do not apply. Truncating model runs at the third strike leaves 1495 of 1500 trials (mean 9.97 of 10 questions answered) and moves rc_ratio only from 1.2575 to 1.2586. Worth reporting the truncated question count as a covariate under this candidate, since error rates should rise enough for the rule to start biting."
+  },
+  "interactions": {
+    "2b_word_recognition": "RESOLVED BY INSPECTION, not guessed: candidates/serial_recognition/harness.py overrides recall() only and keeps word_recognition on the encode()->recall() route. So the two mechanisms are ORTHOGONAL -- under this candidate alone word_recognition does not move (P10, verified byte-identical), and the combination equals 2b alone because word_recognition still runs one encode() step per agent. Combining is safe. THE BRANCH THAT WOULD NOT HAVE BEEN SAFE, recorded as a trap for any future serialization candidate: if the recognition trials are serialized into per-trial step() calls, the two become COMPLEMENTARY AND JOINTLY NECESSARY and serialization alone is insufficient -- the encode() turn's user message is word_list_text, the entire studied list formatted '{trial_index}: {word}', and it stays in conversation history for every subsequent trial turn -- so the studied list remains visible verbatim and the task stays leaky while appearing fixed. Either way A2's MEANING changes once the leak closes and the axis needs recalibration against a fresh baseline rather than a claimed delta.",
+    "2a_overflow": "COMPLEMENTARY, plausibly necessary on nback. See P7. episodic_reset o 2a is the iteration-3 recommendation. On variable_mapping expect PARTLY REDUNDANT but super-additive in error count (displacement alone already tripled errors 12 -> 35), which is also where an rc_ratio near the human 1.386 first becomes arithmetically attainable, since the rc_ratio ceiling rises with error count."
+  },
+  "offline_verification": {
+    "verify_interface": "PASS -- WorkingMemoryAgent rebound in 8 modules, MAX_KEYS in 10, encode/recall round trip returns expected shapes, capacity enforced at 4",
+    "stub_llm_leak_test": "PASS -- all assertions. On the 5th letter turn of a 3-back block the context is exactly [system prompt] + [user: 'Your working memory currently contains:' + store + current letter] + the within-step tool loop. Max count of 'Next letter:' across all turns = 1; no earlier assistant reply present; the task instruction turn is absent (the system prompt carries the full rule via HUMAN_PROMPT_BY_N). On variable_mapping's question turn the store header appears exactly once, with no earlier statement block visible.",
+    "first_letter_turn": "Inspected separately because it is the one turn at risk and the place P9 can fail. The store is still empty so the `if store` guard skips the state block: the agent sees exactly [system: prompt] + [user: 'Next letter: K'], with no state block and not even '(memory is empty)'. The guard is left as it is deliberately -- rendering an empty store would change encode()'s single step and destroy the byte-identical property in P10. Diagnostic pre-commitment: if P9 fails and the failure is localised to buffer-period turns, the reading is 'the agent lost track of sequence position', whose fix is pinning the instruction turn -- a DIFFERENT iteration-3 move from 'the reset broke the model'. model_parsed_buffer at n=1 is the live diagnostic for that (0.92 baseline, 1.00 displacement, 0.00 full_context), unlike n=3 where it is a fixed positional pattern and inert.",
+    "no_op_test": "PASS -- encode()->recall() request streams byte-for-byte identical between baseline and episodic_reset",
+    "gpu_or_paid_api": "none used"
+  }
+}

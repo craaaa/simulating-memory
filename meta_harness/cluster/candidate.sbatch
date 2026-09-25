@@ -106,12 +106,37 @@ RC=0
 for c in $CAND; do
   echo
   echo "############ candidate: $c"
+
+  # Most arms are a directory name under candidates/ run over all 8 tasks. The
+  # exception is an ABLATION ARM: the same source file run under a different
+  # environment, which exists so a candidate can be compared against the one
+  # thing it changed rather than against a baseline it invalidated.
+  #
+  # serial_recognition_open is that arm for serial_recognition. It is the same
+  # harness.py with MH_SERIAL_RECOGNITION_MASK=0, so the recall prompt still
+  # shows one trial per call with the identical directive, identical stitching and
+  # identical max_tokens, but leaves the other 99 trial lines visible. It answers
+  # the objection that would otherwise sink the masked arm -- "you asked the model
+  # to judge one word with no context, that is framing, not memory". Only
+  # word_recognition differs between the arms, so it runs that task alone.
+  SRC="$c"
+  ARM_TASKS=("${TASK_ARGS[@]}")
+  unset MH_SERIAL_RECOGNITION_MASK
+  case "$c" in
+    serial_recognition_open)
+      SRC="serial_recognition"
+      export MH_SERIAL_RECOGNITION_MASK=0
+      ARM_TASKS=(-t wm_word_recognition)
+      echo "  ablation arm: source=${SRC}, MASK=0, word_recognition only"
+      ;;
+  esac
+
   OUT_DIR="meta_harness/runs/iter${ITER}/${c}"
   "$PY" meta_harness/run_candidate.py \
-    --candidate "meta_harness/candidates/${c}/harness.py" \
+    --candidate "meta_harness/candidates/${SRC}/harness.py" \
     --config meta_harness/cluster/search_set.yaml \
     --out-dir "$OUT_DIR" \
-    "${TASK_ARGS[@]}"
+    "${ARM_TASKS[@]}"
   rc=$?
   echo "=== $c run_candidate exit: $rc"
   [ "$rc" -ne 0 ] && RC="$rc"

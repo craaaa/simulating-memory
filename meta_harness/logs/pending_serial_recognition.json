@@ -1,0 +1,247 @@
+{
+  "candidate": "serial_recognition",
+  "iteration": 2,
+  "parent": "baseline",
+  "baseline_run": "meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "arms": {
+    "serial_recognition": {
+      "role": "candidate",
+      "env": {},
+      "out_dir": "meta_harness/runs/iter2/serial_recognition",
+      "tasks": "all 8 search tasks"
+    },
+    "serial_recognition_open": {
+      "role": "ablation -- identical machinery, other trial lines still visible",
+      "env": {"MH_SERIAL_RECOGNITION_MASK": "0"},
+      "out_dir": "meta_harness/runs/iter2/serial_recognition_open",
+      "tasks": "wm_word_recognition only"
+    }
+  },
+  "notes": [
+    "check_predictions.py is NOT edited by this candidate (three concurrent proposers would collide in its CHECKS dict). The caller wires serial_recognition_checks() and adds both arm ids to pending_eval.json.",
+    "`metric` is either a dotted path into the record produced by score_candidate.evaluate(), or null with an explicit `compute` expression for the four quantities no existing tooling reports.",
+    "Any prediction whose metric cannot be resolved is INCONCLUSIVE, never PASS.",
+    "P12 is evaluated against the OPEN arm's run dir, not the candidate's.",
+    "P13 and P14 are entailed by any large accuracy drop and are recorded as arithmetic consequences, not as independent evidence. The load-bearing tests are P1, P10 and P12."
+  ],
+  "helpers": {
+    "wr_rows": "rows = [json.loads(l) for l in open(Path(run_dir)/'tasks/wm_word_recognition.jsonl')]",
+    "wr_scores": "scores = [r['metrics']['score']/100.0 for r in wr_rows]",
+    "wr_judgements": "LINE = re.compile(r'^trial\\s+(\\d+):\\s*(Old|New)\\s*$', re.I); per row: {int(m.group(1)): m.group(2).lower() for m in (LINE.match(s.strip()) for s in r['recall_raw'].splitlines()) if m}"
+  },
+  "predictions": [
+    {
+      "name": "P1_ceiling_group_collapses",
+      "role": "CENTRAL",
+      "metric": null,
+      "compute": "sum(1 for s in wr_scores if s >= 0.98)",
+      "arm": "serial_recognition",
+      "comparator": "<=",
+      "threshold": 3,
+      "units": "participants of 50",
+      "baseline": 36,
+      "direction": "decrease",
+      "rationale": "No baseline store contains enough indexed first-occurrence information to support a score of 0.98: the hard upper bound on a store-only reader, (index of the 3rd store-undecidable trial - 1)/100, is at most 0.50 across all 50 participants and 0.071 on average. So every ceiling score requires the visible list.",
+      "disconfirms": ">= 15 of 50 still at ceiling means the studied list was not what produced the ceiling group and the leak diagnosis is wrong. Under displacement the group fell only 36 -> 30, so a partial fall is not enough.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P2_mean_word_recognition_score_falls",
+      "metric": null,
+      "compute": "mean(wr_scores)",
+      "arm": "serial_recognition",
+      "comparator": "<",
+      "threshold": 0.35,
+      "baseline": 0.816,
+      "human_reference": 0.315,
+      "direction": "decrease",
+      "disconfirms": "> 0.60 means the model is still answering at near-leak accuracy from four chunks, which the store-decidability audit says is impossible -- so something other than memory is supplying the answer.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P3_A2_miss_rate_rises",
+      "metric": "axes.A2.miss_rate",
+      "arm": "serial_recognition",
+      "comparator": ">",
+      "threshold": 0.10,
+      "baseline": 0.043,
+      "expected": "~0.4 (the value of the 7 baseline participants who actually consult the store)",
+      "direction": "increase",
+      "disconfirms": "a value <= 0.043, i.e. misses falling, would mean the model got BETTER at detecting old words after losing the list -- incoherent, and a sign the serialisation is not doing what it claims.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P4_A2_false_alarm_rate_rises",
+      "metric": "axes.A2.fa_rate",
+      "arm": "serial_recognition",
+      "comparator": ">",
+      "threshold": 0.20,
+      "baseline": 0.127,
+      "expected": "0.5-0.8 (the 7 store-consulting participants are at 0.767): the store typically holds an unindexed 'repeated words' list, so the model calls a word old at its FIRST occurrence too -- familiarity without recollection",
+      "direction": "increase",
+      "disconfirms": "<= 0.127. Humans are conservative (fa 0.045); a fall would mean the model became conservative, which would be a genuinely surprising and welcome result and would refute the familiarity-without-recollection reading.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P5_A2_trials_attempted_falls",
+      "metric": "axes.A2.trials_attempted",
+      "arm": "serial_recognition",
+      "comparator": "<",
+      "threshold": 40.0,
+      "baseline": 82.9,
+      "human_reference": 34.5,
+      "direction": "decrease",
+      "gate": "If trials_attempted < 15, A2's per-participant rates rest on ~5 trials and its distance from the human 6.09 is NOT interpretable in either direction. Report the value as a comparability gate, not as a covariate.",
+      "disconfirms": "> 60 -- the model is surviving nearly as long as it did with the list visible.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P6_A2_distance_does_not_approach_human",
+      "metric": "axes.A2.distance",
+      "arm": "serial_recognition",
+      "comparator": ">",
+      "threshold": 4.0,
+      "baseline": 5.754,
+      "direction": "unchanged-or-worse",
+      "rationale": "Closing the leak removes a mixture artifact; it does not install a conservative response criterion. The baseline's 5.754 is a mixture of 36 participants at miss 0.001 / fa 0.011 and 7 at 0.400 / 0.767, so any post-closure value near 5.754 is a coincidence of the mixture and must not be read as 'A2 unchanged'.",
+      "disconfirms": "< 2.0 would mean closing the leak alone fixed the miss/false-alarm asymmetry, which I do not expect and which would make a separate response-criterion candidate unnecessary.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P7_digit_span_untouched",
+      "role": "NO-CHANGE",
+      "metric": ["axes.A1.sub_span_leak", "axes.A1.best_span", "delta_vs_baseline.digit_span_forward", "delta_vs_baseline.digit_span_reverse"],
+      "arm": "serial_recognition",
+      "comparator": "all-within",
+      "threshold": {
+        "axes.A1.sub_span_leak": [0.1198, 0.1398],
+        "axes.A1.best_span": [17.9, 18.9],
+        "delta_vs_baseline.digit_span_forward": [-0.140, 0.140],
+        "delta_vs_baseline.digit_span_reverse": [-0.059, 0.059]
+      },
+      "baseline": {"sub_span_leak": 0.1298, "best_span": 18.4},
+      "rationale": "The digit-span recall prompts contain no trial-list block, so `_find_trial_run` returns None and recall() delegates to super() unchanged. displacement reproduced both of these IDENTICALLY (0.1298, 18.4), so this is a hard test of attribution, not a soft one.",
+      "disconfirms": "any movement outside the bands means the override is firing on prompts it should pass through, and nothing else in the run can be attributed.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P8_nback_untouched",
+      "role": "NO-CHANGE",
+      "metric": ["delta_vs_baseline.nback", "axes.nback_levels.diagnostics.3.answered"],
+      "arm": "serial_recognition",
+      "comparator": "all-within",
+      "threshold": {
+        "delta_vs_baseline.nback": [-0.060, 0.060],
+        "axes.nback_levels.diagnostics.3.answered": [5.82, 7.82]
+      },
+      "baseline": {"nback_hl": 0.791, "n3_answered": 6.82},
+      "rationale": "n-back answers through step(), which this candidate provably never calls. This is also the boundary against iteration 2c, which owns step() and reset_messages(): if n-back moves here, the two candidates are entangled and neither is attributable.",
+      "disconfirms": "movement outside the bands.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P9_other_tasks_within_floor",
+      "role": "NO-CHANGE",
+      "metric": ["delta_vs_baseline.variable_mapping", "delta_vs_baseline.craft_task", "delta_vs_baseline.narrative_qa", "delta_vs_baseline.semantic_story_recall", "floor_violations"],
+      "arm": "serial_recognition",
+      "comparator": "all-within",
+      "threshold": {
+        "delta_vs_baseline.variable_mapping": [-0.017, 0.017],
+        "delta_vs_baseline.craft_task": [-0.025, 0.025],
+        "delta_vs_baseline.narrative_qa": [-0.030, 0.030],
+        "delta_vs_baseline.semantic_story_recall": [-0.030, 0.030],
+        "floor_violations": "empty"
+      },
+      "note_on_floor_violations": "`floor_violations` is computed by score_candidate over ALL eight search tasks, word_recognition included, which P13 predicts will move by >= +0.121. That is not self-contradictory: the check is `d < -eff`, so only regressions can violate a floor and a large positive delta cannot. P9 asserts the list is empty, i.e. no task regresses.",
+      "note": "semantic_story_recall's 0.011 noise floor is deliberately NOT used as the band: it is tighter than run-to-run vLLM batch-composition nondeterminism warrants on a pass-through code path. The 0.030 enforced floor is the bar that matters. Treat this one as soft and the other three as hard.",
+      "disconfirms": "any entry in floor_violations.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P10_response_coverage_stays_high",
+      "role": "ANTI-GARBAGE",
+      "metric": null,
+      "compute": "mean over rows of (number of the 100 gold trials with a parseable Old/New in recall_raw) / 100; equivalently read `coverage=` from the '# serial_recognition' header line in recall_raw",
+      "arm": "serial_recognition",
+      "comparator": ">=",
+      "threshold": 0.95,
+      "baseline": 1.0,
+      "rationale": "score_game treats an unparsed trial as neither correct nor an error, so a candidate that degraded by emitting garbage would post a very low score and a FLATTERED humanlikeness. Coverage is what separates 'lost the leak' from 'lost the format'. The harness also logs every reply without a parseable judgement verbatim into recall_raw, tagged no_judgement / bare_judgement / index_mismatch.",
+      "disconfirms": "< 0.90 -- the result is a compliance or parsing failure and no claim about memory can be made from it.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P11_responses_not_degenerate",
+      "role": "ANTI-GARBAGE",
+      "metric": null,
+      "compute": "mean over rows of the fraction of parsed judgements equal to 'old', over all 100 trials",
+      "arm": "serial_recognition",
+      "comparator": "within",
+      "threshold": [0.15, 0.95],
+      "baseline": 0.528,
+      "baseline_participant_range": [0.23, 0.79],
+      "rationale": "A model that answered a constant, or collapsed into a single token, sits at 0 or 1. Note this band is wide on the high side on purpose: the expected failure mode is an OLD bias (fa up), which is a real bias and must not be scored as degeneracy.",
+      "disconfirms": "outside the band.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P12_open_ablation_reproduces_baseline",
+      "role": "CENTRAL / ATTRIBUTION",
+      "metric": null,
+      "compute": "on the OPEN arm: (sum(1 for s in wr_scores if s >= 0.98), mean(wr_scores))",
+      "arm": "serial_recognition_open",
+      "comparator": "all-of",
+      "threshold": {"ceiling_group": ">= 25 of 50", "mean_score": ">= 0.70"},
+      "baseline": {"ceiling_group": 36, "mean_score": 0.816},
+      "rationale": "The open arm runs the identical machinery -- same 100 calls, same directive line, same one-judgement-per-call framing, same stitching and index repair, same max_tokens -- and differs only in that the other 99 trial lines stay visible. If the masked arm collapses and this one does not, the collapse is caused by removing information.",
+      "disconfirms": "if the OPEN arm also collapses (ceiling < 15 or mean score < 0.50), the masked arm's collapse is caused by the serial framing, the call pattern or the stitching rather than by the leak, and this candidate's claim is VOID regardless of how good its humanlikeness looks.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P13_word_recognition_humanlikeness_rises",
+      "role": "ENTAILED -- not independent evidence",
+      "metric": "delta_vs_baseline.word_recognition",
+      "arm": "serial_recognition",
+      "comparator": ">=",
+      "threshold": 0.121,
+      "baseline": 0.495,
+      "rationale": "Arithmetic, not mechanism: the baseline sits at 0.816 against a human mean of 0.315, so ANY large accuracy drop shrinks W_1. Even a point mass at zero would give W_1 ~ 0.315, i.e. humanlikeness ~0.685. Recorded so that the record cannot later present it as confirmation.",
+      "disconfirms": "a fall, or a move smaller than the 0.121 noise floor, would mean accuracy did not drop, i.e. P1 and P2 also failed.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    },
+    {
+      "name": "P14_search_mean_rises",
+      "role": "ENTAILED -- reported, not claimed",
+      "metric": "mean_humanlikeness_search",
+      "arm": "serial_recognition",
+      "comparator": ">=",
+      "threshold": 0.8121,
+      "baseline": 0.7861,
+      "rationale": "0.7861 + the 0.026 min credible mean delta, and it will be carried almost entirely by word_recognition. This is an instrument fix, so the mean is not the claim; per the manifest, the valid word_recognition contrast is masked vs open, while iter0/baseline remains the control for the other seven tasks.",
+      "disconfirms": "n/a -- reported.",
+      "verdict_if_missing": "INCONCLUSIVE"
+    }
+  ],
+  "reported_not_scored": [
+    {
+      "name": "discrimination_index",
+      "compute": "axes.A2.miss_rate + axes.A2.fa_rate",
+      "expected_band": [0.9, 1.4],
+      "baseline": 0.170,
+      "human": 0.317,
+      "interpretation": "A sum >= 1.0 is at-or-below-chance discrimination. That is EXPECTED here and is not a garbage signature (P10 and P12 are the garbage tests): the 7 baseline participants who consult the store sum to 1.167. It is familiarity without recollection, from a store built with foreknowledge of the whole list. If it lands in this band, iteration 3's ingredient is a serial ENCODE plus a conservative response criterion, not more forgetting."
+    },
+    {
+      "name": "untruncated_model_A2",
+      "compute": "miss and fa over all 100 gold trials from recall_raw, ignoring the 3-strike truncation",
+      "baseline": {"acc": 0.934, "miss": 0.042, "fa": 0.088, "ratio": 0.479},
+      "interpretation": "Model-side diagnostic only. The human protocol also stopped at 3 strikes, so there is no untruncated human reference and this cannot replace axis A2. Its use is to tell a real response bias from a 5-trial artifact once trials_attempted collapses."
+    },
+    {
+      "name": "serialisation_diagnostics",
+      "compute": "the '# serial_recognition ...' header in each row's recall_raw",
+      "fields": ["mode", "block_size", "trials", "calls", "answered", "coverage", "no_judgement", "index_repaired", "bare_judgement", "extra_judgements_dropped"],
+      "interpretation": "mode must read `masked` for the candidate arm and `open` for the ablation in every row; index_repaired should be near zero because the directive names the trial, and a large value means the model is not echoing absolute trial numbers."
+    }
+  ]
+}
