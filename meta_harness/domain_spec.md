@@ -123,9 +123,15 @@ than silently dropped.
 3. A no-memory control: full stimulus in context, no compactor. Establishes
    how much of current humanlikeness the memory module is responsible for.
 4. A deliberate random-decay control: per-participant decay rate drawn from a
-   distribution. **This is the adversary, not a contender** — it should score
-   well on humanlikeness and badly on the error-structure axes. If it does
-   not, the axes are wrong and the search is invalid.
+   distribution. **This is the adversary, not a contender.** It exists to test
+   whether the error-structure axes have teeth, with an explicit pass
+   condition: the control must reach mean humanlikeness **>= baseline + 0.05**
+   while its A2 distance stays **>= 2x the baseline's**. If it cannot match the
+   distribution, it is a weak adversary and the axes are untested rather than
+   validated; if it matches the distribution *and* the axes, the axes do not
+   discriminate and the search is invalid. This is one candidate evaluation
+   (~20 GPU-min) and it **runs first**, immediately after the loop works and
+   before the remaining 38 candidates are spent.
 
 **Reusable helpers built before iteration 1.**
 
@@ -166,6 +172,17 @@ with a *fully inverted* error structure — humans are conservative, opus
 false-alarms on half of all new words and never misses an old one. A3 shows
 opus regurgitating verbatim at 2.7x human recall length.
 
+**A2's denominator is itself a search target.** Word recognition terminates at
+3 strikes, so a participant contributes only the trials they attempted — mean
+34.5 for humans, 40.2 for opus, and **87.5 for qwen3-30b**, which survives 2.5x
+longer than any human and is a non-humanlike signature in its own right.
+Bootstrapped, the miss/FA ratio separates cleanly (humans [3.79, 11.39] vs opus
+[0.00, 0.00]), so the contrast is not a small-sample artifact. But **any harness
+change that shifts `first_error_at` changes the denominator and so moves A2
+without fixing the asymmetry.** So A2 is scored jointly with trials-attempted,
+which is recorded as a covariate on every candidate, and the proposer cannot
+bank an A2 gain that came from surviving longer.
+
 **A1 is not yet usable.** The human digit-span protocol is adaptive and
 terminates (~12 trials, ~2 per span) while the model protocol runs all 19 span
 lengths, inflating the model's supra-threshold opportunities. `protocol_match.py`
@@ -173,7 +190,11 @@ must land before A1 becomes an axis; until then A1 is reported but not
 optimized against.
 
 **Search set.** 8 tasks: digit span forward, digit span reverse, n-back,
-variable mapping, factual QA, narrative QA, semantic story recall, craft task.
+**word recognition**, variable mapping, narrative QA, semantic story recall,
+craft task. The three error-structure axes must live on search tasks — an axis
+computed on a held-out task cannot be optimized without leaking it — so word
+recognition (A2), story recall (A3) and digit span forward (A1) are all in the
+search set by construction, and the held-out pair is chosen from what remains.
 Reduced repeats: digit span forward and reverse cut from 1900 rows to ~200 each
 (together they are 85% of all LLM turns — 16,975 of 19,940 — for 0.307 + 0.106
 headroom), everything else at released repeats. ~4,700 turns per candidate.
@@ -184,10 +205,10 @@ Human reference: a fixed random **half** of each task's participants.
 - *Models (primary).* The winning harness is evaluated on `claude-opus-4-6`,
   `gpt-5.4`, and `llama-3.3-70b-instruct`, none of which the search touches.
   All three already have full 10-task baselines, so the comparison is direct.
-- *Tasks (secondary).* **Word recognition** and **map task** are held out
-  entirely — one working-memory recognition task and one procedural task,
-  headroom 0.164 and 0.221 on opus. n=2 is weak, so this is a directional
-  check, not a statistical claim.
+- *Tasks (secondary).* **Map task** and **factual QA** are held out entirely —
+  one procedural task and one long-term-memory QA task, headroom 0.221 and
+  0.276 on opus. n=2 is weak, so this is a directional check, not a statistical
+  claim.
 - *Participants (always on).* The other half of each task's human
   participants, never used during search. Guards against fitting human
   sampling noise.
@@ -205,14 +226,30 @@ paid API: ~$370 on opus, ~$46 on gpt-4.1, ~$9 on gpt-4.1-mini.
 
 **Contamination / leakage risks.**
 
-1. *The real one.* Human data is fixed and public in this repo, and the
-   proposer can read `runs/human/`. It could hard-code human-matching
-   constants rather than discover a memory mechanism. Mitigation: the proposer
-   is denied read access to `runs/human/` and to held-out task and participant
-   scores; it sees only search-set aggregate scores, per-task vectors, axis
-   values, and its own traces. Enforced by directory permissions in the
-   candidate sandbox, and audited by grepping candidate source for numeric
-   constants close to human statistics.
+1. *The real one.* Human data is fixed and committed in this repo, and the
+   proposer could hard-code human-matching constants instead of discovering a
+   memory mechanism. **Blinding the proposer is not achievable and the spec
+   does not claim it.** `runs/human/` is committed and reachable via
+   `git show` or any prior commit regardless of working-tree permissions; the
+   ~28 model dirs under `runs/compactor/` carry human-relative numbers in their
+   `metrics_*.txt`; the data is in the published paper; and
+   `meta_harness/NOTES.md` plus this spec state the human statistics verbatim
+   *by design*, because "humans are conservative on recognition" is exactly the
+   mechanism hint the proposer should have.
+
+   So the approach is **detect, not prevent**, which is what the paper's own
+   protocol relies on:
+   - the **held-out models** are the primary guard — a hard-coded constant
+     tuned on qwen3-30b will not transfer to opus, gpt-5.4 and llama-3.3-70b;
+   - the **held-out tasks and participant half** are never scored back to the
+     proposer;
+   - a **source audit** rejects any candidate containing a numeric literal
+     within 10% of a human statistic, unless it is a named psychological
+     constant with a citation.
+
+   The alternative — running the proposer in a stripped worktree with no
+   `runs/` at all — buys real isolation but costs the offline trace warm start,
+   which is the highest-signal material available. Rejected for that reason.
 2. Story/map/craft stimuli may be in pretraining, which inflates recall
    independent of the harness. Already true of the baselines, so it biases
    absolute humanlikeness but not candidate-to-candidate comparisons.

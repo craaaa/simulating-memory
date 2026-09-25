@@ -82,28 +82,32 @@ def _a1_one(pairs):
 
 # --------------------------------------------------------- A2 word recognition
 def a2_human():
-    miss, fa = [], []
+    miss, fa, trials = [], [], []
     for f in (HUMAN / "working-memory-word-recognition").glob("run-*.json"):
         resp = json.load(open(f)).get("payload", {}).get("responses", [])
-        m, fp = _a2_one([(str(r["expectedResponse"]).lower(),
-                          str(r["userResponse"]).lower()) for r in resp])
+        pairs = [(str(r["expectedResponse"]).lower(), str(r["userResponse"]).lower())
+                 for r in resp]
+        m, fp = _a2_one(pairs)
         if m is not None:
             miss.append(m)
             fa.append(fp)
-    return miss, fa
+            trials.append(len(pairs))
+    return miss, fa, trials
 
 
 def a2_model(model_dir):
-    miss, fa = [], []
+    miss, fa, trials = [], [], []
     for line in open(ROOT / model_dir / "tasks/wm_word_recognition.jsonl"):
         r = json.loads(line)
         pt = r.get("per_trial") or []
-        m, fp = _a2_one([(str(t["expected"]).lower(), str(t["model_response"]).lower())
-                         for t in pt])
+        pairs = [(str(t["expected"]).lower(), str(t["model_response"]).lower())
+                 for t in pt]
+        m, fp = _a2_one(pairs)
         if m is not None:
             miss.append(m)
             fa.append(fp)
-    return miss, fa
+            trials.append(len(pairs))
+    return miss, fa, trials
 
 
 def _a2_one(pairs):
@@ -154,16 +158,39 @@ for md in MODELS:
     print(f"    {Path(md).name:<44}{len(v):>5}"
           f"{pct(np.nanmean([x[0] for x in v])):>15}{pct(np.nanmean([x[1] for x in v])):>16}")
 
+def a2_ratio_ci(miss, fa, n_boot=2000, seed=0):
+    """Bootstrap the miss/false-alarm ratio.
+
+    The ratio's denominator is small: word recognition terminates at 3 strikes,
+    so each participant contributes only the trials they attempted.  A harness
+    change that shifts first_error_at moves this axis without fixing the
+    asymmetry, so the CI and the trial count are reported alongside it.
+    """
+    rng = np.random.default_rng(seed)
+    miss, fa = np.asarray(miss, float), np.asarray(fa, float)
+    out = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, miss.size, miss.size)
+        d = np.nanmean(fa[idx])
+        out.append(np.nanmean(miss[idx]) / d if d else np.nan)
+    return np.nanpercentile(out, [2.5, 97.5])
+
+
 print("\nA2  WORD RECOGNITION error asymmetry")
-print(f"    {'source':<44}{'n':>5}{'miss_rate':>11}{'fa_rate':>9}{'miss/fa':>9}")
-hm, hf = a2_human()
+print(f"    {'source':<44}{'n':>5}{'miss_rate':>11}{'fa_rate':>9}{'miss/fa':>9}"
+      f"{'ratio_ci':>18}{'trials':>8}")
+hm, hf, ht = a2_human()
+lo, hi = a2_ratio_ci(hm, hf)
 print(f"    {'HUMANS':<44}{len(hm):>5}{pct(np.nanmean(hm)):>11}{pct(np.nanmean(hf)):>9}"
-      f"{pct(np.nanmean(hm)/np.nanmean(hf) if np.nanmean(hf) else np.nan):>9}")
+      f"{pct(np.nanmean(hm)/np.nanmean(hf) if np.nanmean(hf) else np.nan):>9}"
+      f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(ht):>8.1f}")
 for md in MODELS:
-    m, f = a2_model(md)
+    m, f, t = a2_model(md)
     r = np.nanmean(m)/np.nanmean(f) if f and np.nanmean(f) else np.nan
+    lo, hi = a2_ratio_ci(m, f)
     print(f"    {Path(md).name:<44}{len(m):>5}{pct(np.nanmean(m)):>11}"
-          f"{pct(np.nanmean(f)):>9}{pct(r):>9}")
+          f"{pct(np.nanmean(f)):>9}{pct(r):>9}"
+          f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(t):>8.1f}")
 
 print("\nA3  STORY RECALL verbatim vs gist")
 print(f"    {'source':<44}{'n':>5}{'BLEU':>9}{'embed_sim':>11}{'words':>8}")

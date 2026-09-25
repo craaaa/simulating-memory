@@ -49,10 +49,16 @@ With `MAX_KEYS` and decay inside the search space, that candidate is reachable.
 So error structure must be a hard Pareto axis. See `error_structure.txt`.
 
 - **A2 word recognition, error asymmetry.** Humans are conservative:
-  miss 0.272, false-alarm 0.045, ratio **6.09**. `claude-opus-4-6`: miss 0.000,
-  false-alarm 0.533, ratio **0.00** -- the error structure is fully inverted,
-  yet its word-recognition humanlikeness is 0.760. This is the clearest
-  demonstration that score-distribution match is insufficient.
+  miss 0.272, false-alarm 0.045, ratio **6.09** (bootstrap CI [3.79, 11.39]).
+  `claude-opus-4-6`: miss 0.000, false-alarm 0.533, ratio **0.00** (CI
+  [0.00, 0.00]) -- the error structure is fully inverted, yet its
+  word-recognition humanlikeness is 0.760. This is the clearest demonstration
+  that score-distribution match is insufficient.
+  The task terminates at 3 strikes, so trials-attempted is part of the
+  signature: 34.5 for humans, 40.2 for opus, 87.5 for qwen3-30b (2.5x any
+  human). A2 must therefore be scored jointly with trials-attempted, or a
+  candidate can move the axis by surviving longer rather than by fixing its
+  error asymmetry.
 - **A3 story recall, verbatim vs gist.** Humans BLEU 0.002 at 137 words;
   `claude-opus-4-6` BLEU 0.199 at 366 words (verbatim regurgitation, 2.7x too
   long). qwen3-30b BLEU 0.003 at 128 words is already human-like here.
