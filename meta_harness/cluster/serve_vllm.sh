@@ -1,0 +1,61 @@
+#!/bin/bash
+# Serve a base model under vLLM for Meta-Harness candidate evaluation.
+#
+# Run this INSIDE a GPU compute node allocation, never on a login node:
+#
+#   srun --pty --constraint=h100 --gres=gpu:2 --mem=64G -c 16 \
+#        --account=torch_pr_287_general --time=8:00:00 /bin/bash
+#   bash meta_harness/cluster/serve_vllm.sh search
+#
+# Models are already cached under /scratch/cl5625/.cache/huggingface, so this
+# does not download anything.  bf16 only -- quantization changes model
+# behaviour, and behaviour is the quantity being compared to human data, so an
+# fp8 run would not be comparable to the released baselines.
+set -euo pipefail
+
+ROLE="${1:-search}"
+
+case "$ROLE" in
+  search)
+    # ~61GB weights.  1x H100 works (~11GB left for KV); 2x is preferred so the
+    # released max_parallel_participants: 50 is actually achievable.
+    MODEL="Qwen/Qwen3-30B-A3B-Instruct-2507"
+    TP="${TP:-2}"
+    ;;
+  holdout)
+    # ~141GB weights: does not fit one H100.  2x minimum, 4x comfortable.
+    MODEL="meta-llama/Llama-3.3-70B-Instruct"
+    TP="${TP:-4}"
+    ;;
+  *)
+    echo "usage: $0 [search|holdout]" >&2
+    exit 2
+    ;;
+esac
+
+export HF_HOME=/scratch/cl5625/.cache/huggingface
+export PYTHONNOUSERSITE=True
+# Documented Triton libcuda.so.1 fix for vLLM on this cluster.
+export LIBRARY_PATH=/usr/lib64
+export VLLM_LOGGING_LEVEL=INFO
+
+REPO=/scratch/cl5625/meta-harness-compactor
+LOG_DIR="$REPO/meta_harness/logs"
+mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/vllm_${ROLE}_${SLURM_JOB_ID:-nojob}.log"
+
+echo "serving $MODEL  role=$ROLE  tp=$TP  on $(hostname)"
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+echo "log -> $LOG"
+
+# --served-model-name keeps the id stable for bench configs regardless of role.
+"$REPO/.venv/bin/python" -m vllm.entrypoints.openai.api_server \
+  --model "$MODEL" \
+  --served-model-name "$MODEL" \
+  --tensor-parallel-size "$TP" \
+  --dtype bfloat16 \
+  --max-model-len 8192 \
+  --gpu-memory-utilization 0.90 \
+  --host 127.0.0.1 \
+  --port 8000 \
+  2>&1 | tee "$LOG"
