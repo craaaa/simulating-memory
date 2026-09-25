@@ -324,20 +324,38 @@ hours, and the declared capacity/decay parameters.
   streaming encode path is legitimately out of scope.
 - **Spend: settled at $0.** No paid API calls. Search and held-out evaluation
   both run locally under vLLM.
-- **Torch feasibility: the main open risk, and unverified.** No vLLM env exists
-  yet. Specifically unconfirmed, in rough order of how likely each is to bite:
-  1. whether compute nodes have outbound internet for Hugging Face downloads —
-     on many clusters they do not, so weights must be pre-staged to scratch
-     from a login node;
-  2. scratch quota for ~60GB (qwen3-30b bf16) plus ~140GB (llama-3.3-70b bf16)
-     or ~70GB fp8;
-  3. available GPU partition, VRAM per node, and max wall-clock per job —
-     llama-3.3-70b needs 2x80GB at bf16 or 1x80GB at fp8;
-  4. queue wait, which sets whether 40 candidates is days or weeks.
-  Proposed default once verified: one 80GB GPU, 8-hour interactive allocation to
-  stand the server up and validate the loop on 2 candidates (the random-decay
-  adversary first), then `sbatch` batches for the remainder, with `bench`
-  running on the same node against `--base-url http://localhost:8000/v1`.
+- **Torch feasibility: verified 2026-09-24** on compute node `gl030`
+  (job 18486713, account `torch_pr_287_general`). All four risks resolved:
+  1. *Outbound internet from compute nodes:* **works** —
+     `huggingface.co` returned HTTP 200 in 0.034s. No pre-staging needed.
+  2. *Weights:* **both models are already cached**, so there is nothing to
+     download — `Qwen3-30B-A3B-Instruct-2507` (57G) and
+     `Llama-3.3-70B-Instruct` (132G) under
+     `/scratch/cl5625/.cache/huggingface/hub`.
+  3. *Scratch:* 4.83TB of 5TB used, ~170GB free. Adequate because no download
+     is required. The HF cache is 2.5TB of that total and is the obvious place
+     to reclaim space if a future model is needed; nothing needs deleting for
+     this work.
+  4. *Python:* compute node runs 3.12.14, matching the login node, so the
+     3.9/3.12 venv mismatch trap does not apply.
+  Remaining caveat: a plain `--gres=gpu:1` routed to an **L40S with 46GB**,
+  which is *not* enough for qwen3-30b at bf16 (~61GB). GPU quota is 24 per
+  user, so request multiple GPUs rather than quantizing:
+  - search model: `--gres=gpu:2` on L40S (92GB) or `--constraint=h100
+    --gres=gpu:1` (80GB), `--tensor-parallel-size` to match;
+  - held-out model: llama-3.3-70b bf16 needs ~141GB, so `--gres=gpu:4` on
+    L40S (184GB) or 2x H100.
+  **fp8 is rejected for both.** Quantization changes model behavior, and
+  behavior is exactly what is being compared to human data, so an fp8 run
+  would not be comparable to the released bf16 baselines that define the
+  0.167 and 0.164 headroom figures.
+  Queue wait for L40S was ~2 minutes; H100/H200 wait is still unmeasured.
+- **Setup plan.** Python 3.12 venv under `/scratch/cl5625/simulating-memory`
+  with `uv`, `export LIBRARY_PATH=/usr/lib64` (the documented Triton
+  `libcuda.so.1` fix), `HF_HOME=/scratch/cl5625/.cache/huggingface`, vLLM
+  serving on localhost and `bench` running on the same node against
+  `--base-url http://localhost:8000/v1`. First allocation validates the loop on
+  2 candidates, the random-decay adversary first; then `sbatch` batches.
 - **`MAX_KEYS != 4` is in scope by the user's choice**, but it breaks the
   Cowan-2001 grounding the compactor is built on. A winning candidate that
   moves capacity needs that argued explicitly in the paper, not silently
