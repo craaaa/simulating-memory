@@ -104,9 +104,15 @@ def check(path: str) -> tuple[bool, list[str]]:
         return not problems, notes + problems
 
     sig = inspect.signature(Harness.__init__)
+    # A subclass that forwards via **kwargs accepts all of them, so only flag
+    # missing names when there is no VAR_KEYWORD catch-all.
+    accepts_var_kw = any(p.kind is inspect.Parameter.VAR_KEYWORD
+                         for p in sig.parameters.values())
     missing_kwargs = REQUIRED_INIT_KWARGS - set(sig.parameters)
-    if missing_kwargs:
+    if missing_kwargs and not accepts_var_kw:
         problems.append(f"__init__ missing kwargs the tasks pass: {sorted(missing_kwargs)}")
+    elif missing_kwargs:
+        notes.append(f"__init__ forwards {sorted(missing_kwargs)} via **kwargs")
 
     for meth in REQUIRED_METHODS:
         if not callable(getattr(Harness, meth, None)):

@@ -24,8 +24,8 @@
 #SBATCH --account=torch_pr_287_cds
 #SBATCH --output=/scratch/cl5625/meta-harness-compactor/meta_harness/logs/%j.out
 #SBATCH --error=/scratch/cl5625/meta-harness-compactor/meta_harness/logs/%j.err
-#SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=cl5625@nyu.edu
+#
+# No --mail-type / --mail-user: the user does not want job email.
 #
 # Reproduction gate: stand up vLLM, confirm it serves, run wm_word_recognition
 # through bench, tear the server down.  Self-contained so nothing depends on an
