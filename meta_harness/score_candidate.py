@@ -36,6 +36,7 @@ import score as S  # noqa: E402
 
 from meta_harness import error_structure as ES  # noqa: E402
 from meta_harness import interference as IF  # noqa: E402
+from meta_harness import nback_levels as NL  # noqa: E402
 from meta_harness import protocol_match as PM  # noqa: E402
 
 HUMAN_A2_RATIO = 6.094
@@ -177,6 +178,14 @@ def axes(run_dir: Path) -> dict[str, Any]:
                 "bleu_distance": round(abs(bleu - HUMAN_A3_BLEU), 4),
                 "word_distance": round(abs(words - HUMAN_A3_WORDS), 1),
             }
+
+    # N-Back per level, at matched granularity on both sides. Not an axis -- a
+    # diagnostic, because the per-row humanlikeness this record reports elsewhere is
+    # inflated by a scoring-granularity mismatch (see nback_levels.py). The level
+    # breakdown is where the deficit actually is, and `answered` vs
+    # `acc_over_answered` separates omission from error.
+    if (run_dir / "tasks/wm_nback.jsonl").exists():
+        res["nback_levels"] = NL.report(run_dir)
 
     # A4 closes the one cell a candidate could otherwise win by pure noise:
     # variable_mapping has the largest headroom and the best precision, and A1/A2/A3
