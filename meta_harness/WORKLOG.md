@@ -424,6 +424,103 @@ terminated, had no failures to leak, and so scored *closer* to human on A1 than 
 baseline purely by being uninformative. A1 now reports `at_ceiling` and
 `best_span_distance` so that cannot be misread again.
 
+## Iteration 1 — `displacement`: mechanism confirmed, candidate rejected
+
+Job 18496607, 18m18s. One method body changed: overflow displaces the least recently
+refreshed entry instead of refusing the write. Capacity, prompts, tools and the
+tool-call cap all untouched.
+
+**The mechanism claim is confirmed, and cleanly.** The proposer's diagnosis was that
+the baseline's refuse-on-full state jams the store at n=3 and suppresses *responses*
+rather than degrading judgement. Pre-registered thresholds, and what happened:
+
+| prediction | threshold | observed | |
+|---|---|---|---|
+| n=3 `answered` rises | ≥ 12 of 14 (baseline 6.82) | **14.00** | PASS |
+| n=3 `acc_over_answered` unchanged | 0.687–0.787 | 0.744 | PASS |
+| n=3 slots still saturated | ≥ 3.5 of 4 | 3.98 | PASS |
+| digit span untouched | — | A1 and best_span *identical* (0.1298, 18.4) | PASS |
+| story recall regresses | Δ < 0 | −0.0509 | PASS (as predicted) |
+
+The "answers more eagerly" objection is ruled out arithmetically. N-Back is 2AFC, so
+chance is 0.5. If the 7.18 additional responses were guesses, `acc_over_answered`
+would be (6.82·0.737 + 7.18·0.5)/14 = **0.616**; observed is **0.744**, implying the
+additional responses alone were answered at **0.751** — slightly *better* than the
+trials the baseline already answered. The extra responses are informed.
+
+The predicted story-recall mechanism is also confirmed, in the task it lost. Most
+common surviving keys:
+
+    baseline       setting, beginning, first encounter, pie man, main_character
+    displacement   pie man, second appearance, key_moment, emotional_impact, ...
+
+`setting` and `beginning` drop out entirely: the kept chunks shift from primacy and
+orienting information to later events, exactly as pre-registered. **Primacy
+protection is therefore the named iteration-2 ingredient, with direct evidence
+rather than a guess.**
+
+**But the candidate is rejected, and the reason matters more than the headline.**
+
+    all 8 search tasks                     0.7861 -> 0.8122   +0.0261
+    excluding word_recognition             0.8277 -> 0.8378   +0.0100
+    the 5 tasks that measure the store     0.9296 -> 0.9148   -0.0148
+
+The headline +0.0261 — which only just clears the 0.026 min credible mean delta — is
+bought entirely by the two leaky tasks. On the five tasks that actually measure the
+memory module it is a small *regression*. It also fails the per-task floor on
+semantic_story_recall (−0.0509) and fires the A3 guard.
+
+**word_recognition's +0.1388 is a fake gain, and the axes caught it.** This is the
+clearest vindication of building error-structure axes at all:
+
+| | miss | false alarm | A2 ratio | A2 distance | trials attempted |
+|---|---|---|---|---|---|
+| human | 0.272 | 0.045 | **6.09** | — | 34.5 |
+| baseline | 0.043 | 0.127 | 0.340 | 5.754 | 82.9 |
+| displacement | 0.037 | **0.211** | 0.174 | **5.920 — worse** | 68.9 |
+
+Humanlikeness on that task rose because false alarms nearly doubled: the model claims
+"old" for new words *more* often, which is the exact opposite of the human
+conservative bias it is supposed to be approaching. The aggregate moved toward humans
+while the error structure moved away, and the covariate moved too. A mean-only
+evaluation would have banked this as the candidate's second-best result.
+
+I had guessed the opposite — that displacement would make the model conservative by
+telling it what it had lost, raising the miss rate. A2 refuted that outright.
+
+**Two prediction failures, of different kinds.**
+
+1. **`word_recognition` moved 0.1388 against a predicted < 0.121.** The proposer said
+   a large move here would disconfirm the third-leak reading. On the evidence it does
+   not: the ceiling group only fell from 36 to 30 of 50, so the ~43 participants
+   reading the studied list off the recall prompt are still doing exactly that. What
+   changed is that the store now actively misleads the handful that consult it. The
+   leak stands; the prediction was miscalibrated because on a distribution this
+   bimodal, six participants moving is worth a lot of W_1.
+
+2. **The buffer-compliance test was void, not failed.** The proposer called it "the
+   sharpest one" because `answered` can rise for dull reasons and phase compliance
+   cannot. It turns out the n=3 buffer response is a fixed *positional* pattern, near
+   identical in both runs — slot 1 `No response` ×50, slot 3 `Different` ×50, slot 2
+   mostly `Same` (43 vs 48). It cannot move, so it tested nothing. My checker reports
+   FAIL faithfully, which is correct behaviour for a badly specified prediction, but
+   the honest reading is "inert metric", and the guessing-floor arithmetic above is
+   the replacement. Worth noting n=2 buffer compliance actually *declined*
+   (`No response` at slot 1: 27 → 16).
+
+**Unexplained and carried forward:** A3 BLEU rose 0.0031 → 0.0413 (guard fired) with
+recall length 121 → 146 words, which moved *toward* human 137.2. The candidate
+asserted displacement "cannot cause regurgitation — it strictly reduces what is
+retained." That was wrong, and why is not yet established. Likeliest reading: chunks
+kept by recency are later and less abstracted than chunks kept by primacy, so what
+survives is closer to surface form. Iteration 2 must account for it.
+
+**Net:** the search's first real mechanism result is a confirmed diagnosis of a
+harness defect — a capacity limit implemented as refusal produces response omission,
+which is a failure humans never show — obtained without touching capacity, prompts,
+tools or compute. The candidate that demonstrates it is not an improvement in
+humanlikeness on the tasks that measure memory.
+
 ## Per-task comparability audit (all ten tasks)
 
 Four of the first four tasks I looked at had a defect in which the human and model
