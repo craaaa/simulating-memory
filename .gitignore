@@ -57,3 +57,8 @@ secrets.json
 *.log
 .tmp/
 tmp/
+# Candidate run artifacts: JSONL traces, figures, metrics tables.
+# Large, regenerable, and written independently on the cluster -- committing them
+# also made `git checkout` there fail against its own untracked outputs.
+# Scores and records live in meta_harness/logs/ instead.
+meta_harness/runs/
