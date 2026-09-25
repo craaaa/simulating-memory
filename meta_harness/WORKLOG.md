@@ -424,6 +424,47 @@ terminated, had no failures to leak, and so scored *closer* to human on A1 than 
 baseline purely by being uninformative. A1 now reports `at_ceiling` and
 `best_span_distance` so that cannot be misread again.
 
+## Per-task comparability audit (all ten tasks)
+
+Four of the first four tasks I looked at had a defect in which the human and model
+sides were not measuring the same thing. That rate made it worth auditing the rest
+systematically rather than waiting to trip over them. Doing so *before* reading a
+humanlikeness number as a fact about memory is the single most useful habit this
+project produced.
+
+| task | comparable? | defect, and what fixed it |
+|---|---|---|
+| digit_span_forward | after correction | human staircase terminates on double failure, model ran all 19 spans → `protocol_match.py` |
+| digit_span_reverse | after correction | same |
+| nback | after correction | model scored per `(participant, n_level)`, human pooled over levels → `nback_levels.py`, per level on both sides |
+| word_recognition | **no** | recall prompt embeds the studied list verbatim; 36/50 participants read the answer off it. Not fixable without changing `recall()`'s context construction |
+| variable_mapping | **no** | store is off the causal path (674/1500 questions answered at 0.985 with the key evicted); human task also terminates at 3 strikes with a `/10` denominator while the model answers all 10 |
+| semantic_story_recall | **yes** | none — verified, see below |
+| narrative_qa | yes | none; fixed 10-question denominator, no early termination |
+| craft_task | yes | none; fixed 15-question denominator, all 54 humans completed 3 trials |
+| map_task | yes | none; same structure as craft |
+| factual_qa | yes | none; same structure as narrative |
+
+`semantic_story_recall` was the one I most expected to be broken, because the human
+`embeddingSimilarity` is a number precomputed by the web app while the model's is
+computed by `bench` with `all-MiniLM-L6-v2`. Different embedders would make the two
+distributions incomparable while looking perfectly fine. Tested directly by
+recomputing the human similarity from `payload.recallText` and the story transcript
+with MiniLM and comparing against the stored value, over all 53 usable human records:
+
+    stored (web app)   mean 0.6041  sd 0.1282
+    recomputed MiniLM  mean 0.5911  sd 0.1220
+    mean |diff| 0.0346   max |diff| 0.1054   corr 0.9431
+
+Same embedder, small residual attributable to text preprocessing. So A3 and the
+story-recall humanlikeness are sound, and the four remaining MCQ-style tasks are
+sound by construction.
+
+**Net: three of the eight search tasks do not measure the memory module** —
+`nback` and `variable_mapping` because the study history stays in context, and
+`word_recognition` because the studied list is re-presented at recall. Five do.
+That is the real search space, and it was not visible from the released numbers.
+
 ### Bug found while scoring wave 0
 
 `score_candidate.py` looked for `manifest.json` in the run dir it was handed, but
