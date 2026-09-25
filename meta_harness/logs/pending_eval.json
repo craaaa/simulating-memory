@@ -1,28 +1,23 @@
 {
-  "iteration": 2,
+  "iteration": 3,
   "candidates": [
-    "primacy",
-    "episodic_reset",
-    "serial_recognition",
-    "serial_recognition_open",
-    "chunk_limit"
+    "episodic_reset_v2",
+    "primacy_v2",
+    "episodic_primacy"
   ],
-  "arms": {
-    "serial_recognition_open": {
-      "source": "serial_recognition",
-      "env": {"MH_SERIAL_RECOGNITION_MASK": "0"},
-      "tasks": ["wm_word_recognition"],
-      "role": "ablation",
-      "note": "Same source as serial_recognition with the mask off: one trial per call, identical directive, stitching and token budget, but the other 99 trial lines stay visible. Establishes that the masked arm's effect is memory rather than framing. MANIFEST['id'] switches with the env var so the two rows cannot overwrite each other under --record."
-    }
-  },
-  "instrument": [
-    "serial_recognition",
-    "serial_recognition_open"
+  "also_running": [
+    "baseline"
   ],
-  "instrument_reasons": {
-    "serial_recognition": "Changes what word_recognition MEASURES rather than how well the harness does on it, so both frontier axes break at once: the mean is computed against a reference this candidate invalidated, and A2 stops meaning for this row what it means for every other row, because pre-closure A2 is a mixture of 36 prompt-readers (miss 0.001, fa 0.011) and 7 store-consulters (miss 0.400, fa 0.767). Its word_recognition humanlikeness rises arithmetically -- with the baseline at 0.816 against a human 0.315, even a point mass at zero scores about 0.685 -- so the headline is entailed, not evidence. Recorded in full; it just cannot win.",
-    "serial_recognition_open": "Ablation arm, and it ran wm_word_recognition alone, so seven of eight per-task values are absent and mean_humanlikeness_search is its word_recognition score by itself rather than a mean. It exists to distinguish memory from framing in the masked arm, not to be compared against anything on the frontier."
-  },
-  "notes": "Four disjoint mechanism surfaces, one process each: primacy owns WorkingMemory.write_key eviction order, chunk_limit owns within-slot content, serial_recognition owns recall()'s trial-list presentation, episodic_reset owns step()'s conversation history. All four are built on the plain baseline, so one method body separates each from the control. serial_recognition is recorded as an instrument and excluded from the frontier: closing the word-recognition leak makes that task's humanlikeness rise arithmetically, and A2 changes meaning for that row alone. chunk_limit doubles as the control for it -- the ceiling group was measured to be reading the studied list off the prompt, so gutting the store by 74% of its content should leave word_recognition unmoved (its P13)."
+  "instrument": [],
+  "instrument_reasons": {},
+  "notes": "Iteration 3 repairs the two iteration-2 candidates whose mechanisms were confirmed but whose results were disqualified, and composes them. episodic_reset_v2 keeps the history reset and fixes the absorbing state that silenced 36 of 50 n=1 participants; primacy_v2 keeps the confirmed U-shaped retention and limits maintenance to MAX_KEYS-1 when chunks arrive in one simultaneous assistant message, which is where primacy's craft capability overshoot came from. episodic_primacy is a coordinator-written composition over disjoint method sets, contributing no new mechanism; it exists to measure whether the two repairs are additive, redundant or conflicting, and it asserts at import that BOTH are active so a silent fallback fails the run rather than mislabelling a result. No instrument rows this wave: all three run the full 8-task search set and none changes what a task measures.",
+  "repeat_baseline": {
+    "job": 18536738,
+    "out_dir": "meta_harness/runs/iter3rep/baseline",
+    "purpose": "Measure the real per-task run-to-run floor. metric_noise.py bootstraps by resampling the model side of a FIXED set of rows, so it captures sampling noise but not generation-level variation between runs, and the serving stack is NOT bit-deterministic -- two provable no-ops changed 7 and 12 of 150 craft rows' generated content. This is the same harness and config as iter0/baseline, so every per-task delta it shows is pure run-to-run variation.",
+    "quantities_requested": [
+      "narrative_qa per-row score agreement and the resulting humanlikeness delta -- the only search-set cell whose scored noise is uncharacterised, and the cell on which three of four iteration-2 candidates were charged a floor violation, primacy's by 0.0009",
+      "craft_task five-rule-trial accuracy over the 50 overflowing rows, to confirm the observed 0.0000/0.0000 no-op band is not a two-observation accident"
+    ]
+  }
 }

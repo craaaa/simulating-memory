@@ -1,0 +1,278 @@
+{
+  "candidate": "episodic_reset_v2",
+  "iteration": 3,
+  "parent": "episodic_reset",
+  "baseline_run": "meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "reference_runs": {
+    "episodic_reset": "meta_harness/runs/iter2/episodic_reset/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "primacy": "meta_harness/runs/iter2/primacy/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "chunk_limit": "meta_harness/runs/iter2/chunk_limit/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "serial_recognition": "meta_harness/runs/iter2/serial_recognition/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "displacement": "iter1",
+    "full_context": "iter0"
+  },
+  "registered_at": "2026-09-25",
+  "note": "Written before the run. Shape follows check_predictions.episodic_reset_checks: each entry becomes one add(name, verdict, observed, threshold, note, tags) row. The CHECKS dispatch entry is deliberately NOT added here -- the coordinator wires `episodic_reset_v2` -> episodic_reset_v2_checks. MANIFEST.md section 9 states, per row, which fields the checker should read.",
+
+  "brief_corrections": [
+    "THE SERVING STACK IS NOT BIT-DETERMINISTIC, and the brief's licence to 'demand bit-identity' holds only for a coarse scored statistic, never for rows. In-run proof: the 15 empty-store presentations of 'Next letter: C' at n=1 under episodic_reset are BIT-IDENTICAL requests (n=1 system prompt does not vary across participants; store empty so no block prepended; user message identical). Eleven escaped, four did not -- 4/15 divergence on one identical request.",
+    "Cross-arm confirmation. episodic_reset's step() override is provably a no-op on a single-step(), empty-store episode, so every encode()->recall() task issues byte-identical requests under it. Comparing rows by id with server-assigned tool_call_id stripped: semantic_story_recall 199/200 rows differ (scored delta -0.0027), narrative_qa 40/50 (-0.0100), word_recognition 39/50 (+0.0379), craft_task 24/150 (-0.0280), digit_span_reverse 10/190 (0.0000), digit_span_forward 4/190 (0.0000). Under serial_recognition (recall() override that fires only on a >=5 'trial N:' line prompt, which digit span and craft do not have): digit_span_reverse 10/190 and craft_task 12/150, both scored delta 0.0000. Craft is the decisive pair -- 12 differing rows gave 0.0000 and 24 gave -0.0280, same task, same zero mechanism.",
+    "THEREFORE the WORKLOG's attribution is wrong: 'episodic_reset's craft (-0.0280) and narrative (-0.0100) moves are genuine effects of its step() rewrite' is false, and so is 'its claim that the six encode()->recall() tasks would be untouched is empirically wrong'. Its structural claim was correct and is reproduced offline against a stub: the requests ARE byte-identical. What failed was its P10 THRESHOLD (a uniform +-0.005), which this stack cannot meet. semantic_story_recall at 199/200 differing rows and -0.0027 is the proof: near-total row divergence, no scored effect.",
+    "Second-order consequence: metric_noise.py's bootstrapped floor for craft_task is 0.025, and a provably no-op change moved it -0.0280. The bootstrap resamples the model side of a FIXED set of rows, so it does not capture generation-level run-to-run variation. For craft_task at least, NOISE_FLOOR understates it. P8 registers 0.030 there rather than 0.025.",
+    "The pre-committed fix ('pinning the instruction turn') would not have repaired P9: with the instruction turn pinned and the store empty, turn k is still a pure function of the current letter, so the absorbing state survives. AND its premise was false -- the instruction turn is NOT redundant with the system prompt. wm_nback.py:86 uniquely carries 'Update your working memory each turn to track the recent sequence'; the system prompt only says 'Use write_memory and delete_key to maintain the key-value store while doing the original task'.",
+    "The failure was NOT 'localised to buffer-period turns': 36 of 50 n=1 rows answered none of the 14 TRIAL turns either. And the per-turn escape is not a hazard over turns, it is letter-conditioned -- C escapes on 11 of 15 empty-store presentations (0.733) against B 1/29, H 1/31, M 1/40 and 0/601 for the other 17 letters -- traceable to the n=1 system prompt's worked example 'A -> A -> B -> C -> C'. A worked example whose letters overlap the stimulus alphabet is a stimulus-contamination hazard for any candidate that reduces context.",
+    "inject.load_candidate + apply is NOT IDEMPOTENT and stacking is silent. Loading a candidate file twice in one process gives a second class whose _BaseAgent was resolved at import from bench.core.wm_agent.WorkingMemoryAgent -- which apply() has already rebound to the FIRST candidate class -- so the second subclasses the first and overrides compose. Observed: the control-state block emitted twice in one user message. run_candidate.py:79-80 loads once, so the real pipeline is safe; test scripts and any composed-arm harness must load once.",
+    "wm_nback.jsonl does not persist step_log. run_nback_block returns it (wm_nback.py:129) but evaluate() omits it from the row, so the agent's per-turn TEXT on n-back is unrecoverable from a run. 'Did it emit unparseable output?' had to be answered indirectly, via model_parsed_buffer and the contiguity structure. variable_mapping does persist answer_raw."
+  ],
+
+  "predictions": [
+    {
+      "id": "P1",
+      "name": "n=1 nback mechanics repaired -- PRECONDITION",
+      "quantity": ["answered at n=1", "acc_over_answered at n=1", "n_no_answers at n=1", "keys_held at n=1"],
+      "source": "meta_harness.nback_levels.report(run_dir)['diagnostics'][1]",
+      "baseline": [13.98, 0.9943, 0, 1.00],
+      "reference": {
+        "episodic_reset": [2.06, 0.787, 36, 0.28],
+        "displacement": [14.0, 0.9943, 0, 1.00],
+        "primacy": [13.98, 0.9957, 0, 1.00],
+        "chunk_limit": [14.0, 0.9957, 0, 1.00],
+        "full_context": [14.0, 0.9957, 0, 0.80]
+      },
+      "comparator": [">=", ">=", "==", ">="],
+      "threshold": [13.0, 0.90, 0, 0.8],
+      "point_estimate": [13.9, 0.99, 0, 1.0],
+      "disconfirm_if": {"any": [
+        {"quantity": "answered", "comparator": "<", "value": 13.0},
+        {"quantity": "acc_over_answered", "comparator": "<", "value": 0.90},
+        {"quantity": "n_no_answers", "comparator": ">", "value": 0},
+        {"quantity": "keys_held", "comparator": "<", "value": 0.8, "reads_as": "answered correctly WITHOUT a store, which under this harness is incoherent -- at n=1 the only route to a 1-back judgement is previous_letter in the store. full_context demonstrates the hole is reachable (keys_held 0.80 at 0.9957 accuracy, because its context carried the letter). This leg is the n=1 analogue of P2's letter-share."}
+      ]},
+      "role": "precondition",
+      "predicts_change": true,
+      "capable_of_varying": "episodic_reset moved all three legs hard (13.98->2.06, 0.9943->0.787, 0->36) on real data; random_decay_v2 moved answered to 13.86 and acc to 0.9886. Not inert.",
+      "invalidates_on_failure": ["P2", "P3", "P4", "P5", "P6", "P7"],
+      "note": "A P1 FAILURE INVALIDATES P2-P7 REGARDLESS OF THEIR VALUES, exactly as episodic_reset's P9 did. At n=1 a single overwritten key suffices and the baseline uses exactly that (previous_letter in 50/50 blocks, keys_held 1.00), so one item in four slots cannot be a capacity failure and nothing measured under a failed P1 can be attributed to the memory module. Mechanism being tested: the ordinals strictly increase, so no two turns are the same request and the near-absorbing state episodic_reset created (empty store -> no block prepended -> turn is a pure function of the letter) is structurally impossible; the empty store is rendered as '(memory is empty)'; and the standing per-turn write directive is present. keys_held at n=1 should return to ~1 from 0.28."
+    },
+    {
+      "id": "P2",
+      "name": "the leak stays closed on n-back, and not by restoring context",
+      "quantity": ["share of n=3 final_kv values containing a bare capital letter, regex (?<![A-Za-z])[A-Z](?![A-Za-z])", "keys_held at n=3"],
+      "source": ["check_predictions._nback_letter_share(run_dir, 3)", "meta_harness.nback_levels.report(run_dir)['diagnostics'][3]['keys_held']"],
+      "baseline": [0.0202, 3.96],
+      "baseline_detail": "4 of 198 values carry a letter; n=1 is 50/50 and n=2 77/77",
+      "reference": {
+        "episodic_reset": [1.0000, 3.82],
+        "displacement": [0.0201, 3.98],
+        "full_context": [1.0, 1.06]
+      },
+      "comparator": [">=", "report"],
+      "threshold": [0.90, null],
+      "point_estimate": [1.0, [1.0, 4.0]],
+      "verdict_bearing_leg": "letter_share only",
+      "disconfirm_if": {"any": [
+        {"quantity": "letter_share", "comparator": "<", "value": 0.90, "reads_as": "the history leak reopened: the store no longer has to carry letter identity, so the answers are coming from somewhere else"}
+      ]},
+      "role": "primary",
+      "predicts_change": true,
+      "capable_of_varying": "letter-share spans 0.0201 (displacement) to 1.0000 (episodic_reset, full_context) across runs; keys_held at n=3 spans 1.06 (full_context) to 4.00 (primacy). Both legs demonstrably move.",
+      "note": "This is the row that must survive: it is episodic_reset's single strongest mechanism result. keys_held is REPORTED, NOT THRESHOLDED, and that is a deliberate correction made before the run. A keys_held bar cannot be an anti-restoration test in either direction: it can fail while the mechanism works, because an agent with a leak-free store can legitimately adopt the rolling single-overwritten-key strategy (episodic_reset's own P7 named that branch: 'keys_held falls toward 1 => the agent adopted full_context's rolling single-key strategy'), and it can pass while context is restored, because restored context does not force keys_held down -- episodic_reset held 3.82 WITH the leak closed and primacy held 4.00 WITH the leak open. The anti-restoration work is done by P4 instead: a restored transcript returns variable_mapping to ~12 errors, because the baseline's 0.992 IS the transcript. Also deliberately NOT thresholded on acc_over_answered: a correctly maintained 3-letter store legitimately supports high n=3 accuracy, so an accuracy cap would punish the mechanism working. Report keys_held beside letter-share so the strategy the agent adopted is visible: ~1 means rolling single key, ~4 means positional slots."
+    },
+    {
+      "id": "P3",
+      "name": "nback humanlikeness clears its floor",
+      "quantity": "humanlikeness_by_task['nback'], and its delta vs baseline",
+      "source": "meta_harness.score_candidate.evaluate",
+      "baseline": 0.7909,
+      "reference": {"episodic_reset": 0.4970, "displacement": 0.9421, "primacy": 0.9454, "chunk_limit": 0.7694, "full_context": 0.9484, "random_decay": 0.7822},
+      "comparator": ">=",
+      "threshold": 0.7309,
+      "threshold_derivation": "baseline 0.7909 minus the effective floor max(FLOOR=0.03, NOISE_FLOOR['nback']=0.060) = 0.060",
+      "point_estimate": [0.80, 0.94],
+      "disconfirm_if": {"comparator": "<", "value": 0.7309, "reads_as": "a second floor violation on the same task; the reset cannot be made to work on nback within this harness and the candidate is rejected on the same ground its predecessor was"},
+      "role": "required",
+      "predicts_change": true,
+      "capable_of_varying": "spans 0.4970 (episodic_reset) to 0.9484 (full_context) across seven scored runs. Very far from inert.",
+      "note": "NOT claimed as a gain, and the threshold is the floor rather than a forecast. episodic_reset fell 0.2939 and violated this floor, which is what made the whole candidate VOID. The mechanism by which this is expected to clear: the per-row nback humanlikeness is driven by across-level SPREAD (baseline per_row_sd 0.3209 against human_sd 0.0812, with the 50 n=1 rows at ~1.0 and n=3 at 0.36), and getting all three levels to answer compresses that spread. displacement (0.9421) and primacy (0.9454) both gained on nback by exactly that route without changing accuracy much. The decomposition is registered separately as P9 so it is checkable rather than narrated after the fact."
+    },
+    {
+      "id": "P4",
+      "name": "variable_mapping A4 stays trustworthy at scale -- and the transcript did not come back",
+      "quantity": "n_errors",
+      "source": "meta_harness.interference.a4(run_dir)['n_errors']",
+      "baseline": 12,
+      "reference": {"episodic_reset": 509, "displacement": 35, "primacy": 33, "chunk_limit": 14, "full_context": 12},
+      "comparator": ">=",
+      "threshold": 150,
+      "point_estimate": [250, 480],
+      "disconfirm_if": {"comparator": "<", "value": 150, "reads_as": "either the store became sufficient (unlikely at 4 slots against 20 assignments) or context came back. A collapse toward the baseline's 12 is the signature of a reopened leak, because the baseline's 0.992 accuracy IS the leak: 674 of 1500 questions ask about a name the store has already evicted and are answered at 0.985."},
+      "role": "primary + anti-restoration control",
+      "predicts_change": true,
+      "capable_of_varying": "spans 12 (baseline, full_context) to 509 (episodic_reset) on real data; trustworthy flips at 30.",
+      "note": "This is the second and sharper anti-restoration test. A candidate that repaired P1 by partially restoring context would show it here first, because variable_mapping's 0.992 baseline accuracy is precisely what the transcript buys. A FALL from 509 is expected and accepted: the restored write directive should make the agent more diligent, which reduces errors. The bar is 150 (error rate 0.10) not 30, because displacement already produced 35 and 30 no longer discriminates."
+    },
+    {
+      "id": "P5",
+      "name": "A4 errors stay load-ordered -- not noise, and not pinned to the ceiling",
+      "quantity": "rc_ratio_normalized",
+      "source": "meta_harness.interference.a4(run_dir)['rc_ratio_normalized']",
+      "baseline": 0.6661,
+      "baseline_trustworthy": false,
+      "reference": {"episodic_reset": 0.7302, "displacement": 1.0, "primacy": 0.939, "full_context": 0.9999, "human": 0.3728, "pure_noise": 0.0},
+      "comparator": "in_range",
+      "threshold": [0.15, 0.95],
+      "conditional_on": "P4",
+      "also_report": ["rc_ratio", "rc_ratio_ceiling", "rc_ratio_normalized_distance"],
+      "disconfirm_if": {"either": [
+        {"comparator": "<", "value": 0.15, "reads_as": "errors independent of interference load -- the model was made noisy rather than memory-limited; this is also the score_candidate.py guard threshold"},
+        {"comparator": ">", "value": 0.95, "reads_as": "sitting on the run's own arithmetic ceiling, which means 'every error was late' and carries no interference information (displacement scored exactly 1.0 at 35 errors, full_context exactly 0.9999 at 12)"}
+      ]},
+      "role": "guard",
+      "predicts_change": false,
+      "direction": "none registered",
+      "capable_of_varying": "spans 0.6661 to 1.0 across scored runs, and the ceiling itself moves with the error count (1.2525 raw at 12 errors, 1.3750 at 400). Not inert.",
+      "note": "NO DIRECTION IS PREDICTED, deliberately. The brief's instruction to withdraw 'approach the human 1.386' is accepted: the raw ratio's ceiling moves with n_errors and the human sits at normalized 0.3728, not near 1.0, so the model's errors at 0.7302 are already MORE load-ordered than humans'. Moving down toward 0.3728 would be more humanlike; moving up toward 1.0 would be less. Both are informative and neither is the claim, so this is registered as a two-sided band rather than a target. The lower bound is score_candidate.py's own guard value."
+    },
+    {
+      "id": "P6",
+      "name": "variable_mapping keeps most of its gain, on both formulas",
+      "quantity": ["humanlikeness_by_task['variable_mapping']", "axes['variable_mapping_matched']['humanlikeness_matched']"],
+      "source": "meta_harness.score_candidate.evaluate",
+      "baseline": [0.3554, 0.3587],
+      "reference": {
+        "episodic_reset": [0.6764, 0.7295],
+        "displacement": [0.3484, 0.3784],
+        "primacy": [0.3527, 0.3774],
+        "full_context": [0.3467, 0.3584]
+      },
+      "comparator": [">=", ">="],
+      "threshold": [0.55, 0.55],
+      "point_estimate": [[0.58, 0.70], [0.62, 0.75]],
+      "noise_floor": 0.017,
+      "expected_direction": "DOWN from episodic_reset's 0.6764 / 0.7295, UP from the baseline's 0.3554 / 0.3587",
+      "disconfirm_if": {"either": [
+        {"comparator": "<", "value": 0.55, "reads_as": "the write directive made the agent accurate enough to return toward the ceiling; the mechanism still works but the task stops discriminating"},
+        {"comparator": ">", "value": 0.80, "reads_as": "overshoot -- check share_at_ceiling and n_distinct_scores before reading it as calibration"}
+      ]},
+      "role": "primary",
+      "predicts_change": true,
+      "capable_of_varying": "raw spans 0.3467 to 0.6764 and matched 0.3584 to 0.7295 across seven scored runs. Well above the 0.017 noise floor.",
+      "note": "A FALL FROM 0.6764 IS EXPECTED AND ACCEPTED. This candidate's claim is the P1 repair, not variable_mapping maximisation, and the restored per-turn write directive should make the agent write more diligently, which reduces errors, which moves the score back toward the ceiling. Both formulas are registered because they compute different quantities: the model's raw score is relation_count of the last consecutively correct question and saturates by question 5, so later errors are invisible to it, while matched is sum(q.correct)/10 on both sides."
+    },
+    {
+      "id": "P7",
+      "name": "parse integrity AND no chattiness (the anti-verbosity control)",
+      "quantity": ["count of variable_mapping questions whose parsed answer is missing or not a valid option letter", "mean character length of step_logs[*].answer_raw"],
+      "source": ["check_predictions._vm_row_stats(run_dir)['unparsed_answers']", "tasks/wm_variable_mapping.jsonl -> step_logs[*].answer_raw (needs a new helper; no existing field reports it)"],
+      "baseline": [0, 13.10],
+      "baseline_detail": "0 of 1500 unparsed; answer_raw mean 3.000 words / 13.10 chars, max 14, p95 14 over 1500 answers",
+      "reference": {"episodic_reset": [0, 13.18], "episodic_reset_detail": "mean 13.18 chars but MAX 131 -- one answer already ran long under the reset"},
+      "comparator": ["<", "<="],
+      "threshold": [30, 15.0],
+      "disconfirm_if": {"any": [
+        {"quantity": "unparsed", "comparator": ">=", "value": 30, "reads_as": "interference.py counts an unparsed answer as a novel_guess ERROR, so a candidate that reached P4 by emitting garbage inflates n_errors while failing here"},
+        {"quantity": "mean_answer_chars", "comparator": ">", "value": 15.0, "reads_as": "THE FIX WORKED BY MAKING THE AGENT VERBOSE. This candidate prepends three lines of control state before QUESTION_PROMPT, which ends 'Output ONLY one line in this format ... No extra text'. If the block induces commentary, it shows up here first, and a repair that works by talking more is not a repair of the memory module."}
+      ]},
+      "role": "guard + anti-verbosity control",
+      "predicts_change": false,
+      "capable_of_varying": "answer_raw max already moved 14 -> 131 between baseline and episodic_reset, so the quantity is sensitive to a step() change even though its mean barely moved. serial_recognition's word_recognition recall_raw differs on 50/50 rows, so generation length is not inert under a harness change.",
+      "note": "The brief asked for something that fails if the fix works by making the agent verbose or by partially restoring context. Verbosity is this row; wholesale restoration is P4 (a restored transcript returns variable_mapping to ~12 errors) and P2's keys_held leg (a restored transcript makes the store unnecessary, full_context's 1.06 keys signature). Threshold set just above the baseline's 13.10 because the task prompt demands one line and the baseline achieves exactly 3 words in 1500 of 1500 answers -- there is no legitimate reason for the mean to move."
+    },
+    {
+      "id": "P8",
+      "name": "no-change control: digit_span_reverse bit-identical, five others within their own measured floors",
+      "quantity": "per-task humanlikeness",
+      "source": "meta_harness.score_candidate.evaluate -> humanlikeness_by_task and delta_vs_baseline",
+      "legs": {
+        "digit_span_reverse": {"baseline": 0.9666, "comparator": "abs_delta <=", "threshold": 0.059, "point_estimate": 0.9666, "expected_exact": true, "expected_tag": "FROZEN", "threshold_note": "Point estimate is EXACT equality (0.9666 in all four iteration-2 arms) and a hit should be recorded by _frozen_tag. But the VERDICT-BEARING threshold is NOISE_FLOOR['digit_span_reverse'] = 0.059, not exact equality, because correction 1 shows exact equality is an empirical regularity over four arms and not a structural guarantee: 10 of its 190 rows differed under a provably no-op change. Registering == 0.9666 as the gate would repeat precisely the defect this row exists to correct in episodic_reset's P10 -- a threshold the serving stack cannot guarantee."},
+        "digit_span_forward": {"baseline": 0.886, "comparator": "abs_delta <=", "threshold": 0.140},
+        "word_recognition": {"baseline": 0.4948, "comparator": "abs_delta <=", "threshold": 0.121},
+        "narrative_qa": {"baseline": 0.9572, "comparator": "abs_delta <=", "threshold": 0.030},
+        "semantic_story_recall": {"baseline": 0.9473, "comparator": "abs_delta <=", "threshold": 0.015},
+        "craft_task": {"baseline": 0.8907, "comparator": "abs_delta <=", "threshold": 0.030}
+      },
+      "role": "no-change control",
+      "predicts_change": false,
+      "identity_void_applies": false,
+      "expected_tag": "FROZEN on the digit_span_reverse leg",
+      "capable_of_varying": "digit_span_reverse humanlikeness has moved on real data under mechanisms that do reach it: random_decay -0.2316, random_decay_v2 -0.0701, full_context -0.3986, displacement +0.0138. It is NOT an inert quantity -- it is a quantity this mechanism cannot reach, which is what a no-change control requires. It held at exactly 0.9666 in all four iteration-2 arms.",
+      "why_this_mechanism_cannot_touch_it": "wm_digit_span_reverse builds a fresh agent per trial (wm_digit_span_reverse.py:110) and goes encode() -> recall(). encode() calls step() exactly once, so _episode_turn_index() == 1 and no control-state block is prepended; recall() is not overridden. Verified offline against a stub: the encode() tool-call request stream and the recall() prompt are BYTE-IDENTICAL to baseline's.",
+      "structural_claim": "The same argument applies to all six legs -- the requests are byte-identical for every one of them. digit_span_reverse is the one whose scored statistic is coarse enough that exact equality is the expected outcome (W_1 over 10 model pseudo-participants; it held at exactly 0.9666 in 4/4 arms despite 10-42 of its 190 rows differing in each), which is why it carries expected_exact and the FROZEN tag -- but its verdict threshold is still its noise floor, for the reason in its threshold_note.",
+      "threshold_derivation": "Each non-exact leg is its own NOISE_FLOOR value, except craft_task, raised from 0.025 to 0.030, and semantic_story_recall, tightened from 0.030 (FLOOR) to 0.015. Reasons: a provably no-op change (episodic_reset) moved craft -0.0280, past its bootstrapped floor of 0.025, so the bootstrap understates generation-level run-to-run variation there; whereas story recall stayed inside 0.006 in all four iteration-2 arms despite 199/200 rows differing, so 0.015 is achievable and 0.030 would be slack.",
+      "note": "This row is the explicit correction to episodic_reset's P10, which registered a uniform +-0.005 on all six and FAILED on a threshold the serving stack cannot meet, not on a mechanism. See brief_corrections 1-4. Any nonzero movement on these five legs is serving nondeterminism and must not be narrated as a mechanism effect; the row exists so that it is recorded as nondeterminism rather than attributed."
+    },
+    {
+      "id": "P9",
+      "name": "nback per-level decomposition (reported, no threshold)",
+      "quantity": ["per_level humanlikeness at n=1/2/3", "answered, acc_over_answered, acc_over_14, keys_held, buffer_no_response_frac at each level", "per_row_sd", "pooled_sd"],
+      "source": "meta_harness.nback_levels.report(run_dir)['per_level'] and ['diagnostics']",
+      "baseline": {
+        "per_level_hl": {"1": 0.9422, "2": 0.9190, "3": 0.5829},
+        "model_mean": {"1": 0.9929, "2": 0.7786, "3": 0.3600},
+        "human_mean": {"1": 0.9461, "2": 0.8615, "3": 0.7799},
+        "per_row_sd": 0.3209,
+        "pooled_sd": 0.1019,
+        "human_sd": 0.0812
+      },
+      "reference": {
+        "episodic_reset": {"per_level_hl": {"1": 0.1899, "2": 0.6812, "3": 0.6493}, "per_row_sd": 0.2771},
+        "displacement": {"per_level_hl": {"1": 0.9401, "2": 0.9433, "3": 0.9387}, "per_row_sd": 0.1385},
+        "primacy": {"per_level_hl": {"1": 0.9401, "2": 0.9589, "3": 0.9530}, "per_row_sd": 0.1354}
+      },
+      "comparator": "report",
+      "threshold": null,
+      "role": "diagnostic",
+      "predicts_change": true,
+      "tags": ["REPORTED"],
+      "capable_of_varying": "every field listed has moved substantially across the seven scored runs; n=3 acc_over_14 spans 0.2729 to 0.77.",
+      "directions_stated_in_advance": {
+        "n=1": "returns to ~0.99 model_mean and ~0.94 humanlikeness, from episodic_reset's 0.1329 / 0.1899. This is P1 restated at the humanlikeness level.",
+        "n=2": "answered rises from 10.16 toward 14; acc_over_14 rises from 0.5457 toward 0.75-0.82 against the human 0.8615. From the baseline's 0.7786 this may move slightly TOWARD or slightly PAST human -- I do not predict which, and if it overshoots that is a loss on n=2 accompanying the n=3 gain.",
+        "n=3": "answered rises from 9.08 toward 12-14; acc_over_14 rises from 0.4257 toward 0.55-0.70 against the human 0.7799, i.e. clearly TOWARD human from the baseline's 0.3600.",
+        "spread": "per_row_sd falls from the baseline's 0.3209 toward the human 0.0812, which is the mechanism by which P3 is expected to clear its floor. If per_row_sd does NOT fall and P3 still passes, the P3 pass has a different cause and the stated mechanism is wrong."
+      },
+      "note": "Registered with no direction on the aggregate and explicit directions per level, so the decomposition is checkable rather than reconstructed after the run. INCONCLUSIVE by construction; tagged REPORTED so it cannot be cited as a passed test. buffer_no_response_frac at n=1 is reported and deliberately NOT thresholded: episodic_reset scored 1.0000 on it while failing catastrophically (it answered 'no response' to everything), so the quantity does not discriminate in the direction that matters."
+    }
+  ],
+
+  "accepted_costs": [
+    {
+      "task": "variable_mapping",
+      "reference": "episodic_reset 0.6764 raw / 0.7295 matched, n_errors 509",
+      "statement": "Humanlikeness and error count are both expected to FALL from episodic_reset's figures, because the restored standing write directive should make the agent maintain the store more diligently. Accepted: this candidate's claim is the P1 repair, not variable_mapping maximisation. Registered as a floor (HL >= 0.55, n_errors >= 150) rather than as a gain."
+    },
+    {
+      "task": "nback n=2",
+      "baseline": 0.9190,
+      "statement": "Closing the leak removes the information the baseline's n=2 accuracy partly rests on, and restoring response production raises answered from 10.16 to ~14. The net direction on n=2 humanlikeness is not predicted. A loss there is accepted provided the aggregate clears the 0.060 floor (P3)."
+    },
+    {
+      "task": "the five non-frozen no-change tasks",
+      "statement": "Movement up to each task's registered threshold is expected and is serving nondeterminism, not mechanism. This is the correction to episodic_reset's P10; see brief_corrections 1-4."
+    }
+  ],
+
+  "not_predicted": {
+    "mean_humanlikeness_search": "No threshold registered. The mean is not this candidate's claim and it is a composite of a variable_mapping component that is expected to fall from its predecessor's, an nback component that is expected to rise, and six components that cannot move by mechanism. MIN_CREDIBLE_MEAN_DELTA is 0.026; the value will be reported and not credited."
+  },
+
+  "offline_verification": {
+    "verify_interface": "PASS -- WorkingMemoryAgent rebound in 8 modules, SummarizerAgent 8, CONDITION_PROMPTS/TOOLS/MAX_KEYS in their defining modules; encode/recall round trip returns the expected shapes; capacity enforced at 4.",
+    "structural_context_test": "PASS, 0 failures. Drove the REAL wm_nback.run_nback_block at n=1, 2, 3 and the REAL variable_mapping loop against a recording stub LLM. Asserted: the first generate_with_tools call of EVERY step() receives exactly 2 messages (system + user), at every level, INCLUDING all buffer-period turns; no request anywhere (including inside the tool-dispatch loop) contains more than one 'Next letter:'; step 1 carries no control-state block and still carries the task's own instruction text; every later step carries the block and renders the store; turn ordinals strictly increasing and unique; on variable_mapping the store header is never duplicated on the question turn and no turn shows more than its own TURNS_PER_QUESTION=2 statements.",
+    "first_letter_turn": "The turn episodic_reset failed on now reads: '[ongoing episode] / Turn 2 of this episode. Stimulus presentations so far: 1. / You have no transcript of earlier turns: the key-value store is your only record of them. Update it each turn to track what you will need later. / Your working memory currently contains: / (memory is empty) / / Next letter: R'. The empty store is explicit and the turn is distinguishable from every other turn, so the near-absorbing state is structurally impossible.",
+    "no_op_test": "PASS -- encode() -> recall() request stream BYTE-IDENTICAL between baseline and episodic_reset_v2 (tool-call request list and the recall() prompt both).",
+    "what_is_NOT_verified": "Behaviour. Nothing here tests what the frozen LLM will actually do -- whether it now writes on turn 1 and answers from the store is PREDICTED (P1), not measured. No model was run. The verification covers the STRUCTURE of the context only.",
+    "gpu_or_paid_api": "none used"
+  },
+
+  "composition": {
+    "target": "episodic_reset_v2 o primacy, as a third arm",
+    "runtime_error_removed": true,
+    "runtime_error_note": "episodic_reset.step() raised RuntimeError when len(store) > _capacity(). This candidate does NOT. It was dead under the baseline's write_key (which refuses rather than overflows), but under a composed overflow rule a transient overflow would turn a degraded row into a hard job crash, and the invariant belongs to write_key. Safe to compose in that respect.",
+    "surfaces_disjoint": "This candidate overrides step() and nothing else. WorkingMemory is not subclassed; write_key, the overflow policy and the eviction order are untouched (primacy owns them); recall(), encode(), TOOLS, CONDITION_PROMPTS, WM_SYSTEM_PROMPTS, _tool_call_cap() and MAX_KEYS are untouched.",
+    "interaction_the_composed_arm_must_respect": "NOT ADDITIVE. Under the baseline step() the store was never rendered into a turn, so eviction order was unobservable during a step()-driven task. Under this candidate to_recall_text() is on the prompt path every turn, so primacy's eviction -- both WHICH key dies and the ORDER survivors are listed in -- becomes part of the agent's context on nback and variable_mapping. Some of the composed effect may come from the agent reacting to a visibly changed store rather than from the eviction rule. Worth its own prediction row in the composed arm.",
+    "attribute_contract": "self._step_log and self._tool_interactions are READ, never written, before super().step(). A composed candidate that also overrides step() must call super().step() exactly once per turn and must not pre-increment _tool_interactions, or the reported presentation ordinal will be wrong.",
+    "reset_placement": "reset_messages() must stay at the turn boundary, never inside the tool-dispatch loop: clearing mid-loop leaves a 'tool' message with no preceding assistant 'tool_calls' and the request is rejected.",
+    "single_load": "The composed arm must be ONE candidate file, loaded once. See brief_corrections 7: load_candidate + apply is not idempotent and stacking is silent."
+  }
+}

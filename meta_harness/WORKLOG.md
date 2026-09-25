@@ -868,17 +868,42 @@ off the prompt cannot respond to store content. 11 PASS / 3 FAIL / 1 VOID.
 > `max_parallel_participants: 50` is not bitwise reproducible at temperature 0, because
 > batch composition shifts reduction order.
 >
-> **Consequences.** (1) `episodic_reset`'s craft −0.0280 and narrative −0.0100 are NOT
-> safely attributable to its `step()` rewrite; a provable no-op produced a comparable
-> craft move. Its structural claim that the six `encode()`→`recall()` tasks are
-> untouched stands, and its P10 failed on a threshold I would now call miscalibrated
-> rather than on a wrong mechanism. (2) `primacy`'s craft regression is still probably
-> real, but on different grounds: 57 differing rows sits well outside the 7–12 band two
-> no-ops produced. (3) **`metric_noise.py` structurally understates the floor.** It
-> bootstraps by resampling the model side of a FIXED set of rows, so it captures
-> sampling noise but not generation-level variation between runs — and a no-op moved
-> craft past its 0.025 floor. A repeat baseline run (job 18536738) is measuring the
-> real per-task run-to-run floor.
+> **Consequences, as amended by iteration 3b — which corrected this correction.** My
+> first version of this retraction said "a no-op arm moved craft −0.0280, so craft's
+> floor is understated". That is wrong: **`episodic_reset` is not a no-op on craft.**
+> `WorkingMemoryAgent.encode()` calls `self.step()` internally (`wm_agent.py:337`,
+> comment "Use step() internally"), and `step()` is exactly the surface
+> `episodic_reset` rewrites. Verified at the source. So its craft move IS attributable
+> to it after all, and craft's empirical no-op band is **0.0000 and 0.0000** — the two
+> genuine no-ops, `chunk_limit` and `serial_recognition`, produced 7 and 12 rows of
+> phrasing variation and moved the scored statistic not at all.
+>
+> So the effect of generation noise on a scored statistic is **strongly
+> task-dependent**, and that is the durable lesson rather than a blanket floor
+> inflation:
+>
+>     craft_task     19 rows of phrasing variation across two no-ops -> 0.0000 twice.
+>                    A 5-question 2AFC score is too coarse to register a rewording.
+>     narrative_qa   serial_recognition (a genuine no-op here) changes 29 of 50 rows'
+>                    scores for a delta of -0.0034. Least characterised cell in the set.
+>     story recall   188 of 200 rows differ for -0.0026. Continuous score, tiny effect.
+>
+> `metric_noise.py` still cannot see generation-level variation — it resamples the model
+> side of a FIXED row set — but craft is evidence that the consequence is sometimes
+> exactly zero, not that every floor is too tight. Job 18536738, a repeat baseline, is
+> measuring the real run-to-run band, and narrative_qa is the quantity that matters: it
+> is the cell on which three of four iteration-2 candidates were charged a violation.
+>
+> `primacy`'s craft regression is real — 57 differing rows against a no-op band of 7–12,
+> and a scored move of −0.0451 against 0.0000.
+>
+> **A separate arithmetic error of mine, also caught by 3b:** the enforced floor is
+> `max(FLOOR=0.03, NOISE_FLOOR[task])`, so **craft's is 0.030, not the 0.025 I quoted
+> throughout.** Consequences: `displacement`'s craft −0.0280 *passed* and I reported it
+> as a cost it did not incur, and `primacy`'s narrative_qa violation is **−0.0309
+> against 0.030, i.e. by 0.0009** — which is not a result any instrument here can
+> support as a rejection ground. Four iteration-2 candidates on four unrelated surfaces
+> all landed narrative between −0.0089 and −0.0310.
 >
 > The original text is kept below because the error and its correction are both part of
 > the record.

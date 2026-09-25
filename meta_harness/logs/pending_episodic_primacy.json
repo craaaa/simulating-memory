@@ -1,0 +1,76 @@
+{
+  "candidate": "episodic_primacy",
+  "iteration": 3,
+  "parent": "episodic_reset_v2 + primacy_v2",
+  "baseline_run": "meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "written_before_run": true,
+  "author": "coordinator, not a proposer",
+  "note": "A measurement arm. It contributes no new mechanism, so it pre-registers only claims that neither component can make alone: whether the two repairs compose, and whether the composition introduces an effect that is a property of the composition itself. Component-level predictions are NOT restated here -- they live in pending_episodic_reset_v2.json and pending_primacy_v2.json and are evaluated against their own arms. Quoting a component's success from this arm would be attributing to one mechanism a result produced by two.",
+  "predictions": [
+    {
+      "id": "C1",
+      "role": "precondition",
+      "prediction": "Both mechanisms are demonstrably active in the run, not just at import. primacy_v2's batch rule: craft_task's overflowing rows settle at 3 keys, not 4. episodic_reset_v2's reset: the n=3 store carries letter identity.",
+      "source": "tasks/wm_craft_task.jsonl final_kv occupancy on the 50 five-rule rows; nback n=3 share of final_kv values containing a bare capital letter",
+      "threshold": "craft overflow-row mean occupancy <= 3.20 AND n=3 letter-share >= 0.90",
+      "baseline_value": {"craft_overflow_kv": 4.0, "nback_n3_letter_share": 0.0202},
+      "reference": {"primacy_v2_replay_craft_kv": 3.333, "episodic_reset_letter_share": 1.0},
+      "capable_of_varying": "yes -- craft occupancy is 3.667 under primacy and 3.333 under primacy_v2 on replay (830/830 row replay fidelity); letter-share moved 0.0202 -> 1.0000 between baseline and episodic_reset",
+      "disconfirm_if": "either leg fails, in which case the arm is measuring one mechanism and C2/C3 are VOID. primacy_v2's _batch_writes() fails SAFE to serial, so a craft occupancy of 4.0 means it silently degraded to `primacy` rather than erroring",
+      "verdict": "PENDING"
+    },
+    {
+      "id": "C2",
+      "role": "primary -- the question this arm exists to answer",
+      "prediction": "Additivity on the two tasks each component owns. variable_mapping should track episodic_reset_v2's arm (the store becomes the only route) and craft_task should track primacy_v2's arm (the batch limit removes the capability overshoot). Neither should be materially worse in composition than in isolation.",
+      "source": "humanlikeness_by_task['variable_mapping'] and ['craft_task'], compared against the two single-mechanism arms in this same wave",
+      "threshold": "variable_mapping >= (episodic_reset_v2 arm - 0.05) AND craft_task >= (primacy_v2 arm - 0.030)",
+      "baseline_value": {"variable_mapping": 0.3554, "craft_task": 0.8907},
+      "capable_of_varying": "yes -- variable_mapping moved +0.3210 under episodic_reset and craft_task -0.0451 under primacy, both far outside their floors",
+      "note": "Deliberately compared against the sibling arms rather than the baseline, because that is the only comparison that distinguishes additive from redundant. Thresholds are one-sided: the interesting failure is the composition being WORSE than its parts.",
+      "disconfirm_if": "either task falls materially below its single-mechanism arm, which would mean the mechanisms interfere and neither repair is safe to keep in the presence of the other",
+      "verdict": "PENDING"
+    },
+    {
+      "id": "C3",
+      "role": "the composition's own effect -- not attributable to either part",
+      "prediction": "A new effect appears on nback and variable_mapping that neither component produces alone, because episodic_reset_v2 puts to_recall_text() on the prompt path every turn, so primacy_v2's eviction -- which key died, and the order survivors are listed in -- becomes VISIBLE to the agent on exactly the two tasks where it was previously unobservable. Reported, not thresholded: no direction is derivable in advance.",
+      "source": "humanlikeness_by_task['nback'] and ['variable_mapping'] versus both single-mechanism arms; nback_levels answered/keys_held/acc_over_answered per level",
+      "threshold": "none -- reported",
+      "capable_of_varying": "yes -- nback moved +0.1545 under primacy and -0.2939 under episodic_reset, so both surfaces move this task independently",
+      "note": "Raised by iteration 3a's composition note. Under the baseline step() the store was never shown to the agent mid-turn, so eviction was unobservable on these two tasks. Any composed effect here may be the agent reacting to a visibly changed store rather than to the retention change itself, and that is a property of the composition, not of either mechanism.",
+      "verdict": "PENDING"
+    },
+    {
+      "id": "C4",
+      "role": "anti-regression",
+      "prediction": "The composition does not reintroduce either component's known failure. episodic_reset's n=1 collapse stays fixed and primacy's craft overshoot stays fixed.",
+      "source": "nback_levels n=1 answered / n_no_answers; craft_task accuracy",
+      "threshold": "n=1 answered >= 13.0 AND n_no_answers == 0 AND craft accuracy < 0.916",
+      "baseline_value": {"n1_answered": 13.98, "n1_no_answers": 0, "craft_accuracy": 0.9333},
+      "reference": {"episodic_reset_n1_answered": 2.06, "episodic_reset_n1_no_answers": 36, "primacy_craft_accuracy": 0.972},
+      "capable_of_varying": "yes -- n=1 answered fell to 2.06 with 36 of 50 silent under episodic_reset; craft accuracy rose to 0.972 under primacy",
+      "note": "craft accuracy is thresholded BELOW primacy's 0.916 because on this task humanlikeness decreases monotonically in accuracy above the baseline -- the model is already better than humans, so a capability gain here is a cost.",
+      "disconfirm_if": "either failure returns, which would mean the repairs are not composable even though each works alone",
+      "verdict": "PENDING"
+    },
+    {
+      "id": "C5",
+      "role": "no-change control",
+      "prediction": "digit span is untouched by either mechanism in composition. primacy_v2's replay shows 0 of 190 keyset changes on both directions, and its overflowing rows are span-18/20 trials already scoring exact=0.0, which an extra eviction cannot change; episodic_reset_v2 leaves encode()->recall() single-step episodes alone.",
+      "source": "humanlikeness_by_task['digit_span_forward'], ['digit_span_reverse'], axes A1 sub_span_leak and best_span",
+      "threshold": "|delta_fwd| < 0.140 AND |delta_rev| < 0.059 AND best_span >= 18.0",
+      "baseline_value": {"digit_span_forward": 0.886, "digit_span_reverse": 0.9666, "sub_span_leak": 0.1298, "best_span": 18.4},
+      "capable_of_varying": "yes, though weakly -- primacy moved digit_span_forward +0.0152 and chunk_limit +0.0183, and chunk_limit moved best_span 18.4 -> 15.4, so the quantity is not inert. NOT thresholded at bit-identity: the stack is not bit-deterministic (two provable no-ops changed 7 and 12 of 150 craft rows' generated content), so bit-identity is not an available target.",
+      "verdict": "PENDING"
+    }
+  ],
+  "composition_verified_at_import": [
+    "MRO is episodic_primacy -> episodic_reset_v2 -> primacy_v2 -> baseline, checked",
+    "step() resolves to episodic_reset_v2's and __init__ to primacy_v2's, checked by identity",
+    "the two candidates override disjoint method sets, asserted",
+    "MAX_KEYS, TOOLS and CONDITION_PROMPTS agree between the two, asserted",
+    "primacy_v2's batch rule is ACTIVE: a simultaneous batch of 5 settles at 3 keys and serial arrival at 4, asserted at import so a silent fallback to serial fails the run",
+    "the hazard 3b flagged does not fire: episodic_reset_v2 resets at the turn boundary before super().step(), so the assistant message is appended before dispatch and _batch_writes() reads a live list"
+  ]
+}
