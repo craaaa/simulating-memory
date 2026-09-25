@@ -69,8 +69,13 @@ fresh prompt from the KV store alone. So tasks split by how they answer:
 
 | regime | route | tasks | mean HL |
 |---|---|---|---|
-| **bottlenecked** | `encode()` → `recall()`, KV only | ds_fwd .886, ds_rev .967, word_rec .495, story .947, craft .891, narr .957 | 0.854 |
+| **bottlenecked** | `encode()` → `recall()`, KV only | ds_fwd .886, ds_rev .967, story .947, craft .891, narr .957 | 0.930 |
 | **leaky** | answers via `step()`, study history still in context | nback .791, variable_mapping .355 | 0.573 |
+| **leaky** | `recall()`, but the prompt embeds the studied list verbatim | word_rec .495 | 0.495 |
+
+Iteration 1 found the third one: `wm_word_recognition.py` formats `trials_text` —
+every trial in order — into its recall prompt, so although it routes through
+`recall()`, the stimulus is visible anyway. See the H2 withdrawal below.
 
 On `variable_mapping`, conditioning each question on what the store actually held:
 
@@ -128,11 +133,15 @@ so its ratio tends to 1.0. The guard is conditional: improve `variable_mapping`
 past its noise floor and you must show ≥30 errors with `rc_ratio ≥ 1.15`, or the
 gain is rejected as unstructured.
 
-**A2 is where the headroom is.** Humans are conservative on recognition — they
-answer "new" when unsure, giving miss 0.272 against false-alarm 0.045. Every one
-of the eight baselined models does the opposite, false-alarming heavily; the
-closest is still 4.6x off. A harness that makes the model appropriately reluctant
-to claim recognition is the single most valuable thing you can find.
+**A2 was billed as "where the headroom is". Treat that with suspicion now.** Humans
+are conservative on recognition — they answer "new" when unsure, giving miss 0.272
+against false-alarm 0.045. The baseline does the opposite. But the word-recognition
+leak means 36 of 50 participants score ≥ 0.98 by reading the studied list off the
+recall prompt, and A2's 0.340 is dominated by the 7 who actually consult the store.
+So A2 measures something real about those 7 and almost nothing about the rest. A
+candidate that closes the leak will change A2's *meaning*, not just its value —
+expect the axis to need recalibration against a fresh baseline at that point, and
+say so in your manifest rather than claiming the delta.
 
 A2 has a trap: word recognition stops after 3 strikes, so trials-attempted
 varies (34.5 for humans, 82.9 for the local baseline). You can move the ratio by
@@ -178,35 +187,56 @@ closed. `variable_mapping` is unreachable (see the leak). That leaves two cells,
 and wave 0 already localised both — you are not expected to rediscover them, you
 are expected to explain and fix one.
 
-**H1 — N-Back fails episodically, not gradually. This is the anti-correlated task,
-so a real fix here is a structural result rather than a knob.**
+**H1 — N-Back's whole deficit is at n=3, and it is response omission, not bad
+judgement.** Iteration 1 corrected two errors in the earlier version of this
+section; both corrections were independently verified and are recorded here so
+nobody re-derives them.
 
-    model  mean 0.710  sd 0.321   35% of participants at exactly 1.0, min 0.071
-    human  mean 0.866  sd 0.081   tightly clustered, 0.69 to 1.00
+*There is no bimodality.* `score.py` scores the model as one observation per
+`(participant, n_level)` — 150 points — while a human is one pooled observation
+over all three of that participant's levels. The model's distribution therefore
+spans the level effect and the human's averages it away:
 
-The model is not uniformly worse than humans; it is bimodal. It either aces N-Back
-or collapses completely, while humans are consistently good. `full_context` narrows
-sd to 0.125 and mean to 0.863 — essentially human — which says the collapses are a
-resource failure, not a strategy failure. N-Back is also **leaky** (it answers via
-`step()`), so the mechanism is not simply store capacity. Go find the collapsed
-episodes in the traces and read what the harness did on those specific trials.
-Note the tension: N-Back wants *more* retained, digit span and story recall want
-the bottleneck. One global `MAX_KEYS` provably cannot serve both — `full_context`
-takes N-Back +0.157 while destroying five other tasks. A demand-sensitive mechanism
-(interference, displacement, retrieval competition) rather than a hard slot count
-is the obvious candidate and has a literature behind it.
+    model, per-row (what humanlikeness uses)   mean 0.710  sd 0.321   HL 0.791
+    model, pooled to human granularity         mean 0.710  sd 0.102   HL 0.844
+    human                                      mean 0.866  sd 0.081
 
-**H2 — Word recognition has the wrong error asymmetry, and it is the safest place
-for a legitimate gain.** Humans are conservative: they answer "new" when unsure,
-giving miss 0.272 against false-alarm 0.045, a ratio of 6.09. The baseline is at
-0.340 — it barely misses anything and false-alarms instead. It is also the *only*
-axis with real headroom, the task is bottlenecked so the store is genuinely on the
-causal path, and humanlikeness there is 0.495 with plenty of room. Beware the
-covariate: trials-attempted is 82.9 for the baseline against 34.5 for humans, and
-you can move the ratio by surviving longer instead of by fixing the asymmetry.
+The "35% of participants at exactly 1.0" is exactly the 50 n=1 rows. Pooled, the
+model's *shape* matches the human shape and the deficit is a clean mean shift.
 
-Prefer H1 if you want the interesting result, H2 if you want the reliable one. Say
-which you are doing and why.
+Human records support the better fix: `payload.trials` carries a `level` field with
+14 scored trials per level, so both sides can be compared per level
+(`meta_harness/nback_levels.py`). Doing so localises the entire deficit:
+
+| n | model | human | HL | answered/14 | acc over answered | keys held |
+|---|---|---|---|---|---|---|
+| 1 | 0.993 | 0.946 | 0.942 | 13.98 | 0.994 | 1.00 |
+| 2 | 0.779 | 0.862 | 0.919 | 13.24 | 0.821 | 1.54 |
+| 3 | **0.360** | **0.780** | **0.583** | **6.82** | **0.737** | **3.96 — jammed** |
+
+n=1 and n=2 are effectively solved. At n=3 the store saturates and the model
+**stops answering**, while staying 0.737 accurate on the trials it does answer.
+Compare `full_context`: 14.00/14 answered, acc-over-answered only 0.770, **and it
+holds just 1.06 keys** — with capacity 10 000 it holds *fewer* keys than the
+baseline, because never refusing lets it overwrite one rolling key instead of
+accumulating a jammed set of four. So its entire +0.157 is response production, and
+the mechanism is the overflow rule, not capacity. `answered` can rise for dull
+reasons; buffer-phase compliance cannot, so check `model_parsed_buffer` too (the
+baseline emits only 50 `No response` of 150 buffer slots at n=3; `full_context` is
+150/150).
+
+**H2 is withdrawn — word recognition is a THIRD leak.** `wm_word_recognition.py`
+builds its recall prompt with `trials_text` = every trial in order, byte-for-byte
+the studied list, despite the prompt saying "Based ONLY on the above contents". So
+Old/New is fully determined by visible text. Verified: **36 of 50 participants score
+≥ 0.98 and 7 score ≤ 0.04** (humans: 1 of 53 above 0.98, mean 0.315). The 43 at
+ceiling are reading the list off the prompt; the 7 are the only ones consulting the
+store. A2's 0.340 is therefore produced by a handful of participants while most are
+not doing the task at all, and the "A2 headroom" is not what it appeared to be.
+
+So **three of eight tasks bypass the memory module** — nback, variable_mapping and
+word_recognition. Closing the word-recognition leak is the highest-value target
+remaining, and `recall()`'s context construction is inside the override surface.
 
 ## What you may change
 
