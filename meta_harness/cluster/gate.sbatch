@@ -75,6 +75,15 @@ export FLASHINFER_CACHE_DIR=/scratch/cl5625/.cache/flashinfer
 export TORCHINDUCTOR_CACHE_DIR=/scratch/cl5625/.cache/torchinductor
 export TRITON_CACHE_DIR=/scratch/cl5625/.cache/triton
 mkdir -p "$FLASHINFER_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$TRITON_CACHE_DIR"
+
+# The OpenAI client bench uses requires *some* api_key even when base_url points
+# at localhost, and refuses to construct without one (job 18489855).  Set an
+# obvious dummy: vLLM ignores it, and setting it explicitly also guarantees a
+# real key inherited from the environment can never be used, so there is no path
+# from this job to a paid endpoint.
+export OPENAI_API_KEY=local-vllm-no-key-needed
+unset OPENROUTER_API_KEY
+unset ANTHROPIC_API_KEY
 MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507
 PORT=8000
 LOGS="$REPO/meta_harness/logs"
@@ -145,6 +154,19 @@ fi
 echo "=== measured KV cache / concurrency from vLLM startup:"
 grep -iE "GPU KV cache size|Maximum concurrency|KV cache blocks" "$VLLM_LOG" || \
   echo "(no KV cache line matched; check $VLLM_LOG)"
+
+# --- preflight: the endpoint must actually complete, not just answer /health --
+echo "=== preflight chat completion"
+PREFLIGHT=$(curl -sS --max-time 120 "http://127.0.0.1:${PORT}/v1/chat/completions" \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ${OPENAI_API_KEY}" \
+  -d "{\"model\":\"${MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"Reply with the single word OK.\"}],\"max_tokens\":8,\"temperature\":0}" 2>&1)
+echo "$PREFLIGHT" | head -c 600
+echo
+if ! printf '%s' "$PREFLIGHT" | grep -q '"choices"'; then
+  echo "!!! endpoint did not return a completion; aborting before bench"
+  exit 1
+fi
 
 # --- run the gate ----------------------------------------------------------
 echo "=== running wm_word_recognition gate"
