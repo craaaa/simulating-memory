@@ -31,13 +31,27 @@ def main() -> int:
     ap.add_argument("--config", required=True, help="bench YAML config")
     ap.add_argument("--out-dir", required=True, help="where bench writes this candidate's run")
     ap.add_argument("-t", "--task", action="append", default=[],
-                    help="task name, repeatable; empty means all in the config")
+                    help="task name, repeatable; REQUIRED (see --all-tasks)")
+    ap.add_argument("--all-tasks", action="store_true",
+                    help="deliberately run every registered task (31 of them, "
+                         "including the non-compactor prompting and sum_ variants)")
     ap.add_argument("--repeat", type=int, default=None)
     ap.add_argument("--story", default=None)
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--skip-verify", action="store_true",
                     help="skip the offline interface check (not recommended)")
     args = ap.parse_args()
+
+    # An empty task list makes bench run ALL 31 registered tasks, including the
+    # prompting and sum_ variants that are not the compactor at all.  Naming the
+    # tasks in the YAML's task_config does NOT restrict what runs.  This cost a
+    # cancelled 17-minute GPU job before the guard existed.
+    if not args.task and not args.all_tasks:
+        print("refusing to run: no -t/--task given, which would run all 31 "
+              "registered tasks (prompting and sum_ variants included).\n"
+              "Name the tasks explicitly, or pass --all-tasks if that is really "
+              "what you want.")
+        return 2
 
     # bench.cli first, so every task-module binding exists before injection.
     import bench.cli  # noqa: PLC0415

@@ -96,13 +96,26 @@ TC=$(curl -sS --max-time 120 "http://127.0.0.1:${PORT}/v1/chat/completions" \
 printf '%s' "$TC" | head -c 300; echo
 printf '%s' "$TC" | grep -q tool_calls || { echo "!!! no tool_calls; check parser"; exit 1; }
 
+# Each task must be named with -t. An empty task list makes bench run ALL 31
+# registered tasks -- the prompting and sum_ variants too, none of which are the
+# compactor (job 18491587 was cancelled 17 minutes in for exactly this).
+# Listing task_config in the YAML does NOT restrict what runs.
+#
 # No --repeat: search_set.yaml sizes every task explicitly, because --repeat is
 # global and cannot both give 50 participants and a reduced digit span.
 echo "=== running the 8-task search set through the baseline candidate"
 "$PY" meta_harness/run_candidate.py \
   --candidate meta_harness/candidates/baseline/harness.py \
   --config meta_harness/cluster/search_set.yaml \
-  --out-dir "$OUT_DIR"
+  --out-dir "$OUT_DIR" \
+  -t wm_digit_span_forward \
+  -t wm_digit_span_reverse \
+  -t wm_nback \
+  -t wm_word_recognition \
+  -t wm_variable_mapping \
+  -t wm_narrative_qa \
+  -t wm_semantic_story_recall \
+  -t wm_craft_task
 RC=$?
 echo "=== run_candidate exit: $RC"
 
