@@ -112,6 +112,31 @@ Both would have produced plausible-looking but wrong numbers:
   released data.
 - `cluster/search_set.yaml` — 8 search tasks, digit span cut to ~190 rows.
 
+## Blocker for the user: how the proposer runs
+
+The reference implementation invokes the proposer as the `claude` CLI once per
+iteration, and deliberately strips `ANTHROPIC_API_KEY` so it authenticates
+against the Claude *subscription* rather than the paid API
+(`reference_examples/text_classification/meta_harness.py`, `propose_claude`).
+
+So the outer loop costs no API dollars, but ~20 iterations of an Opus coding
+agent at `effort="max"` does consume the user's plan. The instruction for this
+stretch was to spend no money; subscription usage is not dollar spend, but it is
+not obviously free either, and spawning that unattended was not authorized. **Not
+started.** Everything up to it is built, so the loop can begin as soon as the
+user decides:
+
+- let me drive iterations as the proposer inside this session, or
+- authorize spawning fresh `claude` CLI sessions per iteration (matches the
+  reference, gives each iteration a clean context), or
+- run iterations manually with me preparing each candidate.
+
+`PROPOSER.md` holds the instructions either way: the inverted objective, the
+noise-injection trap and its control, the hard constraints (no reading
+`runs/human/`, `MAX_KEYS` needs a psychological argument), the axes with their
+numbers, the per-task noise floor, and the infrastructure gotchas already paid
+for.
+
 ## Running notes
 
 (appended below as things happen)
