@@ -206,3 +206,73 @@ injected as a candidate.
 
 **Not started, and why:** the outer loop. See the proposer-auth blocker above.
 Everything it needs is built and tested.
+
+## Wave 0 — the validity wave
+
+Purpose: decide whether the Pareto setup discriminates at all, *before* spending
+proposer iterations on it. Three runs, all on the same local vLLM stack
+(Qwen3-30B-A3B-Instruct-2507, bf16, `--repeat 50`), 8 search tasks.
+
+| id | mean | ds_fwd | ds_rev | nback | word_rec | var_map | narr_qa | story | craft | A2 dist | A1 leak | A3 bleu | A3 words |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| baseline | **0.7861** | 0.886 | 0.967 | 0.791 | 0.495 | 0.355 | 0.957 | 0.947 | 0.891 | 5.754 | 0.130 | 0.0031 | 121 |
+| random_decay (adversary) | 0.6977 | 0.686 | 0.735 | 0.782 | 0.438 | 0.351 | 0.939 | 0.792 | 0.858 | 5.429 | 0.500 | 0.0001 | 65 |
+| full_context (upper anchor) | 0.6387 | 0.598 | 0.568 | 0.948 | 0.364 | 0.347 | 0.865 | 0.608 | 0.813 | 6.056 | 0.032 | 0.3047 | 411 |
+| *human* | — | — | — | — | — | — | — | — | — | 0 | 0.087 | 0.002 | 137 |
+
+Three things fall out of this, and none of them were guaranteed:
+
+**1. The objective really does invert, and the anchor proves it rather than
+asserting it.** `full_context` — capacity 10 000, stimulus kept verbatim — is the
+*most capable* harness in the table and the *least* humanlike, 0.6387 against the
+baseline's 0.7861. The 4-slot bottleneck is doing the work it is credited with.
+Had `full_context` come out on top, the whole premise would have been wrong.
+
+**2. The A3 guard is not vacuous.** `full_context` regurgitates: story-recall BLEU
+0.3047 against a human 0.002, and 411 words against a human 137. Both guards fire.
+This is the exact failure mode a mean-humanlikeness score alone would have priced
+at merely "somewhat worse" instead of "not recall at all", so the guard is earning
+its place.
+
+**3. The real headroom is two tasks, and they pull opposite ways on capacity.**
+Five of eight tasks are already at 0.89–0.97 on the baseline and have nothing left
+to win. What is actually open:
+
+- `variable_mapping` **0.355** — flat across all three candidates (0.347–0.355).
+  Nothing tried so far moves it at all, which makes it the most interesting cell
+  in the table: it is not a capacity problem.
+- `word_recognition` **0.495**, and it carries A2, the one axis with headroom
+  (distance 5.754 from the human miss/FA ratio of 6.09).
+- `nback` **0.791** — and `full_context` takes it to **0.948**. N-Back is the task
+  where the model is *worse* than humans, so it is the one task that wants *more*
+  capacity, and removing the bottleneck duly fixes it while destroying everything
+  else.
+
+That last point is the design tension worth handing the proposer: a single global
+`MAX_KEYS` cannot satisfy both N-Back and digit span. A mechanism that is
+demand-sensitive — interference or displacement rather than a hard slot count —
+could in principle get both, and that is a psychological claim with a literature
+behind it rather than a knob-twiddle.
+
+**Axis validation is still open**, pending `random_decay_v2` (job 18494067).
+`random_decay` v1 failed as an adversary in the informative direction: it did not
+game the metric, it overshot the human distribution badly (digit-span best span
+18.4 → 2.0 against a human 6.88, A1 leak 0.500 against 0.087) and *lost* 0.088 of
+humanlikeness. A weak adversary leaves the axes unvalidated, not validated, so v2
+retries the attack calibrated — uniform(0, 0.35), applied once after encode.
+Pass condition, written before the run: mean humanlikeness ≥ baseline + 0.05
+*while* A2 distance stays ≥ 2× the baseline's. Passing both invalidates the Pareto
+setup and it must be redesigned before any iteration is spent; failing the first
+again is evidence that matching the human distribution with pure noise is harder
+than assumed, which is the result in the metric's favour.
+
+### Bug found while scoring wave 0
+
+`score_candidate.py` looked for `manifest.json` in the run dir it was handed, but
+that is bench's per-model output dir (`.../<cand>/<model>/`) while
+`run_candidate.py` writes the manifest one level up. The lookup always missed, so
+every record fell back to `run_dir.name` — the *model* name, identical for every
+candidate. With `--record` replacing rows by id, scoring a second candidate would
+silently overwrite the first. It was masked until now only because the earlier two
+rows happened to be written with an explicit `--id`. Fixed to check both
+locations; all three wave-0 rows re-scored so each carries manifest provenance.
