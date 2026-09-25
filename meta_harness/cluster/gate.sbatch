@@ -41,8 +41,23 @@ export UV_DATA_DIR=/scratch/cl5625/.local/share/uv
 export HF_HOME=/scratch/cl5625/.cache/huggingface
 export TORCH_HOME=/scratch/cl5625/.cache/torch
 export PYTHONNOUSERSITE=True
-# Documented Triton libcuda.so.1 fix for vLLM on this cluster.
-export LIBRARY_PATH=/usr/lib64
+# LIBRARY_PATH is the nyu-hpc skill's documented Triton fix; kept because it is
+# harmless, but note it was NOT the cause of the job-18488082 failure.
+export LIBRARY_PATH=/usr/lib64:${LIBRARY_PATH:-}
+export LD_LIBRARY_PATH=/usr/lib64:${LD_LIBRARY_PATH:-}
+#
+# Root cause of that failure, established by diagnosis rather than the skill's
+# gotcha table: the system interpreter /usr/bin/python3.12 has NO development
+# headers -- /usr/include/python3.12/Python.h does not exist.  Triton compiles
+# cuda_utils.c into a Python extension module at runtime, so engine-core init
+# dies with an InductorError wrapping a gcc failure.  libcuda was a red herring:
+# libcuda.so.1 is present in BOTH /usr/lib64 and /lib64 and a direct
+# `gcc -l:libcuda.so.1 -L/usr/lib64` link test succeeds on the GPU node.
+#
+# Fix: build the venv against a uv-managed CPython, which ships its own headers
+# (uv python install 3.12 -> .../cpython-3.12.13-linux-x86_64-gnu with
+# include/python3.12/Python.h).  Nothing here needs to set include paths; the
+# venv's sysconfig points Triton at the right place automatically.
 
 REPO=/scratch/cl5625/meta-harness-compactor
 PY="$REPO/.venv/bin/python"
@@ -66,6 +81,11 @@ echo "=== HEAD: $(git rev-parse HEAD)"
   --dtype bfloat16 \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.90 \
+  `# --enforce-eager keeps this gate on the cluster's known-good path (the` \
+  `# skill records it as the fix for Triton trouble) at the cost of CUDA` \
+  `# graphs.  The gate only needs to be correct, not fast.  For the 40-candidate` \
+  `# search, drop it and measure -- per-candidate wall-clock compounds there.` \
+  --enforce-eager \
   --host 127.0.0.1 --port "$PORT" \
   > "$VLLM_LOG" 2>&1 &
 VLLM_PID=$!
