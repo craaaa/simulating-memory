@@ -104,6 +104,14 @@ echo "=== HEAD: $(git rev-parse HEAD)"
   --dtype bfloat16 \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.90 \
+  `# The compactor is a tool-calling agent and bench requests tool_choice="auto".` \
+  `# Without these two flags vLLM rejects every call with 400: '"auto" tool choice` \
+  `# requires --enable-auto-tool-choice and --tool-call-parser to be set'` \
+  `# (job 18490375).  Qwen3 instruct models emit Hermes-style <tool_call> JSON, so` \
+  `# "hermes"; the registry in vllm/tool_parsers/__init__.py also offers qwen3_xml` \
+  `# and qwen3_coder, which are for the XML-emitting and coder variants.` \
+  --enable-auto-tool-choice \
+  --tool-call-parser hermes \
   `# --enforce-eager keeps this gate on the cluster's known-good path (the` \
   `# skill records it as the fix for Triton trouble) at the cost of CUDA` \
   `# graphs.  The gate only needs to be correct, not fast.  For the 40-candidate` \
@@ -165,6 +173,22 @@ echo "$PREFLIGHT" | head -c 600
 echo
 if ! printf '%s' "$PREFLIGHT" | grep -q '"choices"'; then
   echo "!!! endpoint did not return a completion; aborting before bench"
+  exit 1
+fi
+
+# The compactor is a tool-calling agent, so plain completion working proves
+# little.  Exercise tool_choice="auto" specifically: a wrong --tool-call-parser
+# or a missing --enable-auto-tool-choice fails here in seconds instead of after
+# a full bench run.
+echo "=== preflight tool call"
+TOOLCALL=$(curl -sS --max-time 120 "http://127.0.0.1:${PORT}/v1/chat/completions" \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ${OPENAI_API_KEY}" \
+  -d "{\"model\":\"${MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"Store the value 7 under the key seven using write_memory.\"}],\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"write_memory\",\"description\":\"Write a key to memory\",\"parameters\":{\"type\":\"object\",\"properties\":{\"key\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}},\"required\":[\"key\",\"value\"]}}}],\"tool_choice\":\"auto\",\"max_tokens\":128,\"temperature\":0}" 2>&1)
+echo "$TOOLCALL" | head -c 700
+echo
+if ! printf '%s' "$TOOLCALL" | grep -q 'tool_calls'; then
+  echo "!!! tool_choice=auto did not produce tool_calls; check --tool-call-parser"
   exit 1
 fi
 

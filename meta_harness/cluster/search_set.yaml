@@ -1,0 +1,76 @@
+# Search set: the 8 tasks a candidate is optimized against.
+#
+# Held out and deliberately absent: wm_map_task and wm_factual_qa.
+#
+# IMPORTANT -- do NOT pass --repeat with this config. `--repeat` is global, so it
+# cannot simultaneously give 50 participants on most tasks and a reduced digit
+# span. Every task is sizable from task_config when --repeat is omitted (verified
+# against each task's closure in bench/cli.py), so sizes are set explicitly here.
+# Note also that `run.repeat` is inert: cli.py:179 only writes the CLI --repeat
+# into run_cfg and never reads it back.
+#
+# Digit span is cut from the released 1900 rows to ~190 each. Forward and reverse
+# together are 85% of all LLM turns in a full evaluation (16,975 of 19,940) for
+# 0.307 + 0.106 of headroom, so this is a ~4x speedup for little lost signal.
+# Full repeats are restored for final scoring of the finalists.
+model:
+  backend: openai
+  name: Qwen/Qwen3-30B-A3B-Instruct-2507
+  base_url: http://127.0.0.1:8000/v1
+  temperature: 0.0
+  max_tokens: 2048
+  top_p: 1.0
+
+run:
+  out_dir: meta_harness/runs/search/{date}
+  seed: 42
+  max_parallel_participants: 50   # measured KV cache supports 89.54x concurrency
+  max_parallel_tasks: 1           # one model server; tasks share it
+
+task_config:
+  # --- working memory ------------------------------------------------------
+  # 19 spans (2..20) x 10 sequences = 190 rows, down from 1900.
+  wm_digit_span_forward:
+    min_span: 2
+    max_span: 20
+    sequences_per_span: 10
+    stimuli_seed: 42
+    temperature: 0.0
+  wm_digit_span_reverse:
+    min_span: 2
+    max_span: 20
+    sequences_per_span: 10
+    stimuli_seed: 42
+    temperature: 0.0
+  wm_nback:
+    n_repeat: 50                  # x3 n-levels = 150 rows, as released
+    n_repeats_per_participant: 1
+    stimuli_seed: 123
+    temperature: 0
+  wm_word_recognition:            # carries axis A2
+    words_json_path: data/words.json
+    n_repeat: 50                  # 50 rows, as released
+    max_trials_per_game: 100
+    stimuli_seed: 42
+    temperature: 0.0
+  wm_variable_mapping:
+    names_json_path: data/names.json
+    city_json_path: data/city.json
+    n_repeat: 50                  # x3 runs per participant = 150 rows
+    n_runs_per_participant: 3
+    stimuli_seed: 42
+
+  # --- longer-horizon memory ----------------------------------------------
+  wm_narrative_qa:
+    data_json_path: data/narrative_QA.json
+    n_participants: 50
+    stimuli_seed: 42
+  wm_semantic_story_recall:       # carries axis A3
+    repeats_per_stimulus: 50      # x4 stories = 200 rows, as released
+    stimuli_seed: 42
+    use_judge: true
+    recall_max_tokens: 16384
+  wm_craft_task:
+    data_json_path: data/craft_task.json
+    n_participants: 50
+    stimuli_seed: 42

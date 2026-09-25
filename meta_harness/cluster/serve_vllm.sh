@@ -25,12 +25,15 @@ case "$ROLE" in
     # released max_parallel_participants: 50.  On l40s instead, use TP=2 (92GB).
     MODEL="Qwen/Qwen3-30B-A3B-Instruct-2507"
     TP="${TP:-1}"
+    # Qwen3 instruct emits Hermes-style <tool_call> JSON.
+    PARSER="hermes"
     ;;
   holdout)
     # ~141GB weights: exactly one H200's capacity, so no room for KV.  Use 2x
     # H200 (282GB).  On l40s that would be 4x (184GB), but l40s x4 queues ~15h.
     MODEL="meta-llama/Llama-3.3-70B-Instruct"
     TP="${TP:-2}"
+    PARSER="llama3_json"
     ;;
   *)
     echo "usage: $0 [search|holdout]" >&2
@@ -61,6 +64,9 @@ echo "log -> $LOG"
   --dtype bfloat16 \
   --max-model-len 8192 \
   --gpu-memory-utilization 0.90 \
+  --enforce-eager \
+  --enable-auto-tool-choice \
+  --tool-call-parser "$PARSER" \
   --host 127.0.0.1 \
   --port 8000 \
   2>&1 | tee "$LOG"
