@@ -4,6 +4,68 @@ You are proposing candidate harnesses for a Meta-Harness search over the
 compactor: the 4-slot key-value working-memory agent that wraps a frozen LLM in
 this repo. Read this before proposing anything.
 
+> ## What iteration 2 superseded — read this first
+>
+> Five defects in the evaluation contract and two claims in this file were
+> corrected after iteration 2. The full record is at the end of
+> `meta_harness/WORKLOG.md`; these are the ones that change what you should do.
+>
+> **1. `variable_mapping` IS reachable, and it is the largest gain the project has
+> produced.** This file says below that its headroom "is not reachable by anything
+> you are allowed to change" and tells you not to target it. That was wrong.
+> `episodic_reset` rebuilt `step()`'s message list each turn, closing the
+> conversation-history leak, and moved it 0.3554 → 0.6764 (+0.3210), broke the
+> ceiling point mass from 0.9867 to 0.2733, and took A4 from 12 errors to 509. The
+> store was off the causal path *because the history leak kept it off*, not
+> inherently. The analysis under "Two of the eight tasks do not test the memory
+> module" is otherwise sound; its conclusion was not.
+>
+> **2. A3 no longer enforces BLEU.** BLEU's brevity penalty made it a length proxy:
+> pooled Spearman(recall length, BLEU) = 0.822 over 1000 rows, and all 121 rows
+> under 60 words score *exactly* 0.0000, so it cannot distinguish a verbatim short
+> recall from an abstracted one. It also contradicted the A3 word guard, which
+> rewards moving length toward the human mean. The enforced field is now
+> `precision_distance` — clipped 4-gram precision, no brevity penalty, compared on
+> **medians** because the human distribution is skewed (37 of 53 below 0.05, 5 above
+> 0.5). Human median 0.0192, baseline 0.0414. BLEU is still reported, with
+> `bleu_enforced: false`. **Do not threshold BLEU.**
+>
+> **3. A4 no longer enforces the raw `rc_ratio`.** Its ceiling moves with the error
+> count — 1.2525 at 12 errors, 1.2575 at 35, 1.3750 at 400 — so the old fixed 1.15
+> bar could never have rejected anything, and `displacement`'s 1.2575 at exactly 35
+> errors was its arithmetic maximum. The guard now uses `rc_ratio_normalized` (0.0
+> noise, 1.0 the run's own ceiling). **Humans sit at 0.3728, not near 1.0**, so
+> "approach the human 1.386" is withdrawn as a target — it is unreachable below
+> several hundred errors. Also: A4 had already fired before iteration 2 despite an
+> earlier brief claiming otherwise, and its assignment window was under-counted
+> about twofold until it was fixed.
+>
+> **4. `variable_mapping`'s two sides were scored by different formulas.** Human is
+> `sum(q.correct)/10`, a correct count; the model's is `relation_count` of the last
+> consecutively correct question, which saturates by question 5, so **every error
+> after question 5 was invisible to the model's score** — `displacement` erred on 25
+> runs and 24 still scored 1.0. The matched figure is reported as
+> `axes()["variable_mapping_matched"]`. The "99% at 1.0, two unique values" point
+> mass was substantially a scoring artifact.
+>
+> **5. The chunk defect is NOT task-general.** Unbounded value length concentrates
+> almost entirely in `word_recognition` (13.21 elements per value, max 99). Story and
+> narrative sit at ~3.8, already at a 4-element bound; `nback` maxes at 2;
+> `variable_mapping` and `craft_task` at exactly 1 and cannot move at all.
+>
+> **6. The serving stack is deterministic.** Independent candidates reproduce the
+> baseline bit-exactly — `digit_span_reverse` across all four iteration-2 arms,
+> `craft_task` in two, `digit_span_forward` in two. So a no-change prediction may
+> legitimately demand bit-identity, small deltas are attributable, and you cannot
+> excuse movement as nondeterminism.
+>
+> **7. Predictions are checked mechanically with four verdicts**, not two: PASS,
+> FAIL, INCONCLUSIVE, and VOID. VOID fires when a quantity your row documents as
+> capable of varying turns out identical to the baseline's to full precision. Every
+> prediction row must therefore carry a `capable_of_varying` field with evidence.
+> Three rows were VOIDed on real data in iteration 2, and two whole candidates were
+> voided by their own pre-registered preconditions — which is the system working.
+
 ## What you are optimizing, and why it is backwards
 
 The target is **humanlikeness**, `1 - W_1` between the model's and humans'
@@ -93,6 +155,25 @@ of the time. The store is not on the causal path. That is why capacity 4, capaci
 **Consequence: `variable_mapping`'s 0.645 of apparent headroom is not reachable by
 anything you are allowed to change.** Do not target it. If you move it, you did so
 by manufacturing failures, and axis A4 will ask you to justify their shape.
+
+> **WRONG, corrected by iteration 2 — and this was the most consequential error in
+> this file.** The table above is accurate and its inference was not. The store is
+> off `variable_mapping`'s causal path *because the conversation-history leak keeps
+> it off*: `step()` retains every stimulus verbatim, so the 674 questions asking
+> about an evicted name are answered from history at 0.985. Close that leak and the
+> store becomes the only route. `episodic_reset` did exactly that and moved the task
+> 0.3554 → 0.6764, the largest single-task gain the project has produced, with the
+> ceiling mass broken 0.9867 → 0.2733 and A4 errors 12 → 509 — trustworthy at scale
+> for the first time, at `rc_ratio_normalized` 0.7302 against the human 0.3728.
+>
+> A4 did ask the candidate to justify the shape of those errors, exactly as this
+> paragraph says it would, and the errors passed: they were load-ordered, not noise,
+> and parse integrity held at 1 unparsed answer in 1500. What sank that candidate
+> was an unrelated mechanics failure at n-back level 1, not the legitimacy of its
+> variable_mapping gain.
+>
+> So: **do target it, by closing the leak rather than by manufacturing failures.**
+> The distinction this paragraph was reaching for is real; the pessimism was not.
 
 ## Axes and guards, with the numbers
 
