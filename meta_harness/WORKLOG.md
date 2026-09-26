@@ -1205,6 +1205,70 @@ already spent its calls being refused.
 > already varies along that mechanism before claiming it is the whole story.** The data to
 > refute me was sitting in `evolution_summary.jsonl` and took one query.
 
+---
+
+## Iteration 5 — `evicting_reset` takes the frontier. First accepted candidate.
+
+Job 18563692, 792.6s, exit 0. It passes every per-task floor and every guard, and
+**dominates the baseline on both frontier axes** — mean 0.8460 against 0.7861, A2
+distance 5.729 against 5.754. After five waves the baseline is no longer the frontier.
+
+    task                   baseline   evicting_reset
+    nback                   0.7909      0.9587   +0.1678   floor cleared
+    variable_mapping        0.3554      0.6850   +0.3296
+    semantic_story_recall   0.9473      0.9494   +0.0021
+    word_recognition        0.4948      0.4955   +0.0007
+    digit_span_forward      0.8860      0.9012   (= its run-to-run noise)
+    digit_span_reverse      0.9666      0.9666   exact
+    narrative_qa            0.9572      0.9487   -0.0085  inside floor
+    craft_task              0.8907      0.8627   -0.0280  inside floor (H1 flagged)
+    MEAN                    0.7861      0.8460   +0.0599
+
+### The mechanism did what was predicted, and the prediction was mechanical
+
+`memory_full` per turn went **0.478/0.468 at n=2/n=3 to 0.000 at every level**. With the
+refusal gone the period-2 silence goes with it: n=3 answered **7.44 -> 14.0 of 14**, and
+budget exhaustion — the mediator, not the cause — collapsed from 76% of turns to **0.35%**.
+`keys_held` is 4.00 at n=3, so the store is full: this is not `full_context`'s trick of
+never filling it.
+
+8 of 11 pre-registered rows pass, including the precondition P1 that three predecessors
+failed, the leak-closure row P5 at 1.000, P6 (variable_mapping 0.685 raw / 0.7085 matched,
+475 A4 errors, `rc_ratio_normalized` 0.7146), P7 (parse integrity 1 of 1500), and P8, the
+batch-task control and rule falsifier, entirely within its bands — so the
+within-presentation cap did not leak across presentations, as designed.
+
+### Three rows failed and two are unresolved. They are not waved through.
+
+**P2, the strong claim (non-voiding by design):** needed >= 13.5 answered at every level;
+n=2 came in at 13.34, a miss by 0.16. Recorded as a miss.
+
+**P4, the mechanism row, failed on its SECOND leg.** Its first leg — `memory_full <= 0.01`
+— passed at every level, which is the mechanism claim itself. The failing leg is
+P(answer | budget exhausted) >= 0.97, observed 0.8024 at n=2. Part of this is my
+checker's fault: the 0.97 bar was calibrated on v3, where the budget was exhausted on 70%
+of turns, and here it is 21% at n=2 and 0.35% at n=3 — so at n=3 the leg is computed over
+about 3 turns and means nothing. But at n=2 it is ~167 turns at a genuine 0.80, and
+`memory_full` is 0 there, so these are budget-exhausted-without-refusal turns, which on v3
+answered at 0.990. **Unexplained.** One candidate reading: `displaced_per_turn` is 0.5413
+at n=2, so the displacement notice is now on most turns, and it may compete for the reply
+the way the refusal did. Not tested.
+
+**P9, the anti-gaming row, failed on `acc_over_answered` at n=3 being 0.9214 against a
+0.85 cap.** The row exists to catch a candidate reaching a high nback score the way
+`full_context` does — by never filling the store, `keys_held` 1.06. Here `keys_held` is
+4.00, so the failure mode it was written to detect is provably absent, and the other two
+legs passed. The honest position is that the threshold looks miscalibrated rather than the
+candidate looking bad — but that is exactly the after-the-fact reasoning pre-registration
+exists to prevent, so it is recorded as a FAIL pending a proper answer, not reinterpreted.
+
+### What is not yet established
+
+The held-out run on llama-3.3-70b (job 18563475) is in flight. Until it returns, every
+number above is single-substrate: the mechanism could be specific to how Qwen3-30B-A3B
+handles a denied tool call. That is the claim the held-out set exists to test, and no
+finalist should be reported without it.
+
 ### A checker bug of mine, found by the data it was written to read
 
 My first contamination rule voided the entire run: it flagged any reply that contained a
