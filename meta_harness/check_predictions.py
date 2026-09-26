@@ -2796,7 +2796,9 @@ def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
         d = out.setdefault(int(n), {"turns": 0, "empty_text": 0, "tool_call_in_text": 0,
                                     "contaminated": 0, "cap_hit": 0, "zero_budget": 0,
                                     "tool_calls": 0, "memory_full": 0,
-                                    "answer_plus_stray_call": 0})
+                                    "answer_plus_stray_call": 0, "displaced": 0,
+                                    "b0_turns": 0, "b0_answered": 0,
+                                    "turns_with_refusal_set": set()})
         for st in log[1:]:
             d["turns"] += 1
             text = str(st.get("text") or "")
@@ -2833,8 +2835,24 @@ def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
                 d["zero_budget"] += 1
             d["tool_calls"] += len(st.get("tool_calls") or [])
             for tc in (st.get("tool_calls") or []):
-                if "memory is full" in str(tc.get("result") or ""):
+                res = str(tc.get("result") or "")
+                if "memory is full" in res:
                     d["memory_full"] += 1
+                    d["turns_with_refusal_set"].add(id(st))
+                if "displaced" in res:
+                    d["displaced"] += 1
+            # P(answer | budget exhausted), the quantity that separates a working
+            # mechanism from a broken one. An exhausted budget is harmless by itself:
+            # n=1 answers 0.974 across 347 exhausted turns because it never refuses.
+            if st.get("tool_call_budget_after") == 0:
+                d["b0_turns"] += 1
+                stripped = re.sub(r"<tool_call>.*?</tool_call>", " ", text, flags=re.S)
+                try:
+                    from bench.tasks.wm_nback import _parse_classification as _pc2
+                    if _pc2(stripped) is not None:
+                        d["b0_answered"] += 1
+                except Exception:  # noqa: BLE001
+                    pass
     for n, d in out.items():
         t = max(1, d["turns"])
         d["empty_text_share"] = round(d["empty_text"] / t, 4)
@@ -2842,6 +2860,11 @@ def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
         d["cap_hit_share"] = round(d["cap_hit"] / t, 4)
         d["zero_budget_share"] = round(d["zero_budget"] / t, 4)
         d["tool_calls_per_turn"] = round(d["tool_calls"] / t, 2)
+        d["memory_full_per_turn"] = round(d["memory_full"] / t, 4)
+        d["displaced_per_turn"] = round(d["displaced"] / t, 4)
+        d["p_answer_given_zero_budget"] = (
+            round(d["b0_answered"] / d["b0_turns"], 4) if d["b0_turns"] else None)
+        d.pop("turns_with_refusal_set", None)
         # A share, not a raw count. The absolute bar this replaced was mis-scaled:
         # 8 contaminated turns out of 750 at n=1 would move `answered` from 13.98 to
         # about 13.82, which cannot flip a threshold set at 13.0, yet an absolute
@@ -3114,6 +3137,271 @@ def episodic_reset_v3_checks(run_dir: Path,
     return out
 
 
+def evicting_reset_checks(run_dir: Path,
+                          baseline: Path | None) -> list[dict[str, Any]]:
+    """Iteration 5. First arm to close BOTH routes to the same failure: a refusing
+    store that burns the call budget, and a tools-denied turn with no instruction to
+    answer anyway. Every earlier arm had one or the other."""
+    out: list[dict[str, Any]] = []
+    add = _adder(out)
+    rec = _record(run_dir, baseline)
+    ax = rec.get("axes") or {}
+    hl = rec.get("humanlikeness_by_task") or {}
+    bhl = _hl(baseline)
+    lv = _nback_levels(Path(run_dir))
+    forms = _nback_step_forms(Path(run_dir))
+    a4 = ax.get("A4") or {}
+    if not a4 and Path(run_dir).exists():
+        try:
+            a4 = IF.a4(Path(run_dir))
+        except Exception:  # noqa: BLE001
+            a4 = {}
+    LEVELS = (1, 2, 3)
+
+    # v3 is the reference for the batch-task control, NOT the baseline: v3 runs a
+    # provably identical code path on those six tasks, so differencing against it
+    # isolates this candidate's store change from v3's step() change.
+    v3 = Path(run_dir).parent.parent.parent / "iter4/episodic_reset_v3" / Path(run_dir).name
+    v3_hl = _hl(v3 if v3.exists() else None)
+
+    # --- P1 PRECONDITION -----------------------------------------------------
+    THR_A = (13.0, 11.0, 9.0)
+    THR_ACC = (0.80, 0.55, 0.45)
+    obs1: dict[str, Any] = {}
+    ok, missing = True, False
+    for i, n in enumerate(LEVELS):
+        d = lv.get(n) or {}
+        row = {"answered": d.get("answered"), "acc": d.get("acc_over_answered"),
+               "silent": d.get("n_no_answers"), "keys": d.get("keys_held")}
+        obs1[f"n={n}"] = row
+        if row["answered"] is None or row["acc"] is None or row["silent"] is None:
+            missing = True
+            continue
+        if (row["answered"] < THR_A[i] or row["acc"] < THR_ACC[i]
+                or row["silent"] != 0):
+            ok = False
+    thr1 = ("answered >= 13.0/11.0/9.0, acc_over_answered >= 0.80/0.55/0.45, "
+            "n_no_answers == 0 at all three. n=3's bar is deliberately ABOVE the "
+            "baseline's 6.82: matching the baseline would mean the loop still lives. "
+            "n=1's accuracy bar is 0.80 not 0.99 because v3 already reads 0.8497 "
+            "there with no refusals at all -- the rendered store changed the n=1 "
+            "strategy, and that is inherited, not caused here.")
+    if missing:
+        add("P1 n-back at every level -- PRECONDITION", INCONCL, obs1, thr1,
+            "absent: nback diagnostics for at least one level")
+        p1 = False
+    else:
+        p1 = ok
+        add("P1 n-back at every level -- PRECONDITION", PASS if p1 else FAIL,
+            obs1, thr1,
+            "" if p1 else "A P1 FAILURE INVALIDATES P3-P10, as three predecessors' "
+                          "preconditions did")
+
+    # --- P2 the strong claim, non-voiding -----------------------------------
+    obs2 = {f"n={n}": (lv.get(n) or {}).get("answered") for n in LEVELS}
+    if any(v is None for v in obs2.values()):
+        add("P2 full restoration to the evicting arms' level (strong claim)",
+            INCONCL, obs2, ">= 13.5 at every level", "absent")
+    else:
+        ok2 = all(v >= 13.5 for v in obs2.values())
+        add("P2 full restoration to the evicting arms' level (strong claim)",
+            PASS if ok2 else FAIL, obs2,
+            ">= 13.5 at every level (displacement 14.0/14.0/14.0, primacy "
+            "13.98/13.86/14.0, v3 13.98/7.98/7.44)",
+            "NOT a precondition: passing P1 while failing this means the mechanism "
+            "engaged but something else caps the response rate")
+
+    # --- P3 nback clears its floor ------------------------------------------
+    v = hl.get("nback")
+    if v is None:
+        add("P3 nback clears its floor", INCONCL, None, ">= 0.7309", "absent")
+    else:
+        add("P3 nback clears its floor", PASS if v >= 0.7309 else FAIL,
+            {"nback": v, "delta": None if bhl.get("nback") is None
+                                  else round(v - bhl["nback"], 4)},
+            ">= 0.7309 (baseline 0.7909 minus the 0.060 floor). v3 0.6978, "
+            "displacement 0.9421, full_context 0.9484",
+            "this is the single floor violation that has blocked the best candidate "
+            "in the project")
+
+    # --- P4 THE MECHANISM ROW ------------------------------------------------
+    if forms is None:
+        add("P4 the mechanism is confirmed, not assumed", INCONCL, None,
+            "memory_full <= 0.01/turn at every level AND P(answer|budget=0) >= 0.97",
+            "absent: wm_nback.jsonl has no step_log (run predates the bench change)",
+            tags=("mechanism",))
+    else:
+        obs4 = {n: {k: (forms.get(n) or {}).get(k) for k in
+                    ("memory_full_per_turn", "displaced_per_turn",
+                     "p_answer_given_zero_budget", "zero_budget_share",
+                     "tool_calls_per_turn")}
+                for n in sorted(forms)}
+        legs = []
+        for n in LEVELS:
+            d = forms.get(n) or {}
+            mf = d.get("memory_full_per_turn")
+            pa = d.get("p_answer_given_zero_budget")
+            legs.append(mf is not None and mf <= 0.01)
+            legs.append(pa is None or pa >= 0.97)
+        ok4 = all(legs)
+        add("P4 the mechanism is confirmed, not assumed", PASS if ok4 else FAIL,
+            obs4,
+            "memory_full <= 0.01 per turn at every level AND P(answer | budget "
+            "exhausted) >= 0.97, matching n=1's own 0.974. v3 read memory_full "
+            "0.00/0.478/0.468 and P(answer|b=0) 0.974/0.459/0.499",
+            "zero_budget_share is REPORTED not thresholded: n=1 proves an exhausted "
+            "budget is harmless on its own -- it answers 0.974 across 347 exhausted "
+            "turns because it never refuses -- so predicting the budget would "
+            "collapse would fail a working mechanism. The refusal is the "
+            "discriminator, not the budget.", tags=("mechanism",))
+
+    # --- P5 the leak stays closed -------------------------------------------
+    share, n_vals = _nback_letter_share(Path(run_dir), 3)
+    if share is None:
+        add("P5 history leak stays closed", INCONCL, None, ">= 0.90", "absent")
+    else:
+        add("P5 history leak stays closed", PASS if share >= 0.90 else FAIL,
+            {"n3_letter_share": share, "n_values": n_vals},
+            ">= 0.90 (baseline 0.0202, v3 1.0000, displacement 0.0201, primacy 0.06)",
+            "displacement and primacy evict WITHOUT closing the leak and sit at "
+            "0.02-0.06, so this row is what separates this candidate from them")
+
+    # --- P6 variable_mapping holds up ---------------------------------------
+    vmm = ax.get("variable_mapping_matched") or {}
+    obs6 = {"raw": hl.get("variable_mapping"),
+            "matched": vmm.get("humanlikeness_matched"),
+            "n_errors": a4.get("n_errors"),
+            "rc_ratio_normalized": a4.get("rc_ratio_normalized")}
+    if obs6["raw"] is None or obs6["n_errors"] is None:
+        add("P6 variable_mapping holds up with its error structure", INCONCL, obs6,
+            "raw >= 0.55 AND matched >= 0.60 AND n_errors >= 150 AND normalized in "
+            "[0.15, 0.95]", "absent")
+    else:
+        m = obs6["matched"]
+        nrm = obs6["rc_ratio_normalized"]
+        ok6 = (obs6["raw"] >= 0.55 and (m is None or m >= 0.60)
+               and obs6["n_errors"] >= 150
+               and (nrm is None or 0.15 <= nrm <= 0.95))
+        add("P6 variable_mapping holds up with its error structure",
+            PASS if ok6 else FAIL, obs6,
+            "raw >= 0.55 AND matched >= 0.60 AND n_errors >= 150 AND "
+            "rc_ratio_normalized in [0.15, 0.95] (v3 0.6767/0.7252/505/0.7284; "
+            "humans sit at 0.3728)",
+            "n_errors is the anti-restoration leg: if the leak reopened the errors "
+            "vanish and this collapses toward the baseline's 12")
+
+    # --- P7 parse integrity -------------------------------------------------
+    fv = _vm_answer_forms(Path(run_dir))
+    if fv is None:
+        add("P7 parse integrity on variable_mapping", INCONCL, None,
+            "unparsed <= 5 AND tool_call_in_text <= 5", "absent: step_logs")
+    else:
+        ok7 = fv["unparsed"] <= 5 and fv["tool_call_in_text"] <= 5
+        add("P7 parse integrity on variable_mapping", PASS if ok7 else FAIL,
+            {k: fv[k] for k in ("unparsed", "tool_call_in_text", "n_answers")},
+            "unparsed <= 5 AND <tool_call>-in-text <= 5 (baseline 0/0, v2 38/38, "
+            "v3 0/0)",
+            "v3 already fixed this; the row exists so a store change cannot "
+            "silently undo it")
+
+    # --- P8 batch-task control, banded from the IDENTICAL-PATH delta ---------
+    # Differenced against v3, not the baseline. v3 runs a provably identical code
+    # path on these six, and on that identical path craft still moved 0.0248 and
+    # word_recognition 0.0460 -- 8x and infinitely more than run_to_run_floor.json
+    # records. Banding from the baseline would fail this row on nondeterminism and
+    # void everything below it, which is how two candidates already lost gains.
+    BANDS = {"craft_task": 0.03, "narrative_qa": 0.02,
+             "semantic_story_recall": 0.02, "word_recognition": 0.05,
+             "digit_span_forward": 0.02, "digit_span_reverse": 0.01}
+    obs8, ok8, ref_missing = {}, True, False
+    for t, band in BANDS.items():
+        a, b = hl.get(t), v3_hl.get(t)
+        if a is None or b is None:
+            obs8[t] = None
+            ref_missing = True
+            continue
+        d = round(a - b, 4)
+        obs8[t] = d
+        if abs(d) > band:
+            ok8 = False
+    if ref_missing and all(v is None for v in obs8.values()):
+        add("P8 batch-task control (vs v3, identical path)", INCONCL, obs8,
+            "per-task bands from identical-path deltas",
+            "absent: the episodic_reset_v3 run is not beside this one, so the "
+            "identical-path reference cannot be formed", tags=("control",))
+    else:
+        add("P8 batch-task control (vs v3, identical path)",
+            PASS if ok8 else FAIL, obs8,
+            "|delta vs v3| within craft 0.03, narrative 0.02, story 0.02, "
+            "word_recognition 0.05, ds_fwd 0.02, ds_rev 0.01",
+            "also the RULE FALSIFIER: these six write inside a single step(), so "
+            "the within-presentation cap should leave them at v3's values. A batch "
+            "task moving means the eviction rule leaked across presentations.",
+            tags=("control", "rule_falsifier"))
+
+    # --- P9 anti-full_context ------------------------------------------------
+    d2, d3 = lv.get(2) or {}, lv.get(3) or {}
+    a2 = ax.get("A2") or {}
+    obs9 = {"keys_held_n2": d2.get("keys_held"), "keys_held_n3": d3.get("keys_held"),
+            "acc_over_answered_n3": d3.get("acc_over_answered"),
+            "A2_ratio": a2.get("ratio"), "A2_distance": a2.get("distance")}
+    if obs9["keys_held_n3"] is None:
+        add("P9 the nback gain is not from an empty store", INCONCL, obs9,
+            "keys_held n3 >= 3.5, n2 >= 2.0, acc_over_answered n3 <= 0.85",
+            "absent")
+    else:
+        ok9 = (obs9["keys_held_n3"] >= 3.5
+               and (obs9["keys_held_n2"] is None or obs9["keys_held_n2"] >= 2.0)
+               and (obs9["acc_over_answered_n3"] is None
+                    or obs9["acc_over_answered_n3"] <= 0.85))
+        add("P9 the nback gain is not from an empty store",
+            PASS if ok9 else FAIL, obs9,
+            "keys_held >= 3.5 at n=3 AND >= 2.0 at n=2 AND acc_over_answered at "
+            "n=3 <= 0.85",
+            "full_context reaches nback 0.9484 by NEVER FILLING the store -- "
+            "keys_held 1.06 at n=3 -- and is the least humanlike harness measured "
+            "at mean 0.6387. The n=2 leg is one displacement itself would fail.",
+            tags=("anti_gaming",))
+
+    # --- P10 buffer-period compliance ---------------------------------------
+    obs10 = {f"n={n}": (lv.get(n) or {}).get("buffer_no_response_frac")
+             for n in LEVELS}
+    vals = [obs10[f"n={n}"] for n in LEVELS]
+    if any(v is None for v in vals):
+        add("P10 buffer-period compliance", INCONCL, obs10,
+            ">= 0.90/0.40/0.50", "absent")
+    else:
+        ok10 = vals[0] >= 0.90 and vals[1] >= 0.40 and vals[2] >= 0.50
+        add("P10 buffer-period compliance", PASS if ok10 else FAIL, obs10,
+            ">= 0.90 / 0.40 / 0.50 (baseline 0.92/0.39/0.3333, v3 1.0/0.5/0.6667)",
+            "cannot be bought by answering more eagerly, which is the point: a "
+            "candidate that simply responds to everything scores WORSE here")
+
+    # --- H1 named hazard, non-voiding ---------------------------------------
+    dc = (rec.get("delta_vs_baseline") or {}).get("craft_task")
+    if dc is None:
+        add("H1 craft_task hazard (registered in advance)", INCONCL, None,
+            "flag if delta in [-0.045, -0.030]", "absent", tags=("hazard",))
+    else:
+        flagged = -0.045 <= dc <= -0.030
+        add("H1 craft_task hazard (registered in advance)",
+            FAIL if dc < -0.045 else (INCONCL if flagged else PASS), dc,
+            "flag if delta vs baseline in [-0.045, -0.030]; FAIL below -0.045",
+            "every unconditional evicting store pays here: keys held goes 3.33 -> "
+            "3.67 under either rule, because a REFUSING store burns calls on "
+            "repairs that get truncated and so ends holding FEWER chunks. Admitting "
+            "those writes hands a batch task more retained material, and the "
+            "objective inverts. v3 already sits at -0.0248 against a 0.030 floor.",
+            tags=("hazard", "noise_floor_correction"))
+
+    if not p1:
+        _void_rows(out, ("P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"),
+                   "VOID via P1: the n-back precondition failed, which this candidate "
+                   "pre-registered as invalidating P3-P10. P2 and H1 are "
+                   "non-voiding by design.")
+    return out
+
+
 CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "displacement": displacement_checks,
     "primacy": primacy_checks,
@@ -3128,6 +3416,7 @@ CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "primacy_v2": primacy_v2_checks,
     "episodic_primacy": episodic_primacy_checks,
     "episodic_reset_v3": episodic_reset_v3_checks,
+    "evicting_reset": evicting_reset_checks,
 }
 
 
