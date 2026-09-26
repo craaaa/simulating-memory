@@ -2735,6 +2735,358 @@ def episodic_primacy_checks(run_dir: Path,
     return out
 
 
+def _vm_answer_forms(run_dir: Path) -> dict[str, Any] | None:
+    """Decompose variable_mapping replies into the two populations that matter.
+
+    v2's P7 "verbosity" failure was 38 literal <tool_call> strings emitted as plain
+    text on turns where tools were denied; excluding them its mean reply length was
+    13.09 against the baseline's 13.10. So the ONLY informative split is
+    tool-call-shaped versus everything else, and a mean over all rows is an
+    arithmetic restatement of the unparsed count rather than a measure of verbosity.
+    """
+    rows = _jsonl(Path(run_dir), "wm_variable_mapping")
+    if not rows:
+        return None
+    all_len, clean_len, unparsed, toolcall = [], [], 0, 0
+    for r in rows:
+        for sl in (r.get("step_logs") or []):
+            raw = sl.get("answer_raw")
+            if raw is None:
+                continue
+            raw = str(raw)
+            all_len.append(len(raw))
+            is_tc = "<tool_call>" in raw
+            if is_tc:
+                toolcall += 1
+            else:
+                clean_len.append(len(raw))
+            if not sl.get("parsed"):
+                unparsed += 1
+    if not all_len:
+        return None
+    return {
+        "n_answers": len(all_len),
+        "unparsed": unparsed,
+        "tool_call_in_text": toolcall,
+        "mean_all": round(sum(all_len) / len(all_len), 2),
+        "max_all": max(all_len),
+        "mean_clean": round(sum(clean_len) / len(clean_len), 2) if clean_len else None,
+        "max_clean": max(clean_len) if clean_len else None,
+    }
+
+
+def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
+    """Reply-form and tool-budget decomposition from n-back's per-turn step_log.
+
+    The field is NEW (bench persists it as of the step_log commit) and the
+    iteration-3 runs predate it, so absence means "this run is older", not "broken".
+    Excludes the first step of each block, which carries no control-state block.
+    """
+    rows = _jsonl(Path(run_dir), "wm_nback")
+    if not rows:
+        return None
+    if not any(r.get("step_log") for r in rows):
+        return None
+    out: dict[int, dict[str, Any]] = {}
+    for r in rows:
+        n = r.get("n_level")
+        log = r.get("step_log") or []
+        if n is None or not log:
+            continue
+        d = out.setdefault(int(n), {"turns": 0, "empty_text": 0, "tool_call_in_text": 0,
+                                    "contaminated": 0, "cap_hit": 0, "zero_budget": 0,
+                                    "tool_calls": 0, "memory_full": 0})
+        for st in log[1:]:
+            d["turns"] += 1
+            text = str(st.get("text") or "")
+            if not text.strip():
+                d["empty_text"] += 1
+            has_tc_text = "<tool_call>" in text
+            if has_tc_text:
+                d["tool_call_in_text"] += 1
+                # A reply that BOTH looks like a tool call and parses as a
+                # classification would inflate `answered`; count it so P1 can be
+                # marked contaminated rather than trusted.
+                try:
+                    from bench.tasks.wm_nback import _parse_classification as _pc
+                    if _pc(text) is not None:
+                        d["contaminated"] += 1
+                except Exception:  # noqa: BLE001
+                    pass
+            if st.get("tool_call_cap_hit"):
+                d["cap_hit"] += 1
+            if st.get("tool_call_budget_after") == 0:
+                d["zero_budget"] += 1
+            d["tool_calls"] += len(st.get("tool_calls") or [])
+            for tc in (st.get("tool_calls") or []):
+                if "memory is full" in str(tc.get("result") or ""):
+                    d["memory_full"] += 1
+    for n, d in out.items():
+        t = max(1, d["turns"])
+        d["empty_text_share"] = round(d["empty_text"] / t, 4)
+        d["tool_call_in_text_share"] = round(d["tool_call_in_text"] / t, 4)
+        d["cap_hit_share"] = round(d["cap_hit"] / t, 4)
+        d["zero_budget_share"] = round(d["zero_budget"] / t, 4)
+        d["tool_calls_per_turn"] = round(d["tool_calls"] / t, 2)
+    return out
+
+
+def episodic_reset_v3_checks(run_dir: Path,
+                            baseline: Path | None) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    add = _adder(out)
+    rec = _record(run_dir, baseline)
+    ax = rec.get("axes") or {}
+    hl = rec.get("humanlikeness_by_task") or {}
+    bhl = _hl(baseline)
+    lv = _nback_levels(Path(run_dir))
+    a4 = ax.get("A4") or {}
+    if not a4 and Path(run_dir).exists():
+        try:
+            a4 = IF.a4(Path(run_dir))
+        except Exception:  # noqa: BLE001
+            a4 = {}
+
+    LEVELS = (1, 2, 3)
+    THR = {"answered": (13.0, 9.5, 6.0), "acc_over_answered": (0.90, 0.60, 0.50),
+           "keys_held": (0.8, 1.0, 2.0)}
+
+    # --- P9 first: it can contaminate P1, so it has to be computed before it ----
+    forms = _nback_step_forms(Path(run_dir))
+
+    # --- P1 PRECONDITION: n-back mechanics at EVERY level ----------------------
+    # Pitched at RESTORATION, not ambition: 9.5 sits just under episodic_reset's
+    # 10.16 at n=2 and 6.0 just under the baseline's 6.82 at n=3. A precondition
+    # pitched at the ambition is how episodic_reset lost a creditable +0.32.
+    obs1: dict[str, Any] = {}
+    legs_ok, missing = True, False
+    for i, n in enumerate(LEVELS):
+        d = lv.get(n) or {}
+        row = {"answered": d.get("answered"),
+               "acc": d.get("acc_over_answered"),
+               "silent": d.get("n_no_answers"),
+               "keys": d.get("keys_held")}
+        obs1[f"n={n}"] = row
+        if any(v is None for v in row.values()):
+            missing = True
+            continue
+        if (row["answered"] < THR["answered"][i]
+                or row["acc"] < THR["acc_over_answered"][i]
+                or row["silent"] != 0
+                or row["keys"] < THR["keys_held"][i]):
+            legs_ok = False
+    thr1 = ("per level n=1/2/3: answered >= 13.0/9.5/6.0, acc_over_answered >= "
+            "0.90/0.60/0.50, n_no_answers == 0 at all three, keys_held >= "
+            "0.8/1.0/2.0 (baseline 13.98/13.24/6.82 answered, 0 silent everywhere; "
+            "v2 13.88/6.80/2.12 with 0/3/12 silent)")
+    contaminated = bool(forms and any(
+        (forms.get(n) or {}).get("contaminated", 0) > 2 for n in LEVELS))
+    if missing:
+        add("P1 n-back at every level -- PRECONDITION", INCONCL, obs1, thr1,
+            "absent: nback_levels diagnostics for at least one level")
+        p1 = False
+    elif contaminated:
+        # A reply that both looks like a tool call and parses as a classification
+        # would inflate `answered`, so the quantity is not trustworthy here.
+        add("P1 n-back at every level -- PRECONDITION", INCONCL, obs1, thr1,
+            "CONTAMINATED per P9: more than 2 turns at some level have a reply that "
+            "both contains <tool_call> and parses as a classification, so `answered` "
+            "is inflated and cannot bear a verdict")
+        p1 = False
+    else:
+        p1 = legs_ok
+        add("P1 n-back at every level -- PRECONDITION", PASS if p1 else FAIL,
+            obs1, thr1,
+            "" if p1 else "A P1 FAILURE INVALIDATES EVERY ROW BELOW, as both "
+                          "predecessors' preconditions did")
+
+    # --- P1b the strong claim; cannot void anything --------------------------
+    d2, d3 = lv.get(2) or {}, lv.get(3) or {}
+    obs1b = {"n=2 answered": d2.get("answered"), "n=3 answered": d3.get("answered")}
+    if obs1b["n=2 answered"] is None or obs1b["n=3 answered"] is None:
+        add("P1b response obligation lands fully (strong claim)", INCONCL, obs1b,
+            "n=2 >= 12.0 AND n=3 >= 10.0", "absent")
+    else:
+        ok = obs1b["n=2 answered"] >= 12.0 and obs1b["n=3 answered"] >= 10.0
+        add("P1b response obligation lands fully (strong claim)",
+            PASS if ok else FAIL, obs1b,
+            "n=2 >= 12.0 AND n=3 >= 10.0 (baseline 13.24/6.82, v2 6.80/2.12)",
+            "NOT a precondition: failing here while P1 passes means the obligation "
+            "landed partially and the refusal loop is the remaining cap")
+
+    # --- P2 nback clears its floor -------------------------------------------
+    v = hl.get("nback")
+    if v is None:
+        add("P2 nback clears its floor", INCONCL, None, ">= 0.7309", "absent")
+    else:
+        ok = v >= 0.7309
+        add("P2 nback clears its floor", PASS if ok else FAIL,
+            {"nback": v, "delta": None if bhl.get("nback") is None
+                                  else round(v - bhl["nback"], 4)},
+            ">= 0.7309 (baseline 0.7909 minus the 0.060 floor; measured run-to-run "
+            "noise 0.0023)",
+            "the candidate stated in advance that if P1 passes, P1b fails and this "
+            "lands near the floor, the reading is that the mechanism worked and the "
+            "eviction cap dominated -- not that the diagnosis failed")
+
+    # --- P3 the leak stays closed -------------------------------------------
+    share, n_vals = _nback_letter_share(Path(run_dir), 3)
+    obs3 = {"n3_letter_share": share, "n_values": n_vals,
+            "keys_held": d3.get("keys_held")}
+    if share is None:
+        add("P3 history leak stays closed", INCONCL, obs3, ">= 0.90", "absent")
+    else:
+        add("P3 history leak stays closed", PASS if share >= 0.90 else FAIL, obs3,
+            ">= 0.90 (baseline 0.0202, v2 0.9843, displacement 0.0201)",
+            "keys_held reported not thresholded: P1 already covers the one "
+            "direction that matters")
+
+    # --- P4 variable_mapping holds up ---------------------------------------
+    vmm = ax.get("variable_mapping_matched") or {}
+    obs4 = {"raw": hl.get("variable_mapping"),
+            "matched": vmm.get("humanlikeness_matched"),
+            "n_unique_values": vmm.get("n_unique_values"),
+            "share_at_ceiling": vmm.get("share_at_ceiling")}
+    if obs4["raw"] is None or obs4["matched"] is None:
+        add("P4 variable_mapping holds up", INCONCL, obs4,
+            "raw >= 0.55 AND matched >= 0.60 AND n_unique_values >= 5", "absent")
+    else:
+        ok = (obs4["raw"] >= 0.55 and obs4["matched"] >= 0.60
+              and (obs4["n_unique_values"] or 0) >= 5)
+        add("P4 variable_mapping holds up", PASS if ok else FAIL, obs4,
+            "raw >= 0.55 AND matched >= 0.60 AND n_unique_values >= 5 "
+            "(baseline 0.3554/0.3587/2, v2 0.6854/0.7568/9)",
+            "a FALL from v2's figures is predicted and accepted: recovering 38 of "
+            "1500 answers raises the score on a task where the model already beats "
+            "humans, and being better is a cost here")
+
+    # --- P5 A4 still at scale and still interference-shaped ------------------
+    obs5 = {"n_errors": a4.get("n_errors"),
+            "rc_ratio_normalized": a4.get("rc_ratio_normalized"),
+            "trustworthy": a4.get("trustworthy"),
+            "rc_ratio": a4.get("rc_ratio"), "ceiling": a4.get("rc_ratio_ceiling")}
+    if obs5["n_errors"] is None or obs5["rc_ratio_normalized"] is None:
+        add("P5 A4 at scale and interference-shaped", INCONCL, obs5,
+            "n_errors >= 150 AND normalized in [0.15, 0.95] AND trustworthy",
+            "absent: A4")
+    else:
+        ok = (obs5["n_errors"] >= 150
+              and 0.15 <= obs5["rc_ratio_normalized"] <= 0.95
+              and bool(obs5["trustworthy"]))
+        add("P5 A4 at scale and interference-shaped", PASS if ok else FAIL, obs5,
+            "n_errors >= 150 AND rc_ratio_normalized in [0.15, 0.95] AND "
+            "trustworthy (baseline 12/0.6661, v2 550/0.7362; humans 0.3728)",
+            "this is the anti-restoration test: if the leak reopened, the errors "
+            "vanish and n_errors collapses toward the baseline's 12")
+
+    # --- P6 parse integrity, the surface v2 failed on ------------------------
+    forms_vm = _vm_answer_forms(Path(run_dir))
+    if forms_vm is None:
+        add("P6 parse integrity on variable_mapping", INCONCL, None,
+            "unparsed <= 5 AND tool_call_in_text <= 5", "absent: step_logs")
+    else:
+        ok = forms_vm["unparsed"] <= 5 and forms_vm["tool_call_in_text"] <= 5
+        add("P6 parse integrity on variable_mapping", PASS if ok else FAIL,
+            {k: forms_vm[k] for k in ("unparsed", "tool_call_in_text", "n_answers")},
+            "unparsed <= 5 AND <tool_call>-in-text <= 5 (baseline 0/0, "
+            "episodic_reset 1/1, v2 38/38)",
+            "this is the candidate's central behavioural bet: that the model will "
+            "ANSWER on a tools-denied turn when told to, instead of emitting the "
+            "tool call as text. No offline test could settle it.")
+
+    # --- P7 no verbosity -- staked against the proposer's own refutation -----
+    if forms_vm is None:
+        add("P7 no verbosity", INCONCL, None,
+            "mean_all <= 14.5 AND mean_clean <= 13.5 AND max_clean <= 20", "absent")
+    else:
+        legs = {"mean_all": forms_vm["mean_all"], "mean_clean": forms_vm["mean_clean"],
+                "max_clean": forms_vm["max_clean"]}
+        ok = (legs["mean_all"] <= 14.5
+              and (legs["mean_clean"] is None or legs["mean_clean"] <= 13.5)
+              and (legs["max_clean"] is None or legs["max_clean"] <= 20))
+        add("P7 no verbosity", PASS if ok else FAIL, legs,
+            "mean over all rows <= 14.5 AND mean over non-<tool_call> rows <= 13.5 "
+            "AND max non-<tool_call> <= 20 (baseline 13.10/13.10/14, "
+            "v2 15.91/13.09/14)",
+            "the second leg is staked AGAINST the prompt-competition hypothesis "
+            "this candidate refuted: v3's block is ~202 characters longer than "
+            "v2's, so if length drove the failure this must rise above 13.5. The "
+            "first leg is an arithmetic restatement of P6 and is not independent "
+            "evidence.", tags=("ENTAILED-FIRST-LEG",))
+
+    # --- P8 no-change control, PER-TASK bands -------------------------------
+    # A uniform band would make the checker report a mechanism failure on measured
+    # run-to-run noise: digit_span_forward moved 0.0152 and narrative_qa 0.0160
+    # between two runs of one harness.
+    BANDS = {"digit_span_reverse": 0.008, "word_recognition": 0.008,
+             "semantic_story_recall": 0.008, "craft_task": 0.008,
+             "digit_span_forward": 0.016, "narrative_qa": 0.02}
+    obs8, ok8 = {}, True
+    for t, band in BANDS.items():
+        a, b = hl.get(t), bhl.get(t)
+        if a is None or b is None:
+            obs8[t] = None
+            continue
+        d = round(a - b, 4)
+        obs8[t] = d
+        if abs(d) > band:
+            ok8 = False
+    add("P8 six encode-to-recall tasks unchanged", PASS if ok8 else FAIL, obs8,
+        "per-task bands: 0.008 except digit_span_forward 0.016 and narrative_qa "
+        "0.02, each set to that task's own MEASURED run-to-run spread",
+        "v2 held four of these at exactly 0.0000 but moved word_recognition "
+        "-0.0005 and semantic_story_recall +0.0071, so exact identity is not the "
+        "prediction", tags=("ENTAILED-IF-STRUCTURAL",))
+
+    # --- P9 reply-form and budget decomposition, from the NEW step_log -------
+    if forms is None:
+        add("P9 reply-form and tool-budget decomposition", INCONCL, None,
+            "empty_text_share <= 0.05, tool_call_in_text_share <= 0.05, "
+            "contamination <= 2, per level",
+            "absent: wm_nback.jsonl has no `step_log` -- this run predates the "
+            "bench change that persists it, which is a fact about the run's age, "
+            "not a defect", tags=("REPORTED",))
+    else:
+        obs9 = {n: {k: (forms.get(n) or {}).get(k) for k in
+                    ("empty_text_share", "tool_call_in_text_share", "contaminated",
+                     "cap_hit_share", "zero_budget_share", "tool_calls_per_turn",
+                     "memory_full")}
+                for n in sorted(forms)}
+        bad = any((forms.get(n) or {}).get("empty_text_share", 0) > 0.05
+                  or (forms.get(n) or {}).get("tool_call_in_text_share", 0) > 0.05
+                  or (forms.get(n) or {}).get("contaminated", 0) > 2
+                  for n in forms)
+        add("P9 reply-form and tool-budget decomposition",
+            FAIL if bad else PASS, obs9,
+            "per level: empty_text_share <= 0.05 AND tool_call_in_text_share <= "
+            "0.05 AND contamination <= 2; cap_hit_share, zero_budget_share, "
+            "tool_calls_per_turn and memory_full REPORTED",
+            "the reported legs are iteration 5's decision input: cap_hit_share is "
+            "the refusal loop's fingerprint, measured offline at 14 of 17 n-back "
+            "steps at n=2 and 16 of 18 at n=3")
+
+    # --- P10 buffer-period compliance ---------------------------------------
+    obs10 = {n: (lv.get(n) or {}).get("buffer_no_response_frac") for n in LEVELS}
+    if obs10.get(2) is None or obs10.get(3) is None:
+        add("P10 buffer-period compliance", INCONCL, obs10,
+            "n=2 >= 0.30 AND n=3 >= 0.28", "absent: buffer_no_response_frac")
+    else:
+        ok = obs10[2] >= 0.30 and obs10[3] >= 0.28
+        add("P10 buffer-period compliance", PASS if ok else FAIL, obs10,
+            "n=2 >= 0.30 AND n=3 >= 0.28; n=1 reported only (baseline 0.92/0.39/"
+            "0.3333, v2 0.86/0.17/0.1933)",
+            "a rise here cannot be bought by answering more eagerly, which is why "
+            "it is the anti-degeneracy row; n=1 is reported only because "
+            "episodic_reset scored 1.0 there while failing catastrophically")
+
+    if not p1:
+        _void_rows(out, ("P1b", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"),
+                   "VOID via P1: the n-back precondition failed or was contaminated, "
+                   "which this candidate pre-registered as invalidating every row "
+                   "below it.")
+    return out
+
+
 CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "displacement": displacement_checks,
     "primacy": primacy_checks,
@@ -2748,6 +3100,7 @@ CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "episodic_reset_v2": episodic_reset_v2_checks,
     "primacy_v2": primacy_v2_checks,
     "episodic_primacy": episodic_primacy_checks,
+    "episodic_reset_v3": episodic_reset_v3_checks,
 }
 
 
