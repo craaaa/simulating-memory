@@ -2795,7 +2795,8 @@ def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
             continue
         d = out.setdefault(int(n), {"turns": 0, "empty_text": 0, "tool_call_in_text": 0,
                                     "contaminated": 0, "cap_hit": 0, "zero_budget": 0,
-                                    "tool_calls": 0, "memory_full": 0})
+                                    "tool_calls": 0, "memory_full": 0,
+                                    "answer_plus_stray_call": 0})
         for st in log[1:]:
             d["turns"] += 1
             text = str(st.get("text") or "")
@@ -2804,13 +2805,26 @@ def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
             has_tc_text = "<tool_call>" in text
             if has_tc_text:
                 d["tool_call_in_text"] += 1
-                # A reply that BOTH looks like a tool call and parses as a
-                # classification would inflate `answered`; count it so P1 can be
-                # marked contaminated rather than trusted.
+                # Contamination means the classification was parsed OUT OF the
+                # tool-call JSON, not that a genuine answer happened to be followed
+                # by a stray call. Those are opposite situations and an earlier
+                # version of this check conflated them, voiding a whole run:
+                # inspecting the replies showed the model reasoning, stating "the
+                # response is 'different'", and only THEN emitting a call as text
+                # because tools were denied that turn. That answer is real.
+                #
+                # So strip the tool-call block and re-parse. Still parses => the
+                # answer stands on its own. Parses only with the block present =>
+                # the parse is reading the JSON and `answered` really is inflated.
                 try:
                     from bench.tasks.wm_nback import _parse_classification as _pc
                     if _pc(text) is not None:
-                        d["contaminated"] += 1
+                        stripped = re.sub(r"<tool_call>.*?</tool_call>", " ", text,
+                                          flags=re.S)
+                        if _pc(stripped) is None:
+                            d["contaminated"] += 1
+                        else:
+                            d["answer_plus_stray_call"] += 1
                 except Exception:  # noqa: BLE001
                     pass
             if st.get("tool_call_cap_hit"):
@@ -2828,6 +2842,11 @@ def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
         d["cap_hit_share"] = round(d["cap_hit"] / t, 4)
         d["zero_budget_share"] = round(d["zero_budget"] / t, 4)
         d["tool_calls_per_turn"] = round(d["tool_calls"] / t, 2)
+        # A share, not a raw count. The absolute bar this replaced was mis-scaled:
+        # 8 contaminated turns out of 750 at n=1 would move `answered` from 13.98 to
+        # about 13.82, which cannot flip a threshold set at 13.0, yet an absolute
+        # "<= 2" bar voided the entire run over it.
+        d["contaminated_share"] = round(d["contaminated"] / t, 4)
     return out
 
 
@@ -2879,8 +2898,16 @@ def episodic_reset_v3_checks(run_dir: Path,
             "0.90/0.60/0.50, n_no_answers == 0 at all three, keys_held >= "
             "0.8/1.0/2.0 (baseline 13.98/13.24/6.82 answered, 0 silent everywhere; "
             "v2 13.88/6.80/2.12 with 0/3/12 silent)")
+    # Gate on the SHARE of turns, on the same 5% scale as P9's other legs, and only
+    # where it could plausibly move a verdict. Contamination here means the
+    # classification was parsed out of tool-call JSON rather than stated by the model.
     contaminated = bool(forms and any(
-        (forms.get(n) or {}).get("contaminated", 0) > 2 for n in LEVELS))
+        (forms.get(n) or {}).get("contaminated_share", 0.0) > 0.05 for n in LEVELS))
+    contam_note = ""
+    if forms:
+        contam_note = "; contamination share by level " + ", ".join(
+            f"n={n}: {(forms.get(n) or {}).get('contaminated_share')}"
+            for n in LEVELS if forms.get(n))
     if missing:
         add("P1 n-back at every level -- PRECONDITION", INCONCL, obs1, thr1,
             "absent: nback_levels diagnostics for at least one level")
@@ -2897,8 +2924,8 @@ def episodic_reset_v3_checks(run_dir: Path,
         p1 = legs_ok
         add("P1 n-back at every level -- PRECONDITION", PASS if p1 else FAIL,
             obs1, thr1,
-            "" if p1 else "A P1 FAILURE INVALIDATES EVERY ROW BELOW, as both "
-                          "predecessors' preconditions did")
+            ("" if p1 else "A P1 FAILURE INVALIDATES EVERY ROW BELOW, as both "
+                           "predecessors' preconditions did") + contam_note)
 
     # --- P1b the strong claim; cannot void anything --------------------------
     d2, d3 = lv.get(2) or {}, lv.get(3) or {}
@@ -3054,12 +3081,12 @@ def episodic_reset_v3_checks(run_dir: Path,
                 for n in sorted(forms)}
         bad = any((forms.get(n) or {}).get("empty_text_share", 0) > 0.05
                   or (forms.get(n) or {}).get("tool_call_in_text_share", 0) > 0.05
-                  or (forms.get(n) or {}).get("contaminated", 0) > 2
+                  or (forms.get(n) or {}).get("contaminated_share", 0.0) > 0.05
                   for n in forms)
         add("P9 reply-form and tool-budget decomposition",
             FAIL if bad else PASS, obs9,
             "per level: empty_text_share <= 0.05 AND tool_call_in_text_share <= "
-            "0.05 AND contamination <= 2; cap_hit_share, zero_budget_share, "
+            "0.05 AND contaminated_share <= 0.05; cap_hit_share, zero_budget_share, "
             "tool_calls_per_turn and memory_full REPORTED",
             "the reported legs are iteration 5's decision input: cap_hit_share is "
             "the refusal loop's fingerprint, measured offline at 14 of 17 n-back "

@@ -1103,3 +1103,95 @@ measurement of run-to-run variation is not enough to license reading a delta.** 
 repeat baseline gave narrative 0.0065 and the primacy pair gave 0.0160 on the same task.
 Any future floor argument needs the noise measured on a harness of the same family as the
 candidate, not on the baseline.
+
+---
+
+## Iteration 4 — rejected, and it found the single mechanism behind three waves of
+## n-back results
+
+Job 18545276, 845s, exit 0. `episodic_reset_v3` reaches **mean 0.8163**, the highest
+non-instrument mean in the project and above the 0.8121 credible threshold, with **one**
+floor violation left. It is still rejected, and the reason it was rejected is the most
+valuable thing in the record.
+
+    task                 baseline    v2      v3      floor
+    variable_mapping      0.3554   0.6854  0.6767    0.030
+    nback                 0.7909   0.5601  0.6978    0.060   <- the only violation
+    craft_task            0.8907   0.8907  0.8659    0.030
+    narrative_qa          0.9572   0.9572  0.9563    0.030
+    semantic_story_recall 0.9473   0.9544  0.9405    0.030
+    word_recognition      0.4948   0.4943  0.5408    0.121
+    mean                  0.7861   0.7993  0.8163    0.026
+
+**The silence is gone. Zero silent participants at every level** — against v2's 0/3/12 —
+and answered recovered from 13.88/6.80/2.12 to 13.98/7.98/7.44. But P1 was pitched at
+restoration, needing 9.5 at n=2, and 7.98 misses it. So P1 FAILS on merit and all ten
+rows below it are VOID by the candidate's own pre-registration, exactly as its two
+predecessors' preconditions did. The `variable_mapping` +0.3213 and the A4 505 errors are
+therefore **not creditable from this run**, despite being real numbers.
+
+### The unified mechanism, measured for the first time
+
+The `step_log` field added this session made n-back's per-turn prompts and replies
+readable, and the answer was immediate. Cross-tabulating every turn by whether the
+tool-call budget was exhausted:
+
+    level  turns  budget=0  P(tool-call-as-text | budget=0)  | budget>0   P(answer|0)  P(answer|>0)
+      1      750     347              0.032                     0.000       0.974        1.000
+      2      800     558              0.545                     0.000       0.459        1.000
+      3      850     650              0.518                     0.000       0.498        1.000
+
+    memory-full refusals per turn:  n=1 0.00   n=2 0.48   n=3 0.47
+
+**Zero** tool-call-as-text replies on any turn where the budget was available, at any
+level, and where the budget was available the model answered **every single time**. So the
+chain is:
+
+    full store -> write REFUSED (~0.47 per turn at n>=2) -> tool-call budget exhausted
+    (650 of 850 turns at n=3) -> step() stops offering tools -> the model still wants to
+    write and emits the call as PLAIN TEXT -> the reply carries no classification -> the
+    trial scores unanswered
+
+n=1 is the control that makes it causal rather than correlational: its budget is
+exhausted on 347 of 750 turns too, but its store never fills (zero memory-full results),
+so tool-call-as-text is 0.032 and answers are 0.974. Budget exhaustion alone is harmless.
+Budget exhaustion *while the store is refusing writes* is what silences the agent.
+
+### What this settles
+
+**Three waves of n-back results were measuring the refusal loop.** It explains the
+perfect separation recorded above — five refusing arms at 5.22-6.82 answered, three
+evicting arms at exactly 14.0 — and it explains the baseline's own n=3 omission of 6.82,
+which has been treated as a memory limit since wave 0. It is not. A 4-slot store that
+refuses costs up to three calls to change one slot against a budget of
+`max(6, 1.5 x interactions)`, and it cannot pay.
+
+**It also collapses two mechanisms into one.** v2's 38 unparseable variable_mapping
+answers and v3's residual n-back silence are the same failure reached by two routes: tools
+denied by `allow_tools=False` on a question turn, or tools denied by an exhausted budget
+mid-step. v3's response obligation FIXED the first — variable_mapping unparsed went
+38 -> 0 — and could not fix the second, because no instruction helps when the agent has
+already spent its calls being refused.
+
+So iteration 5 is **one** change, not two: remove the refusal. The prediction is specific
+and falsifiable — if this account is right, an evicting store composed with v3's closed
+leak should clear the n-back floor without any further prompt work, because
+`memory_full` goes to zero, the budget stops being exhausted, and on every
+budget-available turn measured in this run the model answered.
+
+### A checker bug of mine, found by the data it was written to read
+
+My first contamination rule voided the entire run: it flagged any reply that contained a
+tool-call string AND parsed as a classification, on the theory that `answered` was
+inflated. Inspecting the replies showed the opposite — the model reasons, states "the
+response is 'different'", and only then emits a call as text, so the answer is genuine and
+the call is trailing noise. Stripping the tool-call block and re-parsing separates the two
+cases, and it moved n=3 contamination from 11 to **0** and n=2 from 3 to **1**.
+
+The residual n=1 contamination is real (8 turns where the whole reply is JSON and the
+classification is parsed out of `{"key": "comparison", "value": "different"}`) but it is
+8 of 750 turns, which would move `answered` from 13.98 to about 13.82 against a threshold
+of 13.0. My "at most 2 turns" bar was absolute and mis-scaled; it is now a share on the
+same 5% scale as P9's other legs. Without that fix the verdict would have been
+INCONCLUSIVE-by-instrument-artifact rather than FAIL-on-merit, which are very different
+readings of the same run.
