@@ -1173,11 +1173,37 @@ mid-step. v3's response obligation FIXED the first — variable_mapping unparsed
 38 -> 0 — and could not fix the second, because no instruction helps when the agent has
 already spent its calls being refused.
 
-So iteration 5 is **one** change, not two: remove the refusal. The prediction is specific
-and falsifiable — if this account is right, an evicting store composed with v3's closed
-leak should clear the n-back floor without any further prompt work, because
-`memory_full` goes to zero, the budget stops being exhausted, and on every
-budget-available turn measured in this run the model answered.
+~~So iteration 5 is **one** change, not two: remove the refusal.~~
+
+> **REFUTED before it was briefed, by a run already in the record — and I should have
+> checked it before writing the sentence above.** Cross-tabulating store policy against
+> `step()` version on n-back `answered`:
+>
+>     store      step()            n=1     n=2     n=3     arm
+>     refuses    baseline        13.98   13.24    6.82     baseline
+>     EVICTS     baseline         14.0    14.0    14.0     displacement
+>     EVICTS     baseline        13.98   13.86    14.0     primacy
+>     refuses    v2              13.88    6.80    2.12     episodic_reset_v2
+>     EVICTS     v2               14.0    5.84    3.90     episodic_primacy
+>     refuses    v3              13.98    7.98    7.44     episodic_reset_v3
+>
+> Eviction takes n=3 from 6.82 to **14.0** under the baseline `step()`, and from 2.12 only
+> to **3.90** under v2's. So the `step()` rewrite introduces a **second, independent
+> cause** that eviction does not address, and in the one combination that has actually
+> been run the two fixes are **not additive**.
+>
+> The refusal-loop analysis above stands — every one of its conditionals is exact, and it
+> is certainly *a* cause. What does not follow is that it is the *only* cause, which is
+> what I wrote. v3's response obligation is the partial fix for the second cause (2.12 ->
+> 7.44 with the store still refusing), and the untested cell is EVICTS + v3's `step()`.
+> That is iteration 5's candidate, but it is a hypothesis with a known counterexample
+> standing against it rather than the near-certainty I described.
+>
+> This is the fourth time in this project I have generalised from a clean mechanism to a
+> sufficiency claim without checking the cell that would refute it. The pattern is
+> specific enough to name: **when a mechanism explains a difference, check every arm that
+> already varies along that mechanism before claiming it is the whole story.** The data to
+> refute me was sitting in `evolution_summary.jsonl` and took one query.
 
 ### A checker bug of mine, found by the data it was written to read
 
