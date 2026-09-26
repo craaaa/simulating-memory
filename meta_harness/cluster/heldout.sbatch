@@ -54,7 +54,22 @@ export OPENAI_API_KEY=local-vllm-no-key-needed
 unset OPENROUTER_API_KEY
 unset ANTHROPIC_API_KEY
 
-MODEL=meta-llama/Llama-3.3-70B-Instruct
+# Hermes-4-70B, not Llama-3.3-70B-Instruct. Llama-3.3 was the original choice and it
+# FAILED: vLLM's llama3_json parser -- the correct parser for Llama-3.3's output format --
+# rejects parallel tool calls with "This model only supports single tool-calls at once!",
+# and this harness depends on them. The agent emits two write_memory calls in one
+# assistant message in the opening turns of an n-back block, which is exactly the
+# behaviour the tool-call budget analysis turns on.
+#
+# Forcing one call per message was rejected as the fix: the tool-call budget IS the
+# mechanism under study, so serialising the writes would make the held-out run test a
+# different harness than the one being validated.
+#
+# Hermes-4-70B is a Llama-3.1-70B finetune trained for the Hermes tool format, so it uses
+# the same `hermes` parser the search model uses, which demonstrably supports parallel
+# calls. It keeps what the held-out set is for -- a different base family and a different
+# training pipeline from Qwen3-30B-A3B, at a comparable scale (132G on disk).
+MODEL=NousResearch/Hermes-4-70B
 PORT=8000
 LOGS="$REPO/meta_harness/logs"
 mkdir -p "$LOGS"
@@ -79,7 +94,7 @@ echo "=== HEAD: $(git rev-parse HEAD)"
   --tensor-parallel-size 2 --dtype bfloat16 \
   --max-model-len 8192 --gpu-memory-utilization 0.90 \
   --enforce-eager \
-  --enable-auto-tool-choice --tool-call-parser llama3_json \
+  --enable-auto-tool-choice --tool-call-parser hermes \
   --host 127.0.0.1 --port "$PORT" > "$VLLM_LOG" 2>&1 &
 VLLM_PID=$!
 trap 'echo "=== tearing down vLLM"; kill $VLLM_PID 2>/dev/null; wait $VLLM_PID 2>/dev/null' EXIT

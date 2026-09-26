@@ -2,7 +2,7 @@
 #
 # Two independent axes of generalization are tested at once, which is the point:
 #
-#   held-out MODEL  llama-3.3-70b-instruct instead of qwen3-30b-a3b. Everything in
+#   held-out MODEL  Hermes-4-70B instead of qwen3-30b-a3b. Everything in
 #                   the search was measured on qwen, so a candidate could have
 #                   fitted that substrate's quirks rather than a memory mechanism.
 #   held-out TASKS  wm_map_task and wm_factual_qa, deliberately absent from
@@ -20,7 +20,7 @@
 # final reported number.
 model:
   backend: openai
-  name: meta-llama/Llama-3.3-70B-Instruct
+  name: NousResearch/Hermes-4-70B
   base_url: http://127.0.0.1:8000/v1
   temperature: 0.0
   max_tokens: 2048
