@@ -1314,6 +1314,45 @@ craft shows 50 memory-full results and 3.67 mean keys in BOTH Hermes arms, byte-
 the same behaviour. That is P8's rule falsifier passing on a substrate it was never tuned
 for.
 
+### v3 held out too, and it corrects the account above
+
+Job 18647927, Hermes-4-70B, 36:25, exit 0. `episodic_reset_v3` is the leak closure WITHOUT
+eviction, run to find out whether the transferring part stands alone.
+
+    task                  qwen v3   qwen evict   herm v3   herm evict
+    variable_mapping      +0.3213     +0.3296    +0.3428     +0.3444
+    nback                 -0.0931     +0.1678    -0.2435     -0.1358
+    everything else         ~0          ~0         ~0          ~0
+    MEAN                  +0.0302     +0.0599    +0.0134     +0.0293
+
+**Both candidates fail the held-out contract**, on the n-back floor and the A4 guard.
+
+**"Eviction is harmful on Hermes" — written one commit earlier — is WRONG.** Eviction helps
+on Hermes too: n-back goes −0.2435 to −0.1358, a gain of +0.108, against +0.261 on Qwen. So
+eviction is not substrate-specific harm, it is substrate-specific **sufficiency**: it fully
+offsets on Qwen and only partly on Hermes. The earlier reading confused "does not clear the
+floor" with "makes things worse".
+
+**What costs n-back is the LEAK CLOSURE, on both substrates — and that is not a defect.**
+n-back is the one task where the model is WORSE than humans, 0.79 against 0.866. The
+baseline scored well there by answering from the conversation history: letter-identity share
+in the store was 0.0202, so the store was barely consulted. Closing the leak forces
+store-based n-back, which is harder, which moves the model FURTHER from humans. So closing
+the leak **necessarily** costs n-back humanlikeness, and the only way to recover is for
+store-based performance to land near human level anyway. Qwen with eviction manages exactly
+that (0.9587); Hermes does not.
+
+This is a genuine conflict in the objective rather than a bug in a candidate. On seven of
+eight tasks the model is too good and the search wants degradation. On n-back it is too
+bad, and the leak was what made it good. A harness cannot both close the leak and keep
+n-back's leak-derived score.
+
+**The A4 guard fires on BOTH candidates on Hermes**: `rc_ratio_normalized` −0.0444 and
+−0.0406, against ~0.72 on Qwen, with 1137 and 1136 errors. So the variable_mapping SCORE
+transfers cleanly at +0.34 while its ERROR STRUCTURE does not — on Hermes those errors are
+independent of interference load, i.e. unstructured by the axis's own definition. The score
+is portable; the psychological realism behind it is not.
+
 ### What this settles about the project
 
 The frontier result is substrate-specific and should not be reported as a harness
