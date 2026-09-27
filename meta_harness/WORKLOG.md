@@ -1342,10 +1342,39 @@ the leak **necessarily** costs n-back humanlikeness, and the only way to recover
 store-based performance to land near human level anyway. Qwen with eviction manages exactly
 that (0.9587); Hermes does not.
 
-This is a genuine conflict in the objective rather than a bug in a candidate. On seven of
-eight tasks the model is too good and the search wants degradation. On n-back it is too
-bad, and the leak was what made it good. A harness cannot both close the leak and keep
-n-back's leak-derived score.
+~~This is a genuine conflict in the objective rather than a bug in a candidate.~~
+
+> **RETRACTED immediately, and the user caught it, not me.** I claimed closing the leak
+> *necessarily* costs n-back. My own Qwen data is the counterexample and it was already in
+> this file: `evicting_reset` closed the leak and n-back went **0.7909 → 0.9587**, above
+> baseline. Leak closed and n-back improved, together.
+>
+> The correct statement is narrower. Closing the leak replaces a leak-derived score with a
+> store-derived one, and which is higher depends on how well the agent can work the store
+> under the tool budget. Qwen+eviction clears it; Hermes does not — **yet**.
+>
+> And Hermes has measured headroom rather than a ceiling. With refusals at 0.000 it is
+> still losing turns to the budget running dry from ordinary writing:
+>
+>     run              lvl   memfull  budget=0  tc-as-text  lost turns/block
+>     hermes evicting   n=2    0.000     0.399       0.114       1.82
+>     hermes evicting   n=3    0.000     0.151       0.042       0.72
+>     qwen   evicting   n=2    0.000     0.209       0.045       0.66
+>
+> That is **route 3** — the cumulative-budget squeeze diagnosed on Qwen and then set aside
+> as "Qwen-specific, and chasing it optimises a substrate we have learned not to trust."
+> Wrong on both counts: it is present on both substrates and it is **nearly three times
+> larger on Hermes**. Recovering ~1.8 turns per n=2 block is real headroom on exactly the
+> task that blocks both candidates.
+>
+> So there is no established conflict in the objective. There is an unfixed failure, in the
+> same family as every other failure here — tools denied, model emits the call as text
+> instead of answering — with cross-substrate evidence and a named target.
+>
+> Fifth time in this project I have generalised a clean mechanism into a sufficiency or
+> impossibility claim without checking the cell that refutes it. Every previous instance was
+> caught by a proposer's pre-registration or by re-reading my own data. This one was caught
+> by the user asking "how do you know?".
 
 **The A4 guard fires on BOTH candidates on Hermes**: `rc_ratio_normalized` −0.0444 and
 −0.0406, against ~0.72 on Qwen, with 1137 and 1136 errors. So the variable_mapping SCORE
