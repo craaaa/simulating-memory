@@ -1262,12 +1262,71 @@ legs passed. The honest position is that the threshold looks miscalibrated rathe
 candidate looking bad — but that is exactly the after-the-fact reasoning pre-registration
 exists to prevent, so it is recorded as a FAIL pending a proper answer, not reinterpreted.
 
-### What is not yet established
+### HELD OUT: the candidate FAILS on a second substrate. One gain transfers, one reverses.
 
-The held-out run on llama-3.3-70b (job 18563475) is in flight. Until it returns, every
-number above is single-substrate: the mechanism could be specific to how Qwen3-30B-A3B
-handles a denied tool call. That is the claim the held-out set exists to test, and no
-finalist should be reported without it.
+Job 18571492, Hermes-4-70B, both arms in ONE job so the comparison carries no cross-job
+variation. 1h04m, exit 0. (The first attempt on Llama-3.3-70B died: vLLM's `llama3_json`
+parser rejects parallel tool calls and this harness requires them — a limitation on the
+result's generality in its own right.)
+
+    task                    qwen d    hermes d   transfer
+    variable_mapping        +0.3296    +0.3444   HOLDS
+    nback                   +0.1678    -0.1358   REVERSES
+    semantic_story_recall   +0.0021    +0.0178   flat both
+    narrative_qa            -0.0085    +0.0080   flat both
+    craft_task              -0.0280    +0.0000   differs
+    word_recognition        +0.0007    +0.0000   flat both
+    digit span fwd/rev      +0.0152/0  +0.0000   flat both
+    MEAN                    +0.0599    +0.0293
+
+**Held-out contract: FAILS floor (nback −0.1358 against 0.060) and FAILS guards (A4).**
+
+**variable_mapping transfers cleanly and is the durable result.** +0.3444 on Hermes
+against +0.3296 on Qwen, matched-formula humanlikeness 0.8575. Closing the
+conversation-history leak is a real property of the harness, not of the substrate.
+
+**n-back reverses, and the mechanism explains why — it fixed a problem Hermes did not
+have.** Refusals per turn at n=1/2/3:
+
+    qwen baseline      not measurable (predates step_log)
+    qwen evicting      0.0000 / 0.0000 / 0.0000     answered 14.0 / 13.34 / 14.0
+    hermes baseline    0.0040 / 0.0325 / 0.1165     answered 14.0 / 12.78 / 11.42
+    hermes evicting    0.0000 / 0.0000 / 0.0000     answered 14.0 /  8.88 /  9.72
+
+Hermes barely suffers the refusal loop: 0.033 and 0.117 refusals per turn where Qwen ran
+at 0.478 and 0.468, and its baseline n=3 answers 11.42 against Qwen's 6.82. So there was
+little to fix. Worse, removing the refusal let the store FILL — `keys_held` went
+1.48 → 3.76 at n=2 and 2.56 → 3.86 at n=3 — and with a fuller store rendered every turn
+Hermes emits MORE tool-call-as-text, 0.025 → 0.114 at n=2. The refusal had been acting as
+a brake on Hermes' writing, and removing it cost more than it bought.
+
+**The A4 guard fires on the held-out substrate and it is right to.** 1136 variable_mapping
+errors — trustworthy at scale — but `rc_ratio_normalized` is **−0.0406** (raw 0.932,
+ceiling 2.674), i.e. below the noise line: the errors are *independent of interference
+load* on Hermes, where on Qwen they sat at 0.7146. So even the transferring gain has a
+different error structure on the second substrate, and the axis built in wave 0 to catch
+exactly this caught it.
+
+**The four exact 0.0000 deltas on Hermes are the design working, not a bug.**
+`evicting_reset` keeps the refusal *within* a presentation and evicts only *across*
+presentations. The six batch tasks write inside one `step()`, so they are untouched —
+craft shows 50 memory-full results and 3.67 mean keys in BOTH Hermes arms, byte-for-byte
+the same behaviour. That is P8's rule falsifier passing on a substrate it was never tuned
+for.
+
+### What this settles about the project
+
+The frontier result is substrate-specific and should not be reported as a harness
+improvement without that qualification. What survives cross-substrate is the leak
+closure, which is worth having: it is the largest single-task gain measured, it holds at
++0.34 on both models, and it was obtained by removing a defect rather than by tuning.
+
+What does not survive is the n-back mechanism — and the reason is instructive rather than
+merely disappointing. The refusal loop is a real defect, measured to the turn on Qwen, but
+how much it costs depends on how eagerly the model writes. A harness fix calibrated
+against one model's write policy can be a net harm on another's. Any future candidate
+touching the store's overflow behaviour needs held-out evidence before acceptance, not
+after.
 
 ### A checker bug of mine, found by the data it was written to read
 
