@@ -61,8 +61,21 @@ def main() -> int:
     cand_path = Path(args.candidate).resolve()
 
     if not args.skip_verify:
-        from meta_harness.verify_interface import check  # noqa: PLC0415
-        ok, lines = check(str(cand_path))
+        # In a SUBPROCESS, not in-process. check() calls inject.apply() internally,
+        # and apply() is not idempotent: the second load subclasses the
+        # already-injected class, so both step() overrides run and every prompt delta
+        # is emitted twice. That is exactly what happened -- 2400 of 2400 non-first
+        # n-back turns in episodic_reset_v3, evicting_reset and both held-out arms
+        # carried the control-state block twice. Verifying out-of-process keeps the
+        # run process clean, and inject.apply() now raises on a second apply so this
+        # cannot recur silently.
+        import subprocess  # noqa: PLC0415
+        proc = subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "verify_interface.py"),
+             str(cand_path)],
+            capture_output=True, text=True, cwd=str(Path(__file__).parent.parent))
+        ok = proc.returncode == 0
+        lines = (proc.stdout + proc.stderr).splitlines()
         if not ok:
             print(f"!!! interface check FAILED for {cand_path}")
             for line in lines:

@@ -1,0 +1,362 @@
+{
+  "candidate": "respond_first",
+  "iteration": 6,
+  "parent": "evicting_reset",
+  "baseline_run": "meta_harness/runs/iter0/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507",
+  "heldout_baseline_run": "meta_harness/runs/heldout/baseline/NousResearch_Hermes-4-70B",
+  "reference_runs": {
+    "evicting_reset": "meta_harness/runs/iter5/evicting_reset/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "evicting_reset_heldout": "meta_harness/runs/heldout/evicting_reset/NousResearch_Hermes-4-70B",
+    "episodic_reset_v3": "meta_harness/runs/iter4/episodic_reset_v3/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "episodic_reset_v3_heldout": "meta_harness/runs/heldout/episodic_reset_v3/NousResearch_Hermes-4-70B",
+    "displacement": "meta_harness/runs/iter1/displacement/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "full_context": "meta_harness/runs/iter0/full_context/Qwen_Qwen3-30B-A3B-Instruct-2507",
+    "baseline_repeat": "meta_harness/runs/iter3rep/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507"
+  },
+  "registered_at": "2026-09-27",
+  "note": "Written before the run. Shape follows check_predictions.evicting_reset_checks: each entry becomes one add(...) call. check_predictions.py is NOT edited by this proposer; MANIFEST.md section 7 says what respond_first_checks should assert and from which fields.",
+
+  "brief_corrections": [
+    {
+      "id": "C1",
+      "claim_in_brief": "Route 3, measured with columns 'memfull / budget=0 / tc-as-text / lost turns per block'; the worked example has 'step 4, budget_in 0, calls 0, answered NO -- budget already spent entering the turn'.",
+      "correction": "The brief's 'budget=0' column is tool_call_budget_AFTER, not before. Conditioning on the budget ENTERING the turn, tool_call_budget_before == 0 occurs on 0.000 of Hermes turns at every level, and no Hermes turn that loses a trial enters with zero. The failing cell is b_in == 1: P(unparsed | b_in=1) = 0.812 (herm n=2), 0.766 (herm n=3), 0.449 (qwen n=2), against 0.000 at b_in>=2 on Hermes and <=0.010 on Qwen (1/99 at b2, 1/1 at b0). The agent enters with one call left, spends it, the loop re-enters with zero remaining, step() switches to tool_choice='none', and the model emits the SECOND call it wanted as plain text.",
+      "why_it_matters": "It relocates the target by one step and rules out the remedy the brief grants an exception for. A turn that enters with zero budget never gets an 'auto' call at all; a turn that enters with one gets cut off mid-maintenance. Only the latter happens."
+    },
+    {
+      "id": "C2",
+      "claim_in_brief": "An agent that opens by writing two keys per turn spends the floor of 6 by turn 4, loses that turn, then recovers permanently as the 1.5/turn allowance outpaces its ~1/turn demand. It is a transient.",
+      "correction": "Contradicted in the two runs the brief cites. Mean b_in by turn index, Hermes evicting_reset n=2 over 50 blocks: 6.00 5.00 4.00 2.78 2.20 2.46 1.62 2.32 1.82 2.48 1.92 2.64 2.18 2.82 2.08 2.66 -- a persistent period-2 oscillation around 2 that never recovers, with calls/turn oscillating 1.30/1.74 alongside. The unparsed turns sit at trial indices 3,5,7,9,11,13 with caps of 7,10,13,16,19,22, and consumption tracks the cap (turn 15: cap 22, used 21). On episodic_reset_v3 the oscillation is tighter and worse (b_in alternating 1.3/2.1 for sixteen turns). On Qwen n=2 demand is 1.19 so b_in DOES grow 2.9 -> 6.3 and the loss is small; at n=3 demand is 1.03 and the loss is exactly zero. Route 3's size is set by the demand/supply margin: corr(per-block demand, unparsed) = 0.497 / 0.714 / 0.604.",
+      "why_it_matters": "It rules out cap-reshaping on evidence rather than preference. There is no early-turn deficit to front-load: the failures occur at cap 22, and extra early budget is simply consumed. Only lifting the per-turn RATE above the ~1.43/turn Hermes demand would reach the failing cell, which is the capacity change the prohibition is about, and it would relocate the margin rather than remove it."
+    },
+    {
+      "id": "C3",
+      "claim_in_brief": "Fix route 3: it is the only thing standing between evicting_reset and a candidate that passes on both substrates.",
+      "correction": "False by about 0.10 of nback humanlikeness. `answered` is lost through TWO channels: UNPARSED (route 3) and 'No response' emitted during the TRIAL period (call it route 4). herm evict n=2: lost 5.12 = 1.82 unparsed + 3.30 noresp; n=3: lost 4.28 = 0.72 + 3.56. The Hermes BASELINE loses 1.22 and 2.58, all of it route 4. Crediting recovered turns at each block's own acc_over_answered, Hermes nback humanlikeness goes 0.7366 -> 0.7875 (-0.0849, STILL FAILS the -0.060 floor) with route 3 alone, and -> 0.8895 (+0.0171, passes) with both. Discounting the credited accuracy, both-channels holds at 0.75x (-0.0181) and 0.50x (-0.0535) and fails at 0.25x (-0.0904); route 3 alone fails at every discount. Route 4 is zero on Qwen at both levels.",
+      "why_it_matters": "A candidate that fixes only route 3 is a predictable held-out failure. It also forces the precondition to be pitched at the mechanism rather than at restoring Hermes' answered baseline, which route 3 cannot do."
+    },
+    {
+      "id": "C4",
+      "claim_in_brief": "Route 2, allow_tools=False on a question turn, is FIXED by v3's response obligation (vm unparsed 38 -> 0).",
+      "correction": "Fixed on Qwen only. On Hermes, 549 of 1500 variable_mapping answers do not parse under evicting_reset (537 under v3), and the raw replies are tool calls emitted as plain text on the probe turn: '<tool_call>{\"name\": \"write_memory\", \"arguments\": {\"key\": \"Linda\", \"value\": \"Linda lives in Dallas.\"}}</tool_call>'. Qwen's count is 1. This is also the whole explanation of the A4 guard failure: those 549 sit at relation_count 6.22 against 8.43 on correct answers -- concentrated on EARLY questions -- so they drag rc_mean_error below rc_mean_correct. Recomputing A4 on Hermes: as-run n_errors 1136, rc_ratio 0.9320, ceiling 2.6742, normalized -0.0406; with the unparsed trials dropped, n_errors 587, rc_ratio 1.1142, ceiling 1.3402, normalized 0.3356 against a human 0.3728.",
+      "why_it_matters": "It answers the brief's open question. A4 is NOT measuring something different on Hermes -- Hermes' parsed error structure is human-shaped to within 0.04 of the human value. The axis is fine; the parse failure is not. And the vm score does not protect route 2: simulating recovery of the 549 at recovery probability p, raw vm humanlikeness goes 0.6968 (p=0) -> 0.7862 (p=0.383) -> 0.9362 (p=0.7) -> 0.7280 (p=1.0), up at every rate, while Qwen is unmoved at 0.6850. So fixing route 2 is predicted to IMPROVE variable_mapping on Hermes. This candidate does not do it -- it would be a second behavioural change and neither would be attributable -- so the Hermes A4 violation is pre-registered as expected and explained (P6c) and route 2 is handed to iteration 7 measured."
+    },
+    {
+      "id": "C5",
+      "claim_in_brief": "(not in the brief) -- every episodic candidate's prompt delta.",
+      "correction": "A DEFECT IN THE RUNNER. run_candidate.py calls verify_interface.check(), which itself does load_candidate + apply, then calls load_candidate + apply again. The second load re-executes the candidate module, whose `from bench.core.wm_agent import WorkingMemoryAgent as _BaseAgent` now resolves to the already-injected first copy, so the class STACKS: MRO after the second apply is [mh_candidate.WorkingMemoryAgent, mh_candidate.WorkingMemoryAgent, bench.core.wm_agent.WorkingMemoryAgent]. step() therefore ran twice per turn and the control-state block was prepended twice. Counted: 2400 of 2400 n-back turns carry '[ongoing episode]' TWICE in episodic_reset_v3 and evicting_reset on BOTH substrates; the baseline carries it zero times. The outer copy's render_store test suppressed the store in one copy and not the other, so the agent read the block once without the store and once with, and two counters ('Turn 5 of this episode', 'Stimulus presentations so far: 4') twice each.",
+      "why_it_matters": "Every prompt-delta claim in iterations 3-5 describes half of what the model actually saw. respond_first is immune by construction (no path re-enters its own step(); turn 1 reaches the genuine baseline step() by MRO walk), verified by applying it twice in the stub test with byte-identical results. But it means this candidate's prompt differs from the parent's REALISED prompt in two ways -- the ordering and the de-duplication -- so a companion arm is REQUIRED for attribution."
+    },
+    {
+      "id": "C6",
+      "claim_in_brief": "(the parent's claim, carried into this brief) -- on the 471 v3 turns where the budget was exhausted and nothing was refused, the agent answered 99.1% of the time, so more budget buys nothing on the failing cell.",
+      "correction": "Correct as stated but conditioned on budget_AFTER, and it does not survive the b_in conditioning. On evicting_reset, with memory-full results at exactly 0.000, P(answer | b_in = 1) is 0.188 (Hermes n=2), 0.234 (Hermes n=3) and 0.551 (Qwen n=2). The failing cell is real. It is simply not reachable by reshaping the cap (see C2), which is a different and stronger reason to leave _tool_call_cap() alone than the one on record.",
+      "why_it_matters": "The prohibition survives, but for a reason that will not mislead the next proposer into thinking the budget is harmless."
+    }
+  ],
+
+  "diagnosis": {
+    "route_3": "The agent enters a turn with one tool call left, spends it on the first of the two calls it wants, the loop re-enters with _remaining_tool_calls() == 0, step() switches to tool_choice='none', and the model emits the second call as plain text. That reply carries no classification and the trial scores unanswered. Localised exactly: P(unparsed | b_in=1) 0.812/0.766 Hermes n=2/n=3, 0.449 Qwen n=2, against <=0.010 at b_in>=2.",
+    "route_4": "On the same turns' neighbours the maintenance COMPLETES and the response degrades instead: the model replies 'no response' during the trial period. 5 of 6 sampled mid-block cases made a delete and a write and then said 'no response'; one added 'because it is the first two letters of the sequence' on trial 11. Present only on Hermes (3.30 and 3.56 per block at n=2/n=3), where the baseline already loses 1.22/2.58 -- but the baseline's loss is bimodal (histogram {0: 41, 1: 5, 14: 4} at n=2: four blocks refuse throughout, forty-one are clean) while under evicting_reset NO block is clean. The reset harness converted a rare catastrophic per-participant failure into a pervasive per-turn one.",
+    "why_one_mechanism_covers_both": "Both channels rise with per-block maintenance demand: corr(demand, unparsed) 0.497 (herm n=2), 0.714 (herm n=3), 0.604 (qwen n=2); corr(demand, noresp) 0.334 and 0.550. Route 3 is the turn where maintenance is cut off and the repair is spoken; route 4 is the turn where maintenance completes and the response is an afterthought. Removing maintenance from the response-producing act addresses the common cause.",
+    "why_the_demand_differs_by_substrate": "A strategy difference, and my first hypothesis about it was wrong in DIRECTION. Blocks using FEW distinct keys carry MORE deletes (9.7 vs 7.5 per block at Hermes n=2) and higher demand (1.47 vs 1.41), because they delete a rolling key and rewrite it. Qwen issues 0.0-0.1 deletes per block and lets the displacing store free the slot; Hermes issues 5-10. Under a displacing store a delete-then-write is REDUNDANT, so Hermes pays two calls for what the store gives for one. Corollary for a future candidate: DISPLACED_TEMPLATE says 'the least recently used entry X was displaced and is now lost', which may be teaching the agent to delete first in order to CHOOSE the victim -- a one-string mechanism and a better next move than any cap change.",
+    "why_the_cap_is_still_not_touched": "See brief_corrections C2 and C6. Empirically: the failures occur at caps of 7 through 22 with consumption tracking the cap, so front-loading cannot reach them and only raising the per-turn RATE above ~1.43/turn would -- the forbidden capacity change, which would also relocate the margin. Structurally: cap-reshaping cannot touch route 4 at all, and route 4 is the larger half of the Hermes deficit. And on principle: a fixed per-turn action budget has no counterpart in human memory (it bounds API spend), so the remedy is to stop routing the RESPONSE through it, not to re-tune it."
+  },
+
+  "mechanism": {
+    "one_sentence": "A turn that the harness permits tools on, after the first turn of an episode, becomes two acts in a fixed order -- ACT 1 respond with tools withheld, ACT 2 maintain with tools offered on the same cumulative budget -- and the turn's reply is ACT 1's, so no denied tool call can cost a classification.",
+    "prompt_delta": "Two strings against the parent's INTENDED prompt. (1) ORDERED_OBLIGATIONS replaces the parent's obligation sentence on tool-permitted turns ONLY; the parent's wording names the store update first, so leaving it would test the instruction against the structure, and the new text states the order and promises the maintenance slot -- the promise being the hypothesis under test. (2) MAINTENANCE_CUE opens ACT 2, and contains none of 'same', 'different' or 'no response' so no echo of it could reach a classification parser. Probe turns keep the parent's wording character for character; turn 1 of an episode is not prepended at all. Against the parent's REALISED prompt there is a third difference, the de-duplication (C5), which is a defect repair.",
+    "surfaces_touched": ["WorkingMemoryAgent.step (dispatch between three paths) and the two new path implementations"],
+    "surfaces_deliberately_untouched": [
+      "MAX_KEYS -- 4, read live",
+      "_tool_call_cap() -- not overridden; _tool_interactions incremented exactly once per tool-permitted turn as the baseline does, so the cap sequence over a block is identical (verified in the stub test)",
+      "EpisodicDisplacementMemory -- the parent's store, copied character for character",
+      "snapshot() / to_recall_text() -- not overridden, as in the parent",
+      "encode() -- unchanged; it calls step() once, which reaches the GENUINE baseline step() by MRO walk",
+      "recall() -- unchanged, including word_recognition's trial-list presentation",
+      "reset_messages() -- unchanged, and called at the top of every path",
+      "TOOLS, CONDITION_PROMPTS -- re-exported unchanged",
+      "probe turns (allow_tools=False) -- the parent's path and the parent's wording, kept as this run's internal control",
+      "the first turn of every episode -- the baseline's own step(), bit-identical"
+    ],
+    "citations": [
+      "Oberauer (2002, 2009); Ecker, Lewandowsky & Oberauer (2014) -- removal is a distinct, time-consuming component of updating that FOLLOWS retrieval-and-response",
+      "Kessler & Meiran (2008) -- the content-updating cost is paid after the current comparison, not before",
+      "Cowan (2001); Oberauer (2002) -- the focus of attention already holds the item the response is about, so the comparison is available before any store operation",
+      "Baddeley (1986); Barrouillet, Bernardin & Camos (2004) -- rehearsal occupies the inter-stimulus interval; time-based resource sharing defines load over the FREE time between stimuli, i.e. after the response",
+      "Pollack, Johnson & Knaff (1959); Bunting, Cowan & Saults (2006) -- running-memory and n-back show recency without primacy, which is why the parent's displacement rule is left untouched"
+    ],
+    "no_swept_constants": "no numeric parameter of any kind: no rate, threshold, decay or RNG. The parameterization is the act boundary, and there is exactly one place to put it."
+  },
+
+  "predictions": [
+    {
+      "id": "P1",
+      "name": "PRECONDITION -- the mechanism engages, pitched at the CONSTRUCTION and not at the score",
+      "quantity": ["unparsed replies per block at n=1/2/3", "ACT-1 unparsed share per level"],
+      "source": "wm_nback.jsonl step_log, turns with index > n_level: _parse_classification(st['text']) is None; ACT-1 rows are those with st['ordered_turn'] true",
+      "baseline": {"unparsed_per_block_qwen": [0.0, 0.0, 0.0], "unparsed_per_block_hermes": [0.0, 0.0, 0.0], "note": "the baselines have no step_log on Qwen (iter0) and zero unparsed on Hermes; the comparator is the PARENT"},
+      "reference": {
+        "evicting_reset_qwen": {"unparsed_per_block": [0.0, 0.66, 0.0]},
+        "evicting_reset_hermes": {"unparsed_per_block": [0.0, 1.82, 0.72]},
+        "episodic_reset_v3_qwen": {"unparsed_per_block": [0.02, 6.02, 6.52]},
+        "episodic_reset_v3_hermes": {"unparsed_per_block": [0.0, 3.34, 4.7]}
+      },
+      "comparator": "<=",
+      "threshold": {"unparsed_per_block": [0.2, 0.2, 0.2], "act1_unparsed_share": [0.02, 0.02, 0.02]},
+      "threshold_derivation": "Pitched at RESTORATION of the construction's guarantee, not at the ambition. ACT 1 is a model call with no tool available and no tool spent, so a classification that fails to appear there is not a denied tool call -- it is the model declining. 0.2 per block is one lost turn in five blocks, an order of magnitude below the parent's 1.82 and below Qwen's own 0.66. Route 4 is NOT in this row, deliberately: route 3 alone provably cannot restore Hermes' answered baseline (C3), so a precondition that included it would void the route-3 mechanism row whenever the bet failed -- which is the finding the run exists to establish.",
+      "voids_on_fail": true,
+      "voids": ["P2", "P3", "P4a", "P4b", "P6a", "P6b", "P9"],
+      "capable_of_varying": "unparsed per block ranges 0.00 to 6.52 across recorded arms and both substrates",
+      "disconfirm_if": "unparsed per block exceeds 0.2 at any level on either substrate, or ACT-1 unparsed share exceeds 0.02 at any level"
+    },
+    {
+      "id": "P2",
+      "name": "n-back answered at every level",
+      "quantity": ["answered at n=1/2/3", "n_no_answers at n=1/2/3"],
+      "source": "meta_harness.nback_levels.report(run_dir)['diagnostics'][n] for n in (1,2,3)",
+      "baseline": {"qwen": [13.98, 13.24, 6.82], "hermes": [14.0, 12.78, 11.42]},
+      "reference": {
+        "evicting_reset": {"qwen": [14.0, 13.34, 14.0], "hermes": [14.0, 8.88, 9.72]},
+        "episodic_reset_v3": {"qwen": [13.98, 7.98, 7.44], "hermes": [14.0, 7.72, 4.54]},
+        "displacement": {"qwen": [14.0, 14.0, 14.0]},
+        "full_context": {"qwen": [14.0, 14.0, 14.0]}
+      },
+      "comparator": ">=",
+      "threshold": {"qwen": [13.5, 13.5, 13.5], "hermes": [13.5, 10.5, 10.2], "n_no_answers_exactly": [0, 0, 0]},
+      "threshold_derivation": "Qwen: the parent's 14.0/13.34/14.0 minus the route-3 loss it should no longer take. Hermes: the parent's 8.88 and 9.72 plus the measured unparsed 1.82 and 0.72, i.e. 10.70 and 10.44, rounded down -- route 3's recovery ONLY. Deliberately below the Hermes baseline's 12.78/11.42, because route 3 cannot reach it and pretending otherwise is what voided two earlier candidates.",
+      "predicts_change": true,
+      "capable_of_varying": "answered ranges 2.12 to 14.0 across recorded arms",
+      "disconfirm_if": "answered falls below the threshold at any level, or n_no_answers is nonzero anywhere"
+    },
+    {
+      "id": "P3",
+      "name": "nback humanlikeness clears its 0.060 floor -- AMBITION, non-voiding, with Hermes stated separately",
+      "quantity": ["humanlikeness_by_task['nback']", "delta_vs_baseline['nback']"],
+      "source": "meta_harness.score_candidate.evaluate(run_dir, baseline_dir)",
+      "baseline": {"qwen": 0.7909, "hermes": 0.8724},
+      "reference": {
+        "evicting_reset": {"qwen": 0.9587, "hermes": 0.7366},
+        "episodic_reset_v3": {"qwen": 0.6978, "hermes": 0.5254},
+        "full_context": {"qwen": 0.9484, "note": "reaches it by never filling the store, keys_held 1.06, and is the least humanlike harness measured at mean 0.6387 -- see P9"}
+      },
+      "comparator": ">=",
+      "threshold": {"qwen": 0.7309, "hermes": 0.8124},
+      "point_estimate": {"qwen": 0.963, "hermes": 0.854},
+      "estimation_note": "Qwen: route 3 recovery projected at 0.9634, and route 4 is zero there, so the honest Qwen ceiling over the parent is about +0.005. Hermes: the projection with BOTH channels recovered is 0.8895 (+0.0171) crediting recovered turns at each block's own acc_over_answered, which is optimistic because the recovered turns are the high-maintenance ones. Discounting that credited accuracy gives -0.0181 at 0.75x and -0.0535 at 0.50x -- both inside the floor -- and -0.0904 at 0.25x, which fails. So the Hermes band is [-0.055, +0.020] and the point estimate 0.854 is the 0.75x figure, NOT the 1.00x one.",
+      "predicts_change": true,
+      "capable_of_varying": "nback humanlikeness ranges 0.6978 to 0.9587 on Qwen and 0.5254 to 0.8724 on Hermes",
+      "disconfirm_if": "delta vs baseline is below -0.060 on either substrate",
+      "voids_on_fail": false,
+      "note": "Non-voiding on purpose. Hermes passage depends on route 4 moving, which is a bet (P4b), not a construction."
+    },
+    {
+      "id": "P4a",
+      "name": "THE MECHANISM ROW -- route 3, which the construction guarantees",
+      "quantity": ["unparsed replies per block at n=2/3", "share of turns entering with b_in == 1", "share of turns with tool_call_cap_hit", "tool_call_budget_after == 0 share"],
+      "source": "wm_nback.jsonl step_log: st['text'], st['tool_call_budget_before'], st['tool_call_cap_hit'], st['tool_call_budget_after']",
+      "baseline": {"note": "Qwen iter0 has no step_log; Hermes baseline has unparsed 0.00 at every level and b_in==1 on 26 of 800 turns at n=2, 65 of 850 at n=3"},
+      "reference": {
+        "evicting_reset_qwen": {"unparsed_per_block": [0.0, 0.66, 0.0], "b_in_eq_1_turns": [141, 69, 1], "budget_after_0_share": [0.013, 0.209, 0.0]},
+        "evicting_reset_hermes": {"unparsed_per_block": [0.0, 1.82, 0.72], "b_in_eq_1_turns": [0, 112, 47], "budget_after_0_share": [0.0, 0.399, 0.151]}
+      },
+      "comparator": "mixed",
+      "threshold": {
+        "unparsed_per_block_qwen": [0.2, 0.2, 0.2],
+        "unparsed_per_block_hermes": [0.2, 0.2, 0.2],
+        "b_in_eq_1_share_change": "|delta| <= 0.05 -- the incidence of the failing cell must NOT move, because the budget is unchanged"
+      },
+      "threshold_derivation": "This is what separates 'the fix engaged' from 'the score moved'. The b_in==1 incidence is predicted UNCHANGED and is the control on the budget claim: if it moved, the candidate changed the budget and the cap-untouched claim is false. budget_after==0 share and tool_call_cap_hit share are REPORTED, NOT PREDICTED -- the demand is unchanged so the budget will still run to the margin; what changes is that reaching the margin no longer costs a classification.",
+      "offline_stub_reference": "Under a stub reproducing the measured Hermes regime (a delete plus a write every maintenance opportunity, the spoken call when denied mid-turn), evicting_reset answers 1/1/1 of 14 at n=1/2/3 with 13/13/13 unparsed and 12/13/14 spoken tool calls in text, while respond_first answers 14/14/14 with 0/0/0 unparsed and 0/0/0 spoken in text -- on IDENTICAL cap sequences [6,6,6,6,7,9,10,12,13,15,16,18,19,21,22,...], identical b_in sequences [6,4,2,0,1,2,1,2,...] and identical total tool calls 22/24/25. Applying respond_first twice reproduces all of it byte for byte.",
+      "predicts_change": true,
+      "capable_of_varying": "unparsed per block 0.00-6.52; b_in==1 turn counts 0-300 per level across arms",
+      "disconfirm_if": "unparsed per block stays above 0.2 anywhere, or the b_in==1 share moves by more than 0.05"
+    },
+    {
+      "id": "P4b",
+      "name": "THE MECHANISM ROW -- route 4, THE BET",
+      "quantity": ["'No response' replies per block during the trial period, at n=2/3"],
+      "source": "wm_nback.jsonl step_log, turns with index > n_level: _parse_classification(st['text']) == 'No response'",
+      "baseline": {"qwen": [0.0, 0.0, 0.0], "hermes": [0.0, 1.22, 2.58]},
+      "reference": {
+        "evicting_reset": {"qwen": [0.0, 0.0, 0.0], "hermes": [0.0, 3.3, 3.56]},
+        "episodic_reset_v3": {"hermes": [0.0, 2.94, 4.76]}
+      },
+      "comparator": "<=",
+      "threshold": {"hermes": [0.2, 1.5, 1.8], "qwen_exactly": [0.0, 0.0, 0.0]},
+      "threshold_derivation": "Halfway back to the Hermes baseline's own 1.22 and 2.58, which is what the nback floor needs: the projection that clears the floor requires most of route 4 recovered. Registered as a BET, not a construction: the ordering removes maintenance from the response-producing act, and the evidence that this should help route 4 is correlational (corr(demand, noresp) 0.334 and 0.550) plus the observation that 5 of 6 sampled mid-block noresp turns had just made a delete and a write. If unparsed collapses and noresp does not, the unified account in the MANIFEST is WRONG and should be retracted -- that is an informative failure, which is why this row does not void.",
+      "predicts_change": true,
+      "voids_on_fail": false,
+      "capable_of_varying": "noresp per block 0.00-4.76 across recorded arms; the Hermes baseline's own per-block histogram spans {0,1,14}",
+      "disconfirm_if": "Hermes noresp per block stays above 1.5 (n=2) or 1.8 (n=3), or Qwen becomes nonzero"
+    },
+    {
+      "id": "P5",
+      "name": "the history leak stays closed -- the project's one durable result",
+      "quantity": ["n=3 store letter-identity share"],
+      "source": "the computation episodic_reset_v3_checks uses on wm_nback.jsonl final_kv / step_log kv_snapshot",
+      "baseline": {"letter_identity_share_n3": 0.0202},
+      "reference": {"episodic_reset_v3": 1.0, "evicting_reset": 1.0},
+      "comparator": ">=",
+      "threshold": {"letter_identity_share_n3": 0.9},
+      "verdict_bearing_leg": "reset_messages() is called at the top of every path -- _ordered_step, the probe path, and the baseline step() on turn 1 (which has no history to clear). ACT 1 and ACT 2 share the message list that was just cleared, so neither can see an earlier turn. A value below 0.9 would mean the two-act structure leaked a transcript, which would make the candidate worthless regardless of anything else.",
+      "predicts_change": false,
+      "capable_of_varying": "0.0202 (baseline) to 1.0000 (both reset arms)",
+      "disconfirm_if": "the share falls below 0.90 at n=3"
+    },
+    {
+      "id": "P6a",
+      "name": "variable_mapping holds, raw and matched",
+      "quantity": ["humanlikeness_by_task['variable_mapping']", "axes()['variable_mapping_matched']['humanlikeness_matched']", "matched mean_score"],
+      "source": "meta_harness.score_candidate.evaluate / axes",
+      "baseline": {"qwen_raw": 0.3554, "hermes_raw": 0.3524, "human_matched_mean": 0.3868},
+      "reference": {
+        "evicting_reset": {"qwen_raw": 0.685, "qwen_matched_mean": 0.6833, "hermes_raw": 0.6968, "hermes_matched": 0.8575, "hermes_matched_mean": 0.2427}
+      },
+      "comparator": ">=",
+      "threshold": {"qwen_raw": 0.66, "qwen_matched": 0.62, "hermes_raw": 0.66},
+      "direction_stated_in_advance": "Predicted UNCHANGED, not improved. vm's probe turns -- the only turns whose text becomes an answer -- take the parent's path with the parent's wording. Its encode turns become two-act, so the agent emits an acknowledgement before writing, and the task DISCARDS the return value of those steps (wm_variable_mapping.py:148), so the acknowledgement cannot enter any score. The store it builds can differ, which is the only route by which this row could move.",
+      "bound_not_forecast": "A fall below 0.66 raw on either substrate sinks the candidate regardless of nback, per the brief.",
+      "predicts_change": false,
+      "capable_of_varying": "raw 0.3524-0.6968 across arms and substrates",
+      "disconfirm_if": "raw falls below 0.66 on either substrate, or Qwen matched below 0.62"
+    },
+    {
+      "id": "P6b",
+      "name": "variable_mapping error structure holds on Qwen",
+      "quantity": ["axes()['A4']['n_errors']", "axes()['A4']['rc_ratio_normalized']", "axes()['A4']['rc_ratio']", "axes()['A4']['trustworthy']"],
+      "source": "meta_harness.interference.a4(run_dir)",
+      "baseline": {"qwen": {"n_errors": 12, "rc_ratio": 1.1682, "rc_ratio_normalized": 0.6661}},
+      "reference": {"evicting_reset_qwen": {"n_errors": 475, "rc_ratio": 1.2957, "rc_ratio_normalized": 0.7145}},
+      "human_reference": {"rc_ratio": 1.386, "rc_ratio_normalized": 0.3728},
+      "comparator": ">=",
+      "threshold": {"n_errors": 150, "rc_ratio_normalized": 0.15},
+      "predicts_change": false,
+      "capable_of_varying": "rc_ratio_normalized ranges -0.0444 to 0.8705 across recorded arms",
+      "disconfirm_if": "Qwen n_errors below 150 or rc_ratio_normalized below 0.15, which is the guard's own threshold"
+    },
+    {
+      "id": "P6c",
+      "name": "variable_mapping error structure on Hermes -- an EXPECTED AND EXPLAINED guard violation",
+      "quantity": ["axes()['A4']['rc_ratio_normalized'] on Hermes", "axes()['A4']['n_errors'] on Hermes"],
+      "source": "meta_harness.interference.a4(run_dir)",
+      "reference": {"evicting_reset_hermes": {"n_errors": 1136, "rc_ratio": 0.932, "rc_ratio_ceiling": 2.6742, "rc_ratio_normalized": -0.0406}, "episodic_reset_v3_hermes": {"n_errors": 1137, "rc_ratio_normalized": -0.0444}},
+      "comparator": "band",
+      "threshold": {"rc_ratio_normalized_in": [-0.10, 0.10]},
+      "threshold_derivation": "This candidate does NOT fix route 2 (granting probe turns a maintenance slot would be a second behavioural change and neither would be attributable), so the 549 unparsed Hermes vm answers remain, their relation_count of 6.22 against 8.43 on correct answers remains, and the normalized ratio stays near -0.04. vm_delta will be about +0.34, far past the 0.017 trigger, and n_errors will clear trustworthy, so the A4 guard WILL fire and the held-out contract WILL record passes_guards = false. Registered in advance so it is not read as a surprise. The counterfactual that identifies the cause: dropping the unparsed trials gives n_errors 587, rc_ratio 1.1142, ceiling 1.3402, normalized 0.3356 against a human 0.3728 -- Hermes' parsed error structure is human-shaped.",
+      "predicts_change": false,
+      "capable_of_varying": "see P6b",
+      "disconfirm_if": "rc_ratio_normalized comes in at or above 0.15, which would mean route 2 closed without a probe slot and the MANIFEST's account of route 2 is wrong"
+    },
+    {
+      "id": "P7",
+      "name": "parse integrity, and the INTERNAL CONTROL on the 'promise' hypothesis",
+      "quantity": ["variable_mapping answers absent from parsed_answers", "answer_raw strings containing a tool call"],
+      "source": "wm_variable_mapping.jsonl: q_idx values missing from parsed_answers; step_logs[i]['answer_raw'] matching 'tool_call' or 'write_memory'",
+      "baseline": {"qwen": [0, 0], "hermes": [0, 0]},
+      "reference": {
+        "evicting_reset": {"qwen": [1, 1], "hermes": [549, 549]},
+        "episodic_reset_v2": {"qwen": [38, 38]},
+        "episodic_reset_v3": {"qwen": [0, 0], "hermes": [537, 537]}
+      },
+      "comparator": "mixed",
+      "threshold": {"qwen_unparsed_max": 5, "hermes_unparsed_band": [450, 650]},
+      "note": "The Hermes band predicts NO CHANGE, and that is the point. Hermes' nback ACT 1 is a withheld-tools call that PROMISES a maintenance slot; Hermes' vm probe turn is a withheld-tools call that does not. If the promise is what matters, ACT-1 unparsed (P1) collapses while vm unparsed stays near 549. If vm unparsed falls below 450 WITHOUT a probe slot, the account of route 2 in the MANIFEST is wrong and should be retracted.",
+      "predicts_change": false,
+      "capable_of_varying": "0 to 549 across recorded arms and substrates",
+      "disconfirm_if": "Qwen unparsed exceeds 5"
+    },
+    {
+      "id": "P8",
+      "name": "no-change control on the six encode()->recall() tasks, differenced against evicting_reset and banded from IDENTICAL-PATH deltas",
+      "quantity": ["humanlikeness_by_task for digit_span_forward, digit_span_reverse, word_recognition, semantic_story_recall, craft_task, narrative_qa"],
+      "source": "meta_harness.score_candidate.evaluate(run_dir, baseline_dir)['humanlikeness_by_task'], differenced against reference_runs.evicting_reset rather than the baseline",
+      "baseline": {"qwen": {"digit_span_forward": 0.886, "digit_span_reverse": 0.9666, "word_recognition": 0.4948, "semantic_story_recall": 0.9473, "craft_task": 0.8907, "narrative_qa": 0.9572}},
+      "reference": {"evicting_reset_qwen": {"digit_span_forward": 0.9012, "digit_span_reverse": 0.9666, "word_recognition": 0.4955, "semantic_story_recall": 0.9494, "craft_task": 0.8627, "narrative_qa": 0.9487}},
+      "comparator": "|delta| <=",
+      "threshold": {"semantic_story_recall": 0.025, "narrative_qa": 0.025, "digit_span_reverse": 0.025, "word_recognition": 0.025, "craft_task": 0.03, "digit_span_forward": 0.14},
+      "threshold_derivation": "Differenced against evicting_reset, not the baseline, because against the parent the code path is provably identical: encode() calls step() once, _episode_turn_index() is 1, no block is prepended, and the GENUINE baseline step() is reached by MRO walk. Verified in the stub test -- one user message, first message 'Here is the material to remember: ...', no [ongoing episode], same keys, len(step_log)==1, no maintenance_text -- identically for the parent, this candidate, and this candidate applied twice. The bands are the parent's identical-path spread and NOT the recorded noise floor: craft_task moved 0.0248 between the baseline and v3 on a provably identical path, and primacy vs primacy_v2 -- the same harness -- end with different story-recall stores on 200 of 200 rows, so the recorded craft noise of 0.0031 understates the real spread by about 8x. digit_span_forward keeps its own 0.140 min-credible-delta because search_set.yaml resolves it to 10 model participants.",
+      "predicts_change": false,
+      "tags": ["no-change control", "identical code path"],
+      "capable_of_varying": "each of these tasks has moved by more than its band between recorded arms (random_decay took best_span 18.4 -> 2.0)",
+      "disconfirm_if": "any of the six moves by more than its band against evicting_reset"
+    },
+    {
+      "id": "P9",
+      "name": "ANTI-full_context: the n-back gain must not come from an emptier store or from easier answering",
+      "quantity": ["keys_held at n=1/2/3", "acc_over_answered at n=1/2/3", "slot_utilization"],
+      "source": "meta_harness.nback_levels.report(run_dir)['diagnostics'][n]",
+      "baseline": {"qwen_keys_held": [1.0, 1.54, 3.96], "qwen_acc_over_answered": [0.9943, 0.8206, 0.7372]},
+      "reference": {
+        "evicting_reset_qwen": {"keys_held": [1.0, 3.36, 4.0], "acc_over_answered": [0.877, 0.893, 0.921]},
+        "evicting_reset_hermes": {"acc_over_answered": [1.0, 0.735, 0.668]},
+        "full_context": {"keys_held": [1.06, 1.06, 1.06], "acc_over_answered_n3": 0.77, "nback": 0.9484, "mean_humanlikeness": 0.6387, "note": "reaches nback 0.9484 by never filling the store and is the least humanlike harness measured"}
+      },
+      "comparator": "mixed",
+      "threshold": {"keys_held_n3_min": 3.5, "keys_held_n2_min": 2.0, "acc_over_answered_n3_max": 0.85},
+      "threshold_derivation": "full_context reaches nback 0.9484 with keys_held 1.06 -- it never fills the store, so nothing is ever forgotten, and it is the least humanlike harness measured at mean 0.6387. A candidate that bought n-back by holding less, or by answering with superhuman accuracy, fails here even if the score moved. The human n=3 accuracy is 0.7799 and the cap of 0.85 sits above it with margin rather than at it. Note the stub test observed keys_held rise from 2 to 4 under the candidate, because maintenance now completes -- that is the RIGHT direction for this row and the wrong direction for nothing.",
+      "predicts_change": false,
+      "tags": ["anti-gaming"],
+      "capable_of_varying": "keys_held ranges 1.00 to 4.00 and acc_over_answered 0.5762 to 0.9943 across recorded arms",
+      "disconfirm_if": "n=3 keys_held below 3.5, n=2 below 2.0, or n=3 acc_over_answered above 0.85"
+    },
+    {
+      "id": "P10",
+      "name": "buffer-period compliance -- reported, because it cannot be bought by answering eagerly",
+      "quantity": ["buffer_no_response_frac at n=1/2/3"],
+      "source": "meta_harness.nback_levels.report(run_dir)['diagnostics'][n]['buffer_no_response_frac']",
+      "baseline": {"note": "reported for every arm; a rise cannot be manufactured by responding more"},
+      "comparator": "reported",
+      "threshold": null,
+      "predicts_change": false,
+      "capable_of_varying": "yes, across arms",
+      "note": "Reported rather than thresholded. ACT 1 asks for a response on buffer turns too, so a candidate that has merely learned to say something would show buffer compliance FALLING while answered rises. That combination would undercut P2 even where P2 passes."
+    },
+    {
+      "id": "H1",
+      "name": "craft_task -- NAMED NON-VOIDING HAZARD, registered before the run",
+      "quantity": ["humanlikeness_by_task['craft_task']", "delta_vs_baseline['craft_task']"],
+      "baseline": {"qwen": 0.8907, "hermes": 0.934},
+      "reference": {"evicting_reset": {"qwen": 0.8627, "hermes": 0.934}, "episodic_reset_v3": {"qwen": 0.8659}},
+      "comparator": ">=",
+      "threshold": {"delta_vs_baseline_min": -0.03},
+      "source": "meta_harness.score_candidate.evaluate",
+      "predicts_change": false,
+      "tags": ["hazard"],
+      "capable_of_varying": "0.8627-0.9340 across arms and substrates",
+      "note": "Its effective floor is 0.030 and the PARENT already sits at -0.0280 against the baseline on a code path that is provably identical to it, so a nondeterministic step in either direction can cross the floor with no mechanism involved. Registered so a crossing is not read as this candidate's doing. Named as a hazard, not predicted."
+    }
+  ],
+
+  "not_predicted": [
+    "tool_call_budget_after == 0 share and tool_call_cap_hit share -- REPORTED, not predicted. The demand is unchanged and the budget will still run to the margin; what changes is that reaching the margin no longer costs a classification. Predicting these would fail on a working mechanism.",
+    "per-block tool-call demand -- reported. The ordering does not remove the redundant delete-then-write, so demand should be roughly unchanged; a large fall would mean the maintenance cue suppressed maintenance, which P9's keys_held would also catch.",
+    "acc_over_answered on Hermes -- reported. Recovering turns adds trials of unknown difficulty, so the direction is not predictable. P9 caps it from above only.",
+    "mean_humanlikeness_search -- reported. The candidate targets one task and the mean is a derived quantity; predicting it invites reading a route-4 failure as a mean-level success."
+  ],
+
+  "accepted_costs": [
+    "One extra LLM call per tool-permitted turn after the first: measured in the stub test as tool_choice='none' calls 14 -> 29 over an n=1 block, with tool_choice='auto' calls unchanged at 16. About +45% LLM calls on nback and +50% on variable_mapping's encode turns; the six batch tasks are unaffected. Expect a search arm nearer 20 minutes than 14.",
+    "variable_mapping's encode turns gain an acknowledgement in ACT 1 that answers nothing, because the ordering is applied uniformly rather than by detecting whether a response is due -- detecting that would be a task branch. The task discards those return values, so it cannot reach a score, but it does enter the agent's own ACT-2 context.",
+    "step_log gains two fields, maintenance_text and ordered_turn. Every existing analysis script reads st['text'], which now carries ACT 1 only, so they remain correct; a script that wanted the whole turn's text must read both."
+  ],
+
+  "required_companion_arm": {
+    "id": "evicting_reset_single_apply",
+    "cost": "~14 min, 1xH200, Qwen only",
+    "what": "evicting_reset run with inject.apply() called ONCE, i.e. with the runner's double application defeated (run verify_interface separately, or pass --skip-verify).",
+    "why": "respond_first differs from the parent's REALISED prompt in two ways: the ordering (the mechanism) and the de-duplication of the control-state block (a defect repair -- see brief_corrections C5, where 2400 of 2400 n-back turns carry the block twice in every episodic arm on both substrates). Halving the prompt changes maintenance verbosity, hence per-turn demand, hence b_in incidence, so de-duplication alone could move route 3. Without this arm the score is not attributable to the ordering, and the falsification weight must sit on P4a/P4b rather than on P3.",
+    "mark_as": "instrument -- it is a re-run of an existing candidate under a corrected runner, so its mean must not enter frontier derivation"
+  },
+
+  "offline_verification": {
+    "verify_interface": "PASS. Overrides WorkingMemoryAgent, SummarizerAgent, TOOLS, CONDITION_PROMPTS, MAX_KEYS; rebound in 8-10 modules each; encode/recall round trip returns the expected shapes; capacity enforced at 4 keys on a bare instantiation.",
+    "stub_test": "scratchpad/rf_stubtest.py -- drives the REAL bench.tasks.wm_nback.run_nback_block at n=1/2/3 and the REAL variable_mapping encode/probe alternation, against one stub reproducing the measured Hermes regime (a delete plus a write per maintenance opportunity, 2.0 calls/turn against a 1.5/turn allowance, and the spoken tool call when denied mid-turn). Results: evicting_reset answers 1/1/1 of 14 with 13/13/13 unparsed and 12/13/14 spoken tool calls in text; respond_first answers 14/14/14 with 0/0/0 unparsed and 0/0/0 spoken in text; cap sequences, b_in sequences and total tool calls (22/24/25) IDENTICAL between the two; respond_first applied TWICE is byte-identical to once, with one '[ongoing episode]' per prompt; all 15/16/17 turns carry maintenance_text and none of it appears in text; batch path identical across all three configurations; vm probe turns show the PARENT obligation wording and encode turns the ORDERED wording, with identical cap sequence and tool-call total.",
+    "could_not_test": [
+      "The candidate's core assumption: whether a real model, on a tool_choice='none' call that PROMISES a later maintenance slot, answers rather than speaking a tool call. The stub answers there by construction; the question is about the model's disposition, not the harness's control flow. This is why ACT-1 unparsed share is in the PRECONDITION (P1) -- if it is nonzero the mechanism is dead and the number says so on sight.",
+      "Route 4 at all. It does not occur on Qwen and a stub cannot reproduce a position/task-set error. P4b is therefore a bet, registered as non-voiding.",
+      "Whether the acknowledgement ACT 1 produces on variable_mapping's encode turns changes the store the agent then builds, which is the only route by which P6a could move.",
+      "Whether the de-duplication alone moves route 3 -- that is what the required companion arm is for."
+    ]
+  }
+}

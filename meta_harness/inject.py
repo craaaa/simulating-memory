@@ -65,12 +65,45 @@ def _bench_modules() -> list[ModuleType]:
             if n.startswith("bench") and m is not None]
 
 
-def apply(candidate: ModuleType, *, strict: bool = True) -> dict[str, Any]:
+_APPLIED: dict[str, str] = {}
+
+
+def apply(candidate: ModuleType, *, strict: bool = True,
+          allow_reapply: bool = False) -> dict[str, Any]:
     """Rebind each name the candidate overrides, everywhere it is bound.
 
     Returns a report of what was replaced and where, so a candidate's record can
     show exactly which surface it touched rather than leaving it implicit.
+
+    NOT IDEMPOTENT, and it now says so loudly. A candidate module resolves its base
+    class at ITS import time from `bench.core.wm_agent.WorkingMemoryAgent`. Once
+    `apply()` has rebound that name to the candidate's own class, a second
+    `load_candidate` + `apply` of the same file produces a class that subclasses the
+    FIRST one -- so both overrides run and every prompt delta is emitted twice.
+
+    This is not hypothetical. `run_candidate.py` called `verify_interface.check()`,
+    which applies internally, and then applied again; the result was that 2400 of
+    2400 non-first n-back turns in `episodic_reset_v3`, `evicting_reset` and both
+    held-out arms carried the control-state block TWICE, with one copy rendering the
+    store and the other not. Iteration 3a reported the stacking hazard and both it
+    and I concluded the pipeline was safe because `run_candidate.py` loads once --
+    neither of us noticed that `check()` had already applied. Every episodic result
+    before this guard existed was measured on a doubled prompt.
+
+    So a second apply of the same file now raises. Pass `allow_reapply=True` only if
+    stacking is genuinely what you want, which it almost never is.
     """
+    path = getattr(candidate, "__file__", None) or getattr(candidate, "__name__", "?")
+    if not allow_reapply and path in _APPLIED:
+        raise RuntimeError(
+            f"apply() called twice for {path} (first as module "
+            f"{_APPLIED[path]!r}). Injection is not idempotent: the second load "
+            f"subclasses the already-injected class, so both overrides run and any "
+            f"prompt delta is emitted twice. Verify in a subprocess, or reuse the "
+            f"already-applied module, or pass allow_reapply=True if you truly want "
+            f"to stack."
+        )
+
     overrides = {k: getattr(candidate, k) for k in OVERRIDABLE
                  if hasattr(candidate, k)}
     if not overrides:
@@ -104,6 +137,7 @@ def apply(candidate: ModuleType, *, strict: bool = True) -> dict[str, Any]:
             f"bench modules: {missing}. Import bench.cli before calling apply()."
         )
 
+    _APPLIED[path] = getattr(candidate, "__name__", "?")
     return {
         "overrides": {k: getattr(v, "__name__", repr(v)[:60])
                       for k, v in overrides.items()},
