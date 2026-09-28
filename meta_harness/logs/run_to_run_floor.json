@@ -14,12 +14,41 @@
       "Replaying the real write sequences from both live runs through both memory classes under serial arrival: ZERO divergences over 874 rows and 3610 write calls, comparing store contents and returned strings at every call."
     ],
     "spreads": {
-      "narrative_qa":          {"primacy": 0.9263, "primacy_v2": 0.9423, "spread": 0.0160, "floor": 0.030},
-      "digit_span_forward":    {"primacy": 0.9012, "primacy_v2": 0.8860, "spread": 0.0152, "floor": 0.140},
-      "A3_precision_distance": {"primacy": 0.0196, "primacy_v2": 0.0082, "spread": 0.0114, "note": "the sharpest illustration: 'closest to the human median any candidate reached' described nothing at all"},
-      "word_recognition":      {"primacy": 0.4706, "primacy_v2": 0.4637, "spread": 0.0069, "floor": 0.121},
-      "craft_task":            {"primacy": 0.8456, "primacy_v2": 0.8487, "spread": 0.0031, "floor": 0.030},
-      "mean_humanlikeness_search": {"primacy": 0.7945, "primacy_v2": 0.7944, "spread": 0.0001}
+      "narrative_qa": {
+        "primacy": 0.9263,
+        "primacy_v2": 0.9423,
+        "spread": 0.016,
+        "floor": 0.03
+      },
+      "digit_span_forward": {
+        "primacy": 0.9012,
+        "primacy_v2": 0.886,
+        "spread": 0.0152,
+        "floor": 0.14
+      },
+      "A3_precision_distance": {
+        "primacy": 0.0196,
+        "primacy_v2": 0.0082,
+        "spread": 0.0114,
+        "note": "the sharpest illustration: 'closest to the human median any candidate reached' described nothing at all"
+      },
+      "word_recognition": {
+        "primacy": 0.4706,
+        "primacy_v2": 0.4637,
+        "spread": 0.0069,
+        "floor": 0.121
+      },
+      "craft_task": {
+        "primacy": 0.8456,
+        "primacy_v2": 0.8487,
+        "spread": 0.0031,
+        "floor": 0.03
+      },
+      "mean_humanlikeness_search": {
+        "primacy": 0.7945,
+        "primacy_v2": 0.7944,
+        "spread": 0.0001
+      }
     },
     "consequences": [
       "narrative_qa's noise is up to 0.0160, not 0.0065. primacy's -0.0309 violation is about twice the observed spread rather than five times it -- still probably real, but the margin is much thinner than previously stated.",
@@ -29,16 +58,76 @@
     ]
   },
   "per_task": {
-    "craft_task":            {"a": 0.8907, "b": 0.8907, "delta":  0.0000, "rows_differing": "0 of 150",   "bootstrap_floor": 0.025, "enforced_floor": 0.030},
-    "digit_span_reverse":    {"a": 0.9666, "b": 0.9666, "delta":  0.0000, "rows_differing": "0 of 190",   "bootstrap_floor": 0.059, "enforced_floor": 0.059},
-    "word_recognition":      {"a": 0.4948, "b": 0.4948, "delta":  0.0000, "rows_differing": "0 of 50",    "bootstrap_floor": 0.121, "enforced_floor": 0.121},
-    "semantic_story_recall": {"a": 0.9473, "b": 0.9461, "delta": -0.0012, "rows_differing": "156 of 200", "bootstrap_floor": 0.011, "enforced_floor": 0.030},
-    "nback":                 {"a": 0.7909, "b": 0.7886, "delta": -0.0023, "rows_differing": null,         "bootstrap_floor": 0.060, "enforced_floor": 0.060},
-    "variable_mapping":      {"a": 0.3554, "b": 0.3510, "delta": -0.0044, "rows_differing": "1 of 150",   "bootstrap_floor": 0.017, "enforced_floor": 0.030},
-    "narrative_qa":          {"a": 0.9572, "b": 0.9507, "delta": -0.0065, "rows_differing": "13 of 50",   "bootstrap_floor": 0.030, "enforced_floor": 0.030},
-    "digit_span_forward":    {"a": 0.8860, "b": 0.9012, "delta":  0.0152, "rows_differing": null,         "bootstrap_floor": 0.140, "enforced_floor": 0.140}
+    "craft_task": {
+      "a": 0.8907,
+      "b": 0.8907,
+      "delta": 0.0,
+      "rows_differing": "0 of 150",
+      "bootstrap_floor": 0.025,
+      "enforced_floor": 0.03
+    },
+    "digit_span_reverse": {
+      "a": 0.9666,
+      "b": 0.9666,
+      "delta": 0.0,
+      "rows_differing": "0 of 190",
+      "bootstrap_floor": 0.059,
+      "enforced_floor": 0.059
+    },
+    "word_recognition": {
+      "a": 0.4948,
+      "b": 0.4948,
+      "delta": 0.0,
+      "rows_differing": "0 of 50",
+      "bootstrap_floor": 0.121,
+      "enforced_floor": 0.121
+    },
+    "semantic_story_recall": {
+      "a": 0.9473,
+      "b": 0.9461,
+      "delta": -0.0012,
+      "rows_differing": "156 of 200",
+      "bootstrap_floor": 0.011,
+      "enforced_floor": 0.03
+    },
+    "nback": {
+      "a": 0.7909,
+      "b": 0.7886,
+      "delta": -0.0023,
+      "rows_differing": null,
+      "bootstrap_floor": 0.06,
+      "enforced_floor": 0.06
+    },
+    "variable_mapping": {
+      "a": 0.3554,
+      "b": 0.351,
+      "delta": -0.0044,
+      "rows_differing": "1 of 150",
+      "bootstrap_floor": 0.017,
+      "enforced_floor": 0.03
+    },
+    "narrative_qa": {
+      "a": 0.9572,
+      "b": 0.9507,
+      "delta": -0.0065,
+      "rows_differing": "13 of 50",
+      "bootstrap_floor": 0.03,
+      "enforced_floor": 0.03
+    },
+    "digit_span_forward": {
+      "a": 0.886,
+      "b": 0.9012,
+      "delta": 0.0152,
+      "rows_differing": null,
+      "bootstrap_floor": 0.14,
+      "enforced_floor": 0.14
+    }
   },
-  "mean_humanlikeness_search": {"a": 0.7861, "b": 0.7862, "delta": 0.0001},
+  "mean_humanlikeness_search": {
+    "a": 0.7861,
+    "b": 0.7862,
+    "delta": 0.0001
+  },
   "findings": [
     "Generation variation does NOT propagate to the score uniformly, and that is the durable lesson. semantic_story_recall has 156 of 200 rows differing for a delta of -0.0012, because the score is a continuous embedding similarity and the variation averages out. craft_task and word_recognition have ZERO rows differing, because a coarse multiple-choice score cannot register a rewording. narrative_qa is the sensitive cell: 13 of 50 rows differ for -0.0065, the largest scored effect per differing row in the set.",
     "narrative_qa's real run-to-run noise is 0.0065, not the 0.030 its floor asserts. So primacy's -0.0309 is about five times the measured noise and is a genuine effect. It violates the floor by only 0.0009 because 0.030 is conservative, not because the effect is marginal. The earlier reading -- that a 0.0009 violation is unsupportable by the instrument -- was half right: the violation is real, the threshold is the arbitrary part.",
@@ -50,5 +139,72 @@
     "No floor needs loosening. All eight enforced floors exceed the measured run-to-run variation, most by a wide margin.",
     "A no-change prediction may NOT demand bit-identity of generated content -- content varies on every task. It MAY reasonably demand a scored delta under about 0.007 on craft_task, word_recognition, digit_span_reverse, semantic_story_recall, nback and variable_mapping, and under about 0.016 on digit_span_forward.",
     "A differing-row count remains a far more sensitive mechanism-confirmation quantity than a scored delta, but it must be compared against this table's row counts rather than against zero: 156 of 200 differing rows on story recall is the NO-CHANGE baseline there, not evidence of anything."
-  ]
+  ],
+  "third_measurement_episodic_family": {
+    "what": "Two runs of IDENTICAL code for respond_first and respond_only (jobs 18684882/18715439 and 18717242). On craft_task these candidates are provable no-ops -- the request sequences driven through the real encode path are byte-identical to the baseline's, same message counts, roles, tool_choice and final store -- so any spread is pure run-to-run variation.",
+    "why_it_matters": "The 0.030 enforced floor sits INSIDE the noise for craft_task and narrative_qa on this harness family, so single-run accept/reject verdicts on those two tasks are coin flips. Both candidates pass in one run and fail in the other, on DIFFERENT tasks.",
+    "craft_task": {
+      "respond_first": {
+        "run_A": 0.8534,
+        "run_B": 0.8907,
+        "spread": 0.0373
+      },
+      "respond_only": {
+        "run_A": 0.8565,
+        "run_B": 0.8907,
+        "spread": 0.0342
+      },
+      "baseline": 0.8907,
+      "note": "In both B runs craft lands on EXACTLY the baseline value. craft is bimodal here: either identical to baseline or about -0.035.",
+      "previously_recorded_noise": "0.0000 (baseline repeat), 0.0031 (primacy pair)"
+    },
+    "narrative_qa": {
+      "respond_first": {
+        "run_A": 0.9552,
+        "run_B": 0.9258,
+        "spread": 0.0294
+      },
+      "respond_only": {
+        "run_A": 0.9504,
+        "run_B": 0.9607,
+        "spread": 0.0103
+      },
+      "note": "respond_first run B fails the narrative floor at -0.0314 where run A passes it."
+    },
+    "stable_quantities": {
+      "mean_humanlikeness_search": {
+        "respond_first": [
+          0.8497,
+          0.8476
+        ],
+        "respond_only": [
+          0.8392,
+          0.8454
+        ],
+        "spread": "0.0021 and 0.0062"
+      },
+      "variable_mapping": {
+        "respond_first_spread": 0.0016,
+        "respond_only_spread": 0.0
+      },
+      "nback": {
+        "respond_only_spread": 0.0056
+      },
+      "digit_span_reverse": {
+        "spread": 0.0
+      }
+    },
+    "contract_status_flips": {
+      "respond_only_run_B": "passes_floor True, passes_guards True",
+      "respond_only_run_A": "FAILS craft at -0.0342",
+      "respond_first_run_A": "FAILS craft at -0.0373",
+      "respond_first_run_B": "FAILS narrative at -0.0314"
+    },
+    "consequences": [
+      "The MEAN is reliable and the per-task floors are not, at the magnitude these mechanisms operate at: mean spread 0.002-0.006 against per-task spreads of 0.029-0.037 on craft and narrative.",
+      "Earlier rejections on those two tasks are suspect: primacy's narrative -0.0309, chunk_limit's narrative -0.0310, and every craft violation in iterations 5 and 6.",
+      "Acceptance needs either multiple runs per candidate with a proper test, or floors set from SAME-FAMILY repeats rather than from the baseline. An arm is 14 minutes, so both are affordable.",
+      "Third instance of the same error: craft's noise rested on two observations from other harness families, exactly as narrative's did before it went 0.0065 to 0.0160 when a second pair arrived."
+    ]
+  }
 }
