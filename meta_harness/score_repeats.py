@@ -122,16 +122,34 @@ def average_records(run_dirs: list[Path], baseline: Path | None) -> dict[str, An
         eff = max(SC.FLOOR, SC.NOISE_FLOOR.get(t, 0.05))
         if t in SC.SEARCH_TASKS and d < -eff:
             violations.append({"task": t, "delta": d, "floor": -eff})
-            # Is the violation inside the same-family noise for an N-run average?
-            sd = SAME_FAMILY_SD.get(t)
-            if sd:
+            # Is the violation inside the noise? Use THIS candidate's own observed
+            # spread when there are enough repeats, and fall back to the family-wide
+            # figure only when there are not.
+            #
+            # The family-wide table alone is too crude and produced a misleading note:
+            # primacy's craft violation of -0.0466 was flagged as "inside the noise"
+            # using the family sd of 0.0158, when primacy's OWN three runs read 0.8456,
+            # 0.8456 and 0.8410 -- a spread of 0.0046. Its craft cost is one of the most
+            # robust effects measured, not a marginal one.
+            own = [v for v in per_run[t] if v is not None]
+            if len(own) >= 3:
+                sd = st.stdev(own)
+                src = f"this candidate's own {len(own)} repeats"
+            else:
+                sd = SAME_FAMILY_SD.get(t)
+                src = "the family-wide spread (too few repeats for an own estimate)"
+            if sd is not None:
                 se = sd / (n ** 0.5)
                 if abs(d + eff) < 2 * se:
                     flagged.append(
                         f"{t}: violation of {d} against -{eff} is within 2 SE "
-                        f"({2 * se:.4f}) of the floor at n={n} repeats, so it rests "
-                        f"inside the same-family noise and should not be read as a "
-                        f"candidate defect on its own")
+                        f"({2 * se:.4f}, from {src}) of the floor at n={n}, so it "
+                        f"rests inside the noise and should not be read as a candidate "
+                        f"defect on its own")
+                else:
+                    flagged.append(
+                        f"{t}: violation of {d} against -{eff} is OUTSIDE 2 SE "
+                        f"({2 * se:.4f}, from {src}), so it is a real effect at n={n}")
     out["delta_vs_baseline"] = deltas
     out["floor_violations"] = violations
     out["passes_floor"] = not violations
