@@ -3402,6 +3402,320 @@ def evicting_reset_checks(run_dir: Path,
     return out
 
 
+def _nback_reply_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
+    """Per-level reply-form counts for the two loss channels and the budget control.
+
+    route 3 = UNPARSED reply on a scored turn (the model spoke a tool call instead of
+              answering)
+    route 4 = a parsed "No response" during the TRIAL period, which is a legal reply
+              only during the buffer period
+
+    `b_in == 1` is the failing cell for route 3, established on the parent: P(unparsed)
+    is 0.81/0.77 there on Hermes against 0.000 at b_in >= 2. It is tracked as a CONTROL,
+    because a fix that works by relieving budget pressure would lower it, and a fix that
+    works by reordering the response would not.
+    """
+    rows = _jsonl(Path(run_dir), "wm_nback")
+    if not rows or not any(r.get("step_log") for r in rows):
+        return None
+    try:
+        from bench.tasks.wm_nback import _parse_classification as _pc
+    except Exception:  # noqa: BLE001
+        return None
+    out: dict[int, dict[str, Any]] = {}
+    for r in rows:
+        n = r.get("n_level")
+        log = r.get("step_log") or []
+        if n is None or not log:
+            continue
+        n = int(n)
+        d = out.setdefault(n, {"blocks": 0, "unparsed": 0, "noresp_trial": 0,
+                               "turns": 0, "b_in_1": 0, "cap_hit": 0,
+                               "b_after_0": 0, "act1": 0, "act1_unparsed": 0})
+        d["blocks"] += 1
+        for st in log[1:]:
+            d["turns"] += 1
+            if st.get("tool_call_budget_before") == 1:
+                d["b_in_1"] += 1
+            if st.get("tool_call_cap_hit"):
+                d["cap_hit"] += 1
+            if st.get("tool_call_budget_after") == 0:
+                d["b_after_0"] += 1
+            if st.get("ordered_turn"):
+                d["act1"] += 1
+        # scored turns only: after the instruction turn and the n buffer turns
+        for st in log[1 + n:]:
+            text = str(st.get("text") or "")
+            parsed = _pc(re.sub(r"<tool_call>.*?</tool_call>", " ", text, flags=re.S))
+            if parsed is None:
+                d["unparsed"] += 1
+                if st.get("ordered_turn"):
+                    d["act1_unparsed"] += 1
+            elif str(parsed).strip().lower().startswith("no response"):
+                d["noresp_trial"] += 1
+    for n, d in out.items():
+        b = max(1, d["blocks"])
+        t = max(1, d["turns"])
+        d["unparsed_per_block"] = round(d["unparsed"] / b, 3)
+        d["noresp_per_block"] = round(d["noresp_trial"] / b, 3)
+        d["b_in_1_share"] = round(d["b_in_1"] / t, 4)
+        d["cap_hit_share"] = round(d["cap_hit"] / t, 4)
+        d["b_after_0_share"] = round(d["b_after_0"] / t, 4)
+        d["act1_unparsed_share"] = (round(d["act1_unparsed"] / d["act1"], 4)
+                                    if d["act1"] else None)
+    return out
+
+
+def respond_first_checks(run_dir: Path,
+                         baseline: Path | None) -> list[dict[str, Any]]:
+    """Iteration 6. Answers BEFORE maintaining the store, on the same budget.
+
+    Scored on Qwen thresholds; the Hermes bands in the pending file apply to a held-out
+    run and are reported rather than scored here.
+    """
+    out: list[dict[str, Any]] = []
+    add = _adder(out)
+    rec = _record(run_dir, baseline)
+    ax = rec.get("axes") or {}
+    hl = rec.get("humanlikeness_by_task") or {}
+    bhl = _hl(baseline)
+    lv = _nback_levels(Path(run_dir))
+    forms = _nback_reply_forms(Path(run_dir))
+    a4 = ax.get("A4") or {}
+    if not a4 and Path(run_dir).exists():
+        try:
+            a4 = IF.a4(Path(run_dir))
+        except Exception:  # noqa: BLE001
+            a4 = {}
+    L = (1, 2, 3)
+
+    # The reference for P8 is the PARENT run measured with a single apply, beside this
+    # one. Differencing against the baseline would charge this candidate for its
+    # parent's eviction effects.
+    parent = Path(run_dir).parent.parent / "evicting_reset" / Path(run_dir).name
+    p_hl = _hl(parent if parent.exists() else None)
+
+    # --- P1 PRECONDITION, pitched at the construction ------------------------
+    if forms is None:
+        add("P1 mechanism engages -- PRECONDITION", INCONCL, None,
+            "unparsed/block <= 0.2 at every level AND ACT-1 unparsed share <= 0.02",
+            "absent: wm_nback.jsonl has no step_log")
+        p1 = False
+    else:
+        obs1 = {n: {"unparsed_per_block": (forms.get(n) or {}).get("unparsed_per_block"),
+                    "act1_unparsed_share": (forms.get(n) or {}).get("act1_unparsed_share"),
+                    "act1_turns": (forms.get(n) or {}).get("act1")}
+                for n in sorted(forms)}
+        legs = []
+        for n in L:
+            d = forms.get(n) or {}
+            u = d.get("unparsed_per_block")
+            s = d.get("act1_unparsed_share")
+            legs.append(u is not None and u <= 0.2)
+            legs.append(s is None or s <= 0.02)
+        p1 = all(legs)
+        add("P1 mechanism engages -- PRECONDITION", PASS if p1 else FAIL, obs1,
+            "unparsed/block <= 0.2 at n=1/2/3 AND ACT-1 unparsed share <= 0.02 "
+            "(parent: 0.02/0.64/0.00 unparsed per block)",
+            "pitched at the CONSTRUCTION, not at restoring Hermes' answered baseline, "
+            "because route 3 provably cannot do that -- see the candidate's C3. "
+            + ("" if p1 else "Failure voids P2, P3, P4a, P4b, P6a, P6b, P9."))
+
+    # --- P2 answered at every level ------------------------------------------
+    obs2 = {n: {"answered": (lv.get(n) or {}).get("answered"),
+                "silent": (lv.get(n) or {}).get("n_no_answers")} for n in L}
+    if any(v["answered"] is None for v in obs2.values()):
+        add("P2 n-back answered at every level", INCONCL, obs2,
+            ">= 13.5 at each level (Qwen) AND n_no_answers == 0", "absent")
+    else:
+        ok = all(obs2[n]["answered"] >= 13.5 and obs2[n]["silent"] == 0 for n in L)
+        add("P2 n-back answered at every level", PASS if ok else FAIL, obs2,
+            ">= 13.5 at each level on Qwen AND zero silent participants "
+            "(baseline 13.98/13.24/6.82; parent single-apply 13.98/13.36/13.96)")
+
+    # --- P3 nback clears its floor (ambition, non-voiding) -------------------
+    v = hl.get("nback")
+    if v is None:
+        add("P3 nback clears its floor (ambition)", INCONCL, None, ">= 0.7309", "absent")
+    else:
+        add("P3 nback clears its floor (ambition)", PASS if v >= 0.7309 else FAIL,
+            {"nback": v, "delta": None if bhl.get("nback") is None
+                                  else round(v - bhl["nback"], 4)},
+            ">= 0.7309 on Qwen (baseline 0.7909 - 0.060). Hermes bar is 0.8124, "
+            "reported separately when that run exists",
+            "non-voiding: the candidate registered this as ambition, not precondition")
+
+    # --- P4a the mechanism row, with the budget CONTROL ----------------------
+    if forms is None:
+        add("P4a route 3 eliminated (mechanism)", INCONCL, None,
+            "unparsed/block <= 0.2 at every level; b_in==1 incidence UNCHANGED",
+            "absent: step_log", tags=("mechanism",))
+    else:
+        obs4 = {n: {k: (forms.get(n) or {}).get(k) for k in
+                    ("unparsed_per_block", "b_in_1_share", "cap_hit_share",
+                     "b_after_0_share")} for n in sorted(forms)}
+        ok = all((forms.get(n) or {}).get("unparsed_per_block", 1.0) <= 0.2 for n in L)
+        add("P4a route 3 eliminated (mechanism)", PASS if ok else FAIL, obs4,
+            "unparsed/block <= 0.2 at every level. b_in==1 share, cap_hit and "
+            "budget_after==0 are the CONTROL and are reported, not thresholded",
+            "the control is what makes this a mechanism claim rather than a score "
+            "claim: a fix that worked by relieving budget pressure would LOWER the "
+            "b_in==1 incidence. If unparsed collapses while b_in==1 holds or rises, "
+            "the response was reordered rather than the budget relaxed.",
+            tags=("mechanism",))
+
+    # --- P4b route 4, the bet, non-voiding -----------------------------------
+    if forms is None:
+        add("P4b route 4 also falls (the bet)", INCONCL, None,
+            "Qwen exactly 0.0 per block at every level", "absent: step_log")
+    else:
+        obs4b = {n: (forms.get(n) or {}).get("noresp_per_block") for n in sorted(forms)}
+        ok = all((obs4b.get(n) or 0.0) == 0.0 for n in L)
+        add("P4b route 4 also falls (the bet)", PASS if ok else FAIL, obs4b,
+            "Qwen: exactly 0.0 'No response' per block during the trial period at "
+            "every level (Qwen baseline is 0.0; Hermes baseline 0.0/1.22/2.58)",
+            "registered as an explicit BET whose failure is informative, not voiding: "
+            "if unparsed collapses and this does not move on Hermes, the unified "
+            "one-mechanism account of routes 3 and 4 is wrong")
+
+    # --- P5 the leak stays closed -------------------------------------------
+    share, n_vals = _nback_letter_share(Path(run_dir), 3)
+    if share is None:
+        add("P5 history leak stays closed", INCONCL, None, ">= 0.90", "absent")
+    else:
+        add("P5 history leak stays closed", PASS if share >= 0.90 else FAIL,
+            {"n3_letter_share": share, "n_values": n_vals},
+            ">= 0.90 (baseline 0.0202)",
+            "the project's one cross-substrate result; a candidate that loses this is "
+            "worthless regardless of what else it gains")
+
+    # --- P6a variable_mapping holds -----------------------------------------
+    vmm = ax.get("variable_mapping_matched") or {}
+    obs6 = {"raw": hl.get("variable_mapping"),
+            "matched": vmm.get("humanlikeness_matched"),
+            "matched_mean_score": vmm.get("mean_score")}
+    if obs6["raw"] is None:
+        add("P6a variable_mapping holds", INCONCL, obs6,
+            "raw >= 0.66 AND matched >= 0.62", "absent")
+    else:
+        m = obs6["matched"]
+        ok = obs6["raw"] >= 0.66 and (m is None or m >= 0.62)
+        add("P6a variable_mapping holds", PASS if ok else FAIL, obs6,
+            "raw >= 0.66 AND matched >= 0.62 on Qwen (baseline 0.3554; human matched "
+            "mean score 0.3868)")
+
+    # --- P6b A4 structure on Qwen -------------------------------------------
+    obs6b = {"n_errors": a4.get("n_errors"),
+             "rc_ratio_normalized": a4.get("rc_ratio_normalized"),
+             "rc_ratio": a4.get("rc_ratio"), "trustworthy": a4.get("trustworthy")}
+    if obs6b["n_errors"] is None:
+        add("P6b A4 error structure holds (Qwen)", INCONCL, obs6b,
+            "n_errors >= 150 AND rc_ratio_normalized >= 0.15", "absent: A4")
+    else:
+        nrm = obs6b["rc_ratio_normalized"]
+        ok = obs6b["n_errors"] >= 150 and (nrm is not None and nrm >= 0.15)
+        add("P6b A4 error structure holds (Qwen)", PASS if ok else FAIL, obs6b,
+            "n_errors >= 150 AND rc_ratio_normalized >= 0.15 (humans 0.3728, "
+            "baseline 0.6661 at 12 errors)")
+
+    # --- P6c Hermes A4, an expected violation -- reported here ---------------
+    add("P6c A4 on Hermes: expected violation (reported)", INCONCL,
+        "requires the held-out run", "rc_ratio_normalized in [-0.10, 0.10]",
+        "the candidate PRE-REGISTERED that the A4 guard will fire on Hermes, because "
+        "it does not fix route 2 -- 549 of 1500 Hermes variable_mapping answers are "
+        "spoken tool calls, and dropping them takes Hermes to normalized 0.3356 "
+        "against the human 0.3728. A value >= 0.15 would mean that account is wrong.",
+        tags=("REPORTED",))
+
+    # --- P7 parse integrity + the internal control on the promise hypothesis -
+    fv = _vm_answer_forms(Path(run_dir))
+    if fv is None:
+        add("P7 vm parse integrity (+ internal control)", INCONCL, None,
+            "Qwen unparsed <= 5", "absent: step_logs")
+    else:
+        ok = fv["unparsed"] <= 5
+        add("P7 vm parse integrity (+ internal control)", PASS if ok else FAIL,
+            {k: fv[k] for k in ("unparsed", "tool_call_in_text", "n_answers")},
+            "Qwen unparsed <= 5. On Hermes the candidate predicts UNCHANGED at "
+            "450-650, which is its own internal control: n-back's ACT 1 promises a "
+            "maintenance slot, the vm probe turn does not, so if Hermes vm unparsed "
+            "falls anyway the 'promise' account is wrong and C4 should be retracted.")
+
+    # --- P8 no-change control, differenced against the PARENT ---------------
+    BANDS = {"semantic_story_recall": 0.025, "narrative_qa": 0.025,
+             "digit_span_reverse": 0.025, "word_recognition": 0.025,
+             "craft_task": 0.03, "digit_span_forward": 0.14}
+    obs8, ok8, have = {}, True, False
+    for t, band in BANDS.items():
+        a, b = hl.get(t), p_hl.get(t)
+        if a is None or b is None:
+            obs8[t] = None
+            continue
+        have = True
+        d = round(a - b, 4)
+        obs8[t] = d
+        if abs(d) > band:
+            ok8 = False
+    if not have:
+        add("P8 batch control (vs the parent, single-apply)", INCONCL, obs8,
+            "per-task bands against evicting_reset",
+            "absent: the evicting_reset run is not beside this one, so the "
+            "identical-path reference cannot be formed", tags=("control",))
+    else:
+        add("P8 batch control (vs the parent, single-apply)",
+            PASS if ok8 else FAIL, obs8,
+            "|delta vs evicting_reset| within story/narrative/ds_rev/word_rec 0.025, "
+            "craft 0.03, ds_fwd 0.14",
+            "differenced against the PARENT rather than the baseline, so this "
+            "candidate is not charged for its parent's eviction effects -- notably "
+            "craft, which the parent already fails", tags=("control",))
+
+    # --- P9 anti-full_context ------------------------------------------------
+    obs9 = {n: {"keys_held": (lv.get(n) or {}).get("keys_held"),
+                "acc": (lv.get(n) or {}).get("acc_over_answered")} for n in L}
+    k3 = obs9[3]["keys_held"]
+    if k3 is None:
+        add("P9 the n-back gain is not from an emptier store", INCONCL, obs9,
+            "keys_held n3 >= 3.5, n2 >= 2.0, acc_over_answered n3 <= 0.85", "absent")
+    else:
+        ok = (k3 >= 3.5 and (obs9[2]["keys_held"] or 0) >= 2.0
+              and (obs9[3]["acc"] is None or obs9[3]["acc"] <= 0.85))
+        add("P9 the n-back gain is not from an emptier store",
+            PASS if ok else FAIL, obs9,
+            "keys_held >= 3.5 at n=3 AND >= 2.0 at n=2 AND acc_over_answered at n=3 "
+            "<= 0.85 (full_context reaches nback 0.9484 at keys_held 1.06 and is the "
+            "least humanlike harness measured)", tags=("anti_gaming",))
+
+    # --- P10 buffer compliance, reported ------------------------------------
+    add("P10 buffer-period compliance (reported)", INCONCL,
+        {n: (lv.get(n) or {}).get("buffer_no_response_frac") for n in L},
+        "reported, not thresholded",
+        "cannot be manufactured by responding more eagerly, which is why it is "
+        "reported rather than predicted", tags=("REPORTED",))
+
+    # --- H1 the named craft hazard, non-voiding -----------------------------
+    dc = (rec.get("delta_vs_baseline") or {}).get("craft_task")
+    if dc is None:
+        add("H1 craft_task hazard (registered in advance)", INCONCL, None,
+            ">= -0.03", "absent", tags=("hazard",))
+    else:
+        add("H1 craft_task hazard (registered in advance)",
+            PASS if dc >= -0.03 else FAIL, dc,
+            "delta vs baseline >= -0.03 (the enforced floor)",
+            "registered BEFORE the run by this candidate and by evicting_reset: every "
+            "unconditional evicting store pays here, because a refusing store burns "
+            "calls on repairs that get truncated and ends holding FEWER chunks, so "
+            "admitting those writes hands a batch task more retained material and the "
+            "objective inverts.", tags=("hazard",))
+
+    if not p1:
+        _void_rows(out, ("P2", "P3", "P4a", "P4b", "P6a", "P6b", "P9"),
+                   "VOID via P1: the precondition failed, which this candidate "
+                   "pre-registered as invalidating exactly these rows. P5, P7, P8, "
+                   "P10 and H1 are non-voiding by design.")
+    return out
+
+
 CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "displacement": displacement_checks,
     "primacy": primacy_checks,
@@ -3417,6 +3731,7 @@ CHECKS: dict[str, Callable[[Path, Path | None], list[dict[str, Any]]]] = {
     "episodic_primacy": episodic_primacy_checks,
     "episodic_reset_v3": episodic_reset_v3_checks,
     "evicting_reset": evicting_reset_checks,
+    "respond_first": respond_first_checks,
 }
 
 
