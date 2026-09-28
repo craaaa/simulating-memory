@@ -127,10 +127,23 @@ printf '%s' "$TC" | grep -q tool_calls || { echo "!!! no tool_calls; check --too
 # Each candidate in its own process: injection mutates imported bench modules, so
 # two candidates in one process would contaminate each other.
 RC=0
+# Repeats are required for acceptance, because single-run per-task verdicts cannot decide
+# candidates on this benchmark: craft_task's delta across ten episodic-family runs has sd
+# 0.0158 against a 0.030 floor, and two runs of IDENTICAL code gave craft 0.8534 and
+# 0.8907. So the same candidate may appear several times in CAND, and each occurrence
+# needs its own output directory or later repeats would overwrite earlier ones. The first
+# occurrence keeps the plain name so existing paths and records stay valid.
+declare -A _SEEN=()
 for c in $CAND; do
   echo
-  echo "############ candidate: $c"
-  OUT_DIR="meta_harness/runs/heldout/${c}"
+  _SEEN[$c]=$(( ${_SEEN[$c]:-0} + 1 ))
+  _N=${_SEEN[$c]}
+  if [ "$_N" -eq 1 ]; then
+    OUT_DIR="meta_harness/runs/heldout/${c}"
+  else
+    OUT_DIR="meta_harness/runs/heldout/${c}_rep${_N}"
+  fi
+  echo "############ candidate: $c   (occurrence ${_N} -> ${OUT_DIR})"
   "$PY" meta_harness/run_candidate.py \
     --candidate "meta_harness/candidates/${c}/harness.py" \
     --config meta_harness/cluster/heldout_set.yaml \
