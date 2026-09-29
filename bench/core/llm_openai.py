@@ -219,10 +219,16 @@ class OpenAIChatLLM(LLM):
         request_kwargs: Dict[str, Any] = {
             "model": self._api_model,
             "messages": messages,
-            "tools": tools,
-            "tool_choice": tool_choice,
             "temperature": temperature,
         }
+        # An EMPTY tools list means "this turn has no tools at all", and the schemas must
+        # not be sent. Sending them with tool_choice="none" still renders every schema into
+        # the chat template, and the model then emits a <tool_call> block as ordinary
+        # content which nothing parses back out -- it is returned as the agent's reply and
+        # reaches the task's answer parser, which records the trial as unanswered.
+        if tools:
+            request_kwargs["tools"] = tools
+            request_kwargs["tool_choice"] = tool_choice
         request_kwargs.update(_token_limit_kwargs(self.model, max_tokens))
         self._attach_extra_body(request_kwargs)
 

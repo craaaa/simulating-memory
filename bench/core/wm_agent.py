@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Dict, List, Union
 
 from .llm import LLM
@@ -59,6 +60,34 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
 ]
+
+
+_SPOKEN_CALL_RE = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>", re.DOTALL)
+
+
+def _strip_spoken_tool_calls(text: str) -> tuple[str, List[str]]:
+    """Remove complete spoken tool-call blocks from a reply.
+
+    A model that is shown tool schemas but forbidden from calling them will sometimes type
+    the call out instead of answering. That text is not an answer: every task parser looks
+    for a classification or a choice and finds none, so the trial is recorded as unanswered
+    -- which lowers the model's score and, because the model is MORE accurate than humans
+    on most of these tasks, silently raises its measured humanlikeness.
+
+    Only complete `<tool_call>...</tool_call>` blocks are removed, so a reply that merely
+    mentions a tool by name is untouched. Returns the cleaned text and the blocks removed.
+
+    >>> _strip_spoken_tool_calls("different")
+    ('different', [])
+    >>> _strip_spoken_tool_calls('same\\n<tool_call>\\n{"name": "write_memory"}\\n</tool_call>')
+    ('same', ['{"name": "write_memory"}'])
+    >>> _strip_spoken_tool_calls("I will use write_memory next turn")
+    ('I will use write_memory next turn', [])
+    """
+    found = _SPOKEN_CALL_RE.findall(text)
+    if not found:
+        return text, []
+    return _SPOKEN_CALL_RE.sub("", text).strip(), found
 
 
 def _dispatch_tool(wm: WorkingMemory, name: str, arguments_json: str) -> str:
@@ -195,6 +224,8 @@ class WorkingMemoryAgent:
         self._messages.append({"role": "user", "content": user_message})
 
         tool_calls_log: List[Dict[str, Any]] = []
+        spoken_calls: List[str] = []
+        refused_calls: List[Dict[str, Any]] = []
         collected_text = ""
         cap_before = self._tool_call_cap()
         budget_before = self._remaining_tool_calls()
@@ -210,20 +241,21 @@ class WorkingMemoryAgent:
                     temperature=self.temperature,
                     max_tokens=max_tokens,
                 )
-            elif allow_tools:
-                cap_hit = True
-                resp = self.llm.generate_with_tools(
-                    messages=self._messages,
-                    tools=TOOLS,
-                    tool_choice="none",
-                    temperature=self.temperature,
-                    max_tokens=max_tokens,
-                )
             else:
+                # No tools this turn -- either the budget is gone or the caller passed
+                # allow_tools=False. Send NO schemas, rather than schemas plus
+                # tool_choice="none": the schemas are rendered into the chat template
+                # either way, and a model that sees them emits a <tool_call> block as
+                # ordinary content. Nothing parses that back out when calls are
+                # disallowed, so it was returned as the agent's reply and reached the
+                # task's answer parser, which recorded the trial as unanswered. Measured
+                # on runs already collected: 554 of 1500 variable_mapping replies under
+                # evicting_reset, and 2417 of 4950 n-back replies under respond_first.
+                if allow_tools:
+                    cap_hit = True
                 resp = self.llm.generate_with_tools(
                     messages=self._messages,
-                    tools=TOOLS,
-                    tool_choice="none",
+                    tools=[],
                     temperature=self.temperature,
                     max_tokens=max_tokens,
                 )
@@ -231,18 +263,38 @@ class WorkingMemoryAgent:
             # Build assistant message
             assistant_msg: Dict[str, Any] = {"role": "assistant"}
             tool_calls = resp.tool_calls or []
+            dropped_calls: List[Dict[str, Any]] = []
             if tool_calls:
                 remaining = self._remaining_tool_calls()
                 if len(tool_calls) > remaining:
                     cap_hit = True
+                    dropped_calls = tool_calls[remaining:]
                     tool_calls = tool_calls[:remaining]
             if resp.content:
                 assistant_msg["content"] = resp.content
-                collected_text += resp.content
+                # Keep the full content in the transcript the model sees, but do not let a
+                # spoken tool call become the agent's ANSWER: a reply that is only
+                # `<tool_call>{...}</tool_call>` carries no classification, and the task
+                # parsers score it as no answer. Strip complete blocks and record them.
+                clean, spoken = _strip_spoken_tool_calls(resp.content)
+                if spoken:
+                    spoken_calls.extend(spoken)
+                collected_text += clean
             if tool_calls:
                 assistant_msg["tool_calls"] = tool_calls
             else:
                 assistant_msg.setdefault("content", "")
+            # Calls beyond the budget are dropped from the assistant message, so the
+            # transcript the model is resent stays self-consistent -- it sees the calls it
+            # kept and a result for each. What was missing was any RECORD that an intended
+            # write never happened, which made a cap-truncated turn indistinguishable from
+            # a turn where the model chose to write once.
+            for tc in dropped_calls:
+                refused_calls.append({
+                    "name": tc["function"]["name"],
+                    "arguments": tc["function"]["arguments"],
+                    "reason": "tool_call_budget_exhausted",
+                })
             self._messages.append(assistant_msg)
 
             # If no tool calls, we're done with this step
@@ -283,6 +335,8 @@ class WorkingMemoryAgent:
             "tool_call_budget_before": budget_before,
             "tool_call_budget_after": self._remaining_tool_calls(),
             "tool_call_cap_hit": cap_hit,
+            "spoken_tool_calls": spoken_calls,
+            "refused_tool_calls": refused_calls,
         }
         self._step_log.append(step_entry)
 

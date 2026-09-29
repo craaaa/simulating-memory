@@ -297,9 +297,12 @@ class AnthropicChatLLM(LLM):
             "max_tokens": max_tokens,
             "temperature": temperature,
             "messages": anth_messages,
-            "tools": anth_tools,
-            "tool_choice": anth_tool_choice,
         }
+        # See llm_openai: an empty tools list means the turn has no tools, and the schemas
+        # must be left out of the request rather than sent with tool_choice "none".
+        if anth_tools:
+            request_kwargs["tools"] = anth_tools
+            request_kwargs["tool_choice"] = anth_tool_choice
         if system_text:
             request_kwargs["system"] = system_text
 
