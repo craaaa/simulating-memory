@@ -52,9 +52,21 @@ between-participant spread is item difficulty while the humans' is between-perso
 and the headline metric is a Wasserstein distance between those two. That may be a question
 about whether the objective measures what the project claims, not a protocol detail.
 
-**8. Hermes job 18757709** (`respond_first_v2`, `TAG=postfix`, → `runs/heldout/postfix/`) —
-read it, but it ran **pre-instrument-fix bench** from the main checkout, so file it under
-`exp/compactor-prefix-v1` as history about Hermes' behaviour, not as a comparable result.
+**8. ~~Hermes job 18757709~~ — KILLED 2026-09-29 at 2h05 on user instruction.** It was
+running **pre-instrument-fix bench** from the main checkout, so nothing it produced is
+comparable to anything measured after `exp/compactor-prefix-v1`, and it was holding 2×H200
+that `18774002` needed.
+
+It left **partial output** at `/scratch/cl5625/meta-harness-compactor/meta_harness/runs/heldout/postfix/`
+— 4 of 6 arms started (`baseline`, `baseline_rep2`, `respond_first_v2`,
+`respond_first_v2_rep2`), 35 `.jsonl` files against 40 for four complete arms, so the last arm
+is truncated mid-write. **Do not score it.** It is pre-fix, incomplete, and its per-arm
+completeness is unverified. Not pulled down. Delete it or leave it; either way it is not
+evidence. The question it was meant to answer — does hiding the tool schemas stop Hermes
+emitting `"no response"` on n-back — is still open and would need a fresh run on post-fix
+bench, which also means `respond_first_v2` would first have to be checked against the new
+turn structure (candidates carry their own `step()` copies, so the bench fix does not reach
+them).
 
 **9. Only then, iteration 10.** The candidate idea on the table is keeping tool schemas
 visible while stating the store's purpose in prose, to separate "needs the interface
