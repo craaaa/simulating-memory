@@ -1,4 +1,76 @@
-# CONTINUITY — session state, 2026-09-28
+# CONTINUITY — session state, 2026-09-28 / 29
+
+## 2026-09-29T02:00Z [USER][CODE] — EXECUTION ORDER, everything blocked on job 18774002
+
+`18774002` (Qwen, 3 baseline repeats, all 8 tasks, `ITER=11postfix` → `runs/iter11postfix/`)
+was PENDING at write time. It runs from `/scratch/cl5625/mh-postfix` at commit **410ec2a**.
+~70 min. Do these in order; each later item assumes the earlier ones.
+
+**1. Read 18774002 in the registered order, not n-back first.**
+`rsync -az -e "ssh -o BatchMode=yes" torch:/scratch/cl5625/mh-postfix/meta_harness/runs/iter11postfix/ meta_harness/runs/iter11postfix/`
+Then: (a) the five untouched batch tasks inside their noise bands — this is the precondition
+and voids the rest if it fails; (b) `variable_mapping`, expected ≈0.68 humanlikeness; (c)
+n-back last. **The specific check that decides whether the turn-order fix worked: n=1
+accuracy.** It was 0.9943 pre-fix and 0.4786 in the defective run; it must recover. Also
+confirm n=1 blocks no longer end with ≤1 key (149 of 150 did before).
+
+**2. Record it as the new reference generation.** Append to
+`logs/postfix_baseline_outcome.md` (which currently documents the *defective* n-back run and
+says so). Record in `logs/evolution_summary.jsonl` with an id prefixed so the three
+measurement generations never merge.
+
+**3. Re-measure run-to-run noise per task from the 3 repeats.** Resolves a live
+disagreement: `run_to_run_floor.json` gives craft_task 0.0000–0.0031 while
+`score_repeats.SAME_FAMILY_SD` gives 0.0158, and the post-fix craft delta of −0.0078 sits
+between them. Every floor verdict depends on which is right.
+
+**4. Apply the error-shape measures to the post-fix baseline.**
+`python meta_harness/report_error_shape.py <run_dir>` — the first model-side numbers for
+them, deliberately not computed before now. Their run-to-run spread from step 3 is what
+decides which are promotable from report-only to guard or objective; that decision is the
+user's.
+
+**5. Land the bundled A4 + A1 documentation edits.** Held deliberately until a baseline
+existed: strike "humans sit at 0.3728" from the A4 guard's message text in
+`score_candidate.py`; re-justify its 0.15 cutoff from model-side evidence or the step-3
+spread rather than from the void human value; apply `logs/doc_audit.md` group 2 (the A4 rows
+in `HANDOFF.md`, `WORKLOG.md`, `domain_spec.md`, plus the A1 demotion and the new measures in
+`domain_spec.md`'s axis table and `NOTES.md`).
+
+**6. `word_recognition` stage 2** — `logs/instrument_fix_stage2_plan.md`. First the
+prerequisite: confirm `src/score.py` divides the human side by trials *attempted* (humans
+stop at 3 strikes, ~20 trials; the model runs 100). That check decides whether to replicate
+the strike rule in bench or truncate analysis-side. Then implement one word per turn,
+answer-then-store, `encode()` deleted — and re-baseline again.
+
+**7. The protocol-mismatch audit** — a subagent was producing
+`logs/protocol_mismatch_audit.md` when this was written; check whether it landed. Then decide
+per item between changing bench, correcting analysis-side, or documenting. It contains the
+deepest open question: `search_set.yaml` sets `temperature: 0.0` and the 50 "participants"
+per task are 50 seeded *stimulus sets* run by one deterministic model, so the model's
+between-participant spread is item difficulty while the humans' is between-person ability —
+and the headline metric is a Wasserstein distance between those two. That may be a question
+about whether the objective measures what the project claims, not a protocol detail.
+
+**8. Hermes job 18757709** (`respond_first_v2`, `TAG=postfix`, → `runs/heldout/postfix/`) —
+read it, but it ran **pre-instrument-fix bench** from the main checkout, so file it under
+`exp/compactor-prefix-v1` as history about Hermes' behaviour, not as a comparable result.
+
+**9. Only then, iteration 10.** The candidate idea on the table is keeping tool schemas
+visible while stating the store's purpose in prose, to separate "needs the interface
+description" from "needs to see tools it cannot use". But reconsider whether to search at
+all first: `analyze_live_dimensions.py` showed the objective had two live dimensions and both
+were the leaky tasks, and the instrument has changed under all twelve candidate verdicts.
+
+**Commits today:** 70befa7 (instrument fix), 050afa1 (sbatch REPO), 38a89a6 (lead-in prompt),
+71ea97f (nback_steps + five analyses), 574298c (--baseline bug), aad06c1 + d55ee04 (doc
+group 1), d5d2497 (A4 invalid), 06c81c8 (A1 demoted), 3ecc47a (defective baseline outcome),
+410ec2a (n-back answer-then-encode). Error-shape agent: 0c9cefa, e02e86a, 5f5c013, 41473f5,
+407f710. All pushed to `myfork`.
+
+---
+
+# Earlier entries, 2026-09-28
 
 ## 2026-09-28T23:40Z [USER][CODE] — the instrument is being fixed; everything below is history
 
