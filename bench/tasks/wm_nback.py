@@ -49,6 +49,40 @@ WM_SYSTEM_PROMPTS = {
 }
 
 
+# Turn prompts. These mirror `wm_variable_mapping`'s pair exactly -- an encode turn that
+# shows the store and the new stimulus with tools ON, then an answer turn that shows the
+# store and restates the task instructions with tools OFF and no stimulus. Before this,
+# n-back was the only one of the eight working-memory tasks that never showed the agent its
+# own store: `TOOLS` has only `write_memory` and `delete_key`, there is no read tool, and
+# the turn was the bare string "Next letter: X". The store was write-only and every answer
+# came from the conversation transcript.
+#
+# The position index is given explicitly because clearing the transcript removes the
+# agent's only cue to where it is in the block. A human participant watching letters appear
+# has that cue for free; `variable_mapping` supplies the same thing as "Question {q_idx}".
+ENCODE_PROMPT = """\
+Your working memory currently contains:
+{wm_contents}
+
+New letter (position {pos}):
+{letter}
+
+Update your memory as needed."""
+
+ANSWER_PROMPT = """\
+Your working memory currently contains:
+{wm_contents}
+
+Original task instructions:
+{task_prompt}
+
+Based ONLY on the above contents, answer for the letter at position {pos}:
+Does it match the letter {n} position(s) back?
+
+Output ONLY one of: same, different, no response.
+No extra text."""
+
+
 def _parse_classification(text: str) -> Optional[str]:
     """Extract same / different / no response from agent text output."""
     t = re.sub(r"\s+", " ", text.strip()).lower()
@@ -70,8 +104,23 @@ def run_nback_block(
 ) -> Dict[str, Any]:
     """Run one n-back block turn-by-turn using the WM agent's step() method.
 
-    Returns dict with trial_map (1-based trial index -> Same/Different),
-    buffer_map, step_log, and final_kv.
+    Two turns per letter, matching `wm_variable_mapping`: an encode turn (store + letter,
+    tools ON) then an answer turn (store + instructions, tools OFF, no letter). The answer
+    is therefore reachable only through the key-value store, which is the point -- the
+    current letter must have been written for the comparison to be possible at all, against
+    a MAX_KEYS-slot store.
+
+    The standalone instruction turn this function used to open with is gone: `step()` now
+    clears the transcript at every turn boundary, so a one-off instruction turn would be
+    visible to nothing. The model-phrased instructions are restated on each answer turn
+    instead, which is what the other seven tasks do and which also delivers
+    `TASK_DESC_BY_N[n]` -- previously passed to `wm_system_prompt_for()` as `task_prompt`
+    and discarded there, so n-back's model-phrased instructions reached the model nowhere.
+
+    Returns dict with trial_map (1-based trial index -> Same/Different), buffer_map,
+    step_log, final_kv, and the step-log indices of the encode and answer turns. Those
+    indices matter for analysis: the step log now holds two entries per letter, so the old
+    positional rule "scored trial k is step n+k" no longer holds.
     """
     n = block.n
     agent = WorkingMemoryAgent(
@@ -82,19 +131,11 @@ def run_nback_block(
         system_prompt_override=wm_system_prompt_for(condition_id, n),
     )
 
-    # Initial instruction
-    agent.step(
-        f"This is a {n}-back task. You will see letters one at a time. "
-        f"For the first {n} letter(s), respond 'no response'. "
-        f"After that, respond 'same' if the current letter matches the letter "
-        f"{n} position(s) back, otherwise 'different'. "
-        f"Update your working memory each turn to track the recent sequence.",
-        allow_tools=False,
-        max_tokens=512,
-    )
-
     trial_map: Dict[int, str] = {}
     buffer_map: Dict[int, Optional[str]] = {i: None for i in range(1, n + 1)}
+    encode_steps: List[int] = []
+    answer_steps: List[int] = []
+    answer_step_by_position: Dict[int, int] = {}
 
     for pos_idx, letter in enumerate(block.full_sequence):
         global_pos = pos_idx + 1  # 1-based
@@ -102,11 +143,29 @@ def run_nback_block(
         if debug:
             print(f"  Letter {global_pos}: {letter}")
 
-        response_text = agent.step(
-            f"Next letter: {letter}",
+        agent.step(
+            ENCODE_PROMPT.format(
+                wm_contents=agent.wm.to_recall_text(),
+                pos=global_pos,
+                letter=letter,
+            ),
             allow_tools=True,
             max_tokens=512,
         )
+        encode_steps.append(len(agent.get_step_log()) - 1)
+
+        response_text = agent.step(
+            ANSWER_PROMPT.format(
+                wm_contents=agent.wm.to_recall_text(),
+                task_prompt=TASK_DESC_BY_N[n].strip(),
+                pos=global_pos,
+                n=n,
+            ),
+            allow_tools=False,
+            max_tokens=512,
+        )
+        answer_steps.append(len(agent.get_step_log()) - 1)
+        answer_step_by_position[global_pos] = answer_steps[-1]
 
         classification = _parse_classification(response_text)
 
@@ -128,6 +187,9 @@ def run_nback_block(
         "trial_map": trial_map,
         "buffer_map": buffer_map,
         "step_log": agent.get_step_log(),
+        "encode_steps": encode_steps,
+        "answer_steps": answer_steps,
+        "answer_step_by_position": answer_step_by_position,
         "final_kv": agent.wm.store,
         "slot_utilization": len(agent.wm.store) / MAX_KEYS,
     }
@@ -271,6 +333,12 @@ def evaluate(
                     # because the replies and the prompts they answered were
                     # generated and discarded.
                     "step_log": block_result["step_log"],
+                    # Two turns per letter since the encode/answer split, so the old rule
+                    # "scored trial k is step n+k" is wrong. These carry the mapping
+                    # explicitly: `answer_step_by_position[n + k]` is scored trial k.
+                    "encode_steps": block_result["encode_steps"],
+                    "answer_steps": block_result["answer_steps"],
+                    "answer_step_by_position": block_result["answer_step_by_position"],
                     "slot_utilization": block_result["slot_utilization"],
                     "answered": scored["answered"],
                     "correct": scored["correct"],

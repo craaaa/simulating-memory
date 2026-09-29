@@ -30,11 +30,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 Q = "Qwen_Qwen3-30B-A3B-Instruct-2507"
 
+# "collection fix" here means eb3e96f (empty `tools` list omits the schemas), NOT the later
+# instrument fix (turn-boundary reset + n-back store injection). Both predate any run listed
+# here; nothing below was produced after `exp/compactor-prefix-v1`.
 GENERATIONS = {
-    "pre-fix baseline": ["iter0/baseline", "iter8repA/baseline", "iter8repB/baseline"],
-    "post-fix baseline": ["iter9postA/baseline", "iter9postB/baseline"],
-    "post-fix respond_first_v2": ["iter9postA/respond_first_v2",
-                                  "iter9postB/respond_first_v2"],
+    "pre-collection-fix baseline": ["iter0/baseline", "iter8repA/baseline",
+                                    "iter8repB/baseline"],
+    "post-collection-fix baseline": ["iter9postA/baseline", "iter9postB/baseline"],
+    "post-collection-fix respond_first_v2": ["iter9postA/respond_first_v2",
+                                             "iter9postB/respond_first_v2"],
 }
 
 
@@ -50,8 +54,18 @@ def trials(run: Path):
         n = int(r.get("n_level") or 1)
         per_trial = r.get("per_trial") or []
         steps = r.get("step_log") or []
+        # Post-instrument-fix rows hold TWO step entries per letter (encode, answer), so
+        # the old positional rule "scored trial k is step n+k" is only correct for rows
+        # written before `exp/compactor-prefix-v1`. When the explicit mapping is present,
+        # use it.
+        by_pos = r.get("answer_step_by_position") or {}
         for k, t in enumerate(per_trial, start=1):
-            i = n + k
+            if by_pos:
+                i = by_pos.get(str(n + k), by_pos.get(n + k))
+                if i is None:
+                    continue
+            else:
+                i = n + k
             if i >= len(steps):
                 continue
             st = steps[i]

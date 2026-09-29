@@ -36,7 +36,20 @@ WM_SYSTEM_PROMPTS = wm_system_prompts(
     human_task_prompt=HUMAN_PROMPT,
 )
 
+# Summarizer ablation encode prompt: that agent has a running summary, not a KV store.
 ENCODE_PROMPT = """\
+New statements:
+{statements}
+
+Update your memory as needed."""
+
+# WM agent encode prompt. The store is shown here as well as at the question turn: with
+# the transcript cleared at each turn boundary the agent cannot otherwise see which of its
+# MAX_KEYS slots are occupied, and would overwrite its own keys blind.
+WM_ENCODE_PROMPT = """\
+Your working memory currently contains:
+{wm_contents}
+
 New statements:
 {statements}
 
@@ -144,7 +157,10 @@ def evaluate(
                 statement_block = "\n".join(
                     a["statement"] for a in assignments[start:end]
                 )
-                encode_msg = ENCODE_PROMPT.format(statements=statement_block)
+                encode_msg = WM_ENCODE_PROMPT.format(
+                    wm_contents=agent.wm.to_recall_text(),
+                    statements=statement_block,
+                )
                 agent.step(encode_msg, allow_tools=True)
 
                 # Ask the question — model answers from KV store only

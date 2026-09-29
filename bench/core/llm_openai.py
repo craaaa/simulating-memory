@@ -28,6 +28,17 @@ def _sanitize_message_text(text: str) -> str:
     return text
 
 
+def _sanitize_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Sanitize every string `content` in a message list, without mutating the input."""
+    out: List[Dict[str, Any]] = []
+    for m in messages:
+        c = m.get("content")
+        if isinstance(c, str) and c:
+            m = {**m, "content": _sanitize_message_text(c)}
+        out.append(m)
+    return out
+
+
 # 1 initial attempt + 5 retries before surfacing the error
 _API_RETRIES = 5
 _ERROR_LOG_DIR = Path(__file__).resolve().parent.parent.parent / "logs" / "llm_openai_errors"
@@ -216,6 +227,10 @@ class OpenAIChatLLM(LLM):
         max_tokens: int = 256,
         **kwargs,
     ) -> LLMToolResponse:
+        # `generate()` sanitizes its prompt and system text; this path did not, so
+        # surrogates, NULs and control characters reached the API on the tool path only.
+        # Copy rather than mutate: the caller's list is the agent's live `_messages`.
+        messages = _sanitize_messages(messages)
         request_kwargs: Dict[str, Any] = {
             "model": self._api_model,
             "messages": messages,

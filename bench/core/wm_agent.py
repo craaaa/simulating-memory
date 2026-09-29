@@ -200,9 +200,25 @@ class WorkingMemoryAgent:
     ) -> str:
         """One turn of the agent loop.
 
-        Appends *user_message*, gets the LLM response (processing any tool
-        calls in a loop until the agent stops calling tools), and returns the
-        final text content.  Conversation history is maintained across calls.
+        Starts from a FRESH context (system prompt only), appends *user_message*, gets the
+        LLM response (processing any tool calls in a loop until the agent stops calling
+        tools), and returns the final text content.
+
+        Conversation history is NOT maintained across calls. Each turn sees the system
+        prompt, its own user message, and its own tool-call loop -- nothing else. The
+        key-value store is the only thing that crosses a turn boundary, which is what this
+        benchmark claims to measure. Before this, `_messages` accumulated every prior turn,
+        so a task presented turn-by-turn could be answered from the transcript without
+        consulting the store at all; `wm_nback` and `wm_variable_mapping` were both
+        answerable that way, and they were the only two of the eight working-memory tasks
+        whose scores any harness change could move.
+
+        The tool loop still needs multi-message state WITHIN a turn (the assistant's
+        tool_calls message and the tool result messages), which is why this method exists
+        rather than a single `generate()` call.
+
+        The batch tasks are unaffected: each calls `encode()` exactly once, and `recall()`
+        never reads `_messages`.
 
         Parameters
         ----------
@@ -218,6 +234,8 @@ class WorkingMemoryAgent:
         str
             The agent's text reply (may be empty if agent only made tool calls).
         """
+        # Turn boundary: the store carries over, the transcript does not.
+        self.reset_messages()
         self._ensure_messages()
         if allow_tools:
             self._tool_interactions += 1
