@@ -72,7 +72,7 @@ M3_nback_error_structure   [task=nback]
 
 M4_word_recognition_lag   [task=word_recognition]
     unit: accuracy on old trials (proportion correct) within a lag bin
-    CAVEAT: HUMAN side: words were always presented one at a time, so this is a memory curve. It rises with lag (0.506 at lag 1-2 to 0.950 at 11-20), which no memory account here explains; a likely part of it is survivorship, since the session stops at 3 errors so long-lag bins exist only for participants who survived that long (n per bin falls 53/51/44/40/27)
+    CAVEAT: HUMAN side: words were always presented one at a time, so the presentation was never the defect here -- the model harness was. But this curve's SLOPE IS NOT IDENTIFIABLE. It rises with lag (0.506 at 1-2 to 0.950 at 11-20), backwards for recognition memory, and the 3-error stop censors trials non-randomly with respect to lag WITHIN each participant: a long-lag trial exists only if that person had not yet erred 3 times. Measured decomposition -- survivorship explains under half (rise +0.4445 over all 53 participants, +0.2419 among the 12 who survived >=50 trials), the rise persists within participants (+0.3571, 28 positive vs 4 negative, Wilcoxon p=7.5e-06), and there is a separate early-session base-rate deficit (old-trial accuracy 0.740 at trials 1-10 vs ~0.90 later) that the lag effect survives. Quote the sign, not the magnitude. See logs/lag_curve_not_identifiable.md
     quantity                                         human     model  distance   n_human   n_model     1-W1
     lag 1-2                                         0.5059    0.7717    0.2658        53        50   0.7371
     lag 3-5                                         0.7975    0.7657    0.0318        51        44   0.8729

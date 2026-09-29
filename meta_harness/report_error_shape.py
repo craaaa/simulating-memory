@@ -203,11 +203,18 @@ def human_reference() -> dict[str, Any]:
     M["M4_word_recognition_lag"] = {
         "task": "word_recognition",
         "task_is_broken": False,
-        "caveat": ("HUMAN side: words were always presented one at a time, so this is a memory "
-                   "curve. It rises with lag (0.506 at lag 1-2 to 0.950 at 11-20), which no "
-                   "memory account here explains; a likely part of it is survivorship, since "
-                   "the session stops at 3 errors so long-lag bins exist only for participants "
-                   "who survived that long (n per bin falls 53/51/44/40/27)"),
+        "caveat": ("HUMAN side: words were always presented one at a time, so the presentation "
+                   "was never the defect here -- the model harness was. But this curve's SLOPE "
+                   "IS NOT IDENTIFIABLE. It rises with lag (0.506 at 1-2 to 0.950 at 11-20), "
+                   "backwards for recognition memory, and the 3-error stop censors trials "
+                   "non-randomly with respect to lag WITHIN each participant: a long-lag trial "
+                   "exists only if that person had not yet erred 3 times. Measured decomposition "
+                   "-- survivorship explains under half (rise +0.4445 over all 53 participants, "
+                   "+0.2419 among the 12 who survived >=50 trials), the rise persists within "
+                   "participants (+0.3571, 28 positive vs 4 negative, Wilcoxon p=7.5e-06), and "
+                   "there is a separate early-session base-rate deficit (old-trial accuracy "
+                   "0.740 at trials 1-10 vs ~0.90 later) that the lag effect survives. Quote "
+                   "the sign, not the magnitude. See logs/lag_curve_not_identifiable.md"),
         "unit": lag["unit"],
         "values": {b["lag"]: b["accuracy"] for b in lag["bins"]},
         "n_participants_per_bin": {b["lag"]: b["n_participants"] for b in lag["bins"]},

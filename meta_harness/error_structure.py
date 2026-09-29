@@ -645,10 +645,17 @@ def wr_lag_summary(sessions: list[list[float | None]],
                    if broken else
                    "one word per turn, answered before storing, list never re-shown "
                    "(fixed 2026-09-29), so this curve is a memory curve on the model side. "
-                   "The HUMAN side is unchanged and its rise with lag may be partly "
-                   "survivorship: both sides stop at 3 errors, so long-lag bins exist only "
-                   "for participants who survived that long (human n per bin falls "
-                   "53/51/44/40/27)"),
+                   "THE HUMAN CURVE'S SLOPE IS NOT IDENTIFIABLE: the 3-error stop censors "
+                   "trials non-randomly with respect to lag and does so WITHIN a participant "
+                   "-- a long-lag trial exists only if that person had not yet erred 3 times "
+                   "-- so every available estimator is biased upward. Survivorship alone "
+                   "accounts for under half (+0.4445 rise over all 53, +0.2419 among the 12 "
+                   "who survived >=50 trials) and the rise persists within participants "
+                   "(+0.3571, Wilcoxon p=7.5e-06), so it is not merely composition. Both "
+                   "sides now share the same censoring, which makes the COMPARISON more "
+                   "defensible than the human curve alone, and the SIGN is safe because no "
+                   "upward bias turns the model's falling curve into a rising one. See "
+                   "logs/lag_curve_not_identifiable.md"),
         "unit": "accuracy on old trials (proportion correct) within a lag bin",
         "n_sessions": len(sessions),
         "bins": bins,
