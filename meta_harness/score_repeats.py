@@ -208,7 +208,12 @@ def average_records(run_dirs: list[Path],
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("run_dirs", nargs="+")
-    ap.add_argument("--baseline", nargs="+", default=None)
+    # `action="extend"` so that BOTH forms accumulate: `--baseline A B C` and the repeated
+    # `--baseline A --baseline B --baseline C`. With plain nargs="+" the repeated form keeps
+    # only the last occurrence, which silently scored a candidate against a single baseline
+    # while the header claimed however many were passed -- the exact failure this module
+    # exists to prevent.
+    ap.add_argument("--baseline", nargs="+", action="extend", default=None)
     ap.add_argument("--id", default=None)
     ap.add_argument("--iteration", type=int, default=0)
     ap.add_argument("--record", action="store_true")
