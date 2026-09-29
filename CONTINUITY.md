@@ -37,14 +37,43 @@ spread rather than from the void human value; apply `logs/doc_audit.md` group 2 
 in `HANDOFF.md`, `WORKLOG.md`, `domain_spec.md`, plus the A1 demotion and the new measures in
 `domain_spec.md`'s axis table and `NOTES.md`).
 
-**6. `word_recognition` stage 2** — `logs/instrument_fix_stage2_plan.md`. First the
-prerequisite: confirm `src/score.py` divides the human side by trials *attempted* (humans
-stop at 3 strikes, ~20 trials; the model runs 100). That check decides whether to replicate
-the strike rule in bench or truncate analysis-side. Then implement one word per turn,
-answer-then-store, `encode()` deleted — and re-baseline again.
+**6. ~~`word_recognition` stage 2~~ — LANDED 2026-09-29, `dc14d0a` + `25b2121`.** One word per
+turn, answer-then-store, `encode()` deleted, presentation stops at the third error. Outcome
+sections appended to `logs/instrument_fix_stage2_plan.md`; 13 tests pass. Three things a later
+reader needs:
 
-**7. The protocol-mismatch audit** — a subagent was producing
-`logs/protocol_mismatch_audit.md` when this was written; check whether it landed. Then decide
+- **The prerequisite check returned the opposite of what the plan assumed, and it did not
+  matter.** `src/score.py` divides BOTH sides by a fixed 100 — but `score_game` already
+  applied the 3-strike rule analysis-side (`MAX_ERRORS_BEFORE_STOP`), so both sides were
+  already measuring *words survived*. Verified: `score == len(per_trial) − 3` for all 12 of 50
+  post-fix rows that reached three errors. Both of the plan's decision options were void; the
+  only thing left to change was the loop condition.
+- **There is no human accuracy on this task.** `trialsCompleted − correctResponses == 3` for
+  53 of 53 human records (mean 34.49 trials, median 32, mean score 0.3149), so the human
+  proportion-correct is algebraically `1 − 3/n`. The audit's **M1** is right about the human
+  side and wrong about the model side. `word_recognition` humanlikeness compares two
+  *survival-length* distributions rescaled by 100; closing the presentation defect makes the
+  model's survival length reflect memory rather than prompt-reading, and does not turn the
+  score into an accuracy. Quote **A2** (miss/FA, human 6.094) and `M4_word_recognition_lag`
+  as this task's real measures.
+- **Pre-stage-2 anchor: 0.5075 humanlikeness**, over the named triple `iter0/baseline` +
+  `iter8repA/baseline` + `iter8repB/baseline`. The 0.5199 in the plan body was unsourced and is
+  corrected. Stage 1 did *not* touch this task — one `encode()` call so the reset fires on an
+  empty message list, an ASCII-only sanitizer no-op, and −0.0158 against `SAME_FAMILY_SD`
+  0.0180 with a within-run spread of 0.0364.
+
+**6a. NOT YET ON THE CLUSTER.** `/scratch/cl5625/mh-postfix` is still at `410ec2a` and **must
+not be pulled until 18774002's output is copied down** — sbatch snapshots the script but Python
+is read at run time. `18774002`'s `word_recognition` column is the OLD presentation. Its noise
+figures for this task (`run_to_run_floor.json` 0.0000, `SAME_FAMILY_SD` 0.0180) do not survive
+the change and must be re-measured from repeats of the new code. Wall-clock rises: up to 200
+turns per participant against 2, cut back by the third-error stop (human mean 34.49 trials ⇒
+~69 turns).
+
+**7. The protocol-mismatch audit** — LANDED, `18dd2b8` + `df01b82`, 21 items in
+`logs/protocol_mismatch_audit.md`. Its own summary contradicts the brief it was given in six
+places; read those before acting on the table. M13 (word_recognition) was its only
+change-`bench/` recommendation and is now done. Still to decide
 per item between changing bench, correcting analysis-side, or documenting. It contains the
 deepest open question: `search_set.yaml` sets `temperature: 0.0` and the 50 "participants"
 per task are 50 seeded *stimulus sets* run by one deterministic model, so the model's
