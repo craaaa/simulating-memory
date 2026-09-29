@@ -35,7 +35,12 @@ export PYTHONNOUSERSITE=True
 export LIBRARY_PATH=/usr/lib64:${LIBRARY_PATH:-}
 export LD_LIBRARY_PATH=/usr/lib64:${LD_LIBRARY_PATH:-}
 
-REPO=/scratch/cl5625/meta-harness-compactor
+# Overridable so a second checkout can run a different commit while another job is still
+# reading the first one. SLURM snapshots this script at submit time but Python files are read
+# at run time, so switching the main checkout's HEAD under a running job would change bench
+# mid-run. Pass REPO=<path> to point a job at its own worktree; .venv and runs/ may be
+# symlinks back to the main checkout.
+REPO="${REPO:-/scratch/cl5625/meta-harness-compactor}"
 PY="$REPO/.venv/bin/python"
 export PATH="$REPO/.venv/bin:$PATH"   # FlashInfer shells out to ninja
 
