@@ -194,11 +194,20 @@ def human_reference() -> dict[str, Any]:
 
     # ---- M4 word-recognition lag curve
     sessions = ES.wr_lag_human()
-    lag = ES.wr_lag_summary(sessions)
+    # The HUMAN side was never the broken one. `word_recognition.HUMAN_PROMPT` is "Words will
+    # appear one at a time", so human participants always saw a single word per trial; it was
+    # the MODEL harness that printed all 100 at once, and that was fixed on 2026-09-29. This
+    # block said `task_is_broken: True` about the human reference, which mislabelled the side
+    # that was correct all along.
+    lag = ES.wr_lag_summary(sessions, post_fix=True)
     M["M4_word_recognition_lag"] = {
         "task": "word_recognition",
-        "task_is_broken": True,
-        "caveat": lag["caveat"],
+        "task_is_broken": False,
+        "caveat": ("HUMAN side: words were always presented one at a time, so this is a memory "
+                   "curve. It rises with lag (0.506 at lag 1-2 to 0.950 at 11-20), which no "
+                   "memory account here explains; a likely part of it is survivorship, since "
+                   "the session stops at 3 errors so long-lag bins exist only for participants "
+                   "who survived that long (n per bin falls 53/51/44/40/27)"),
         "unit": lag["unit"],
         "values": {b["lag"]: b["accuracy"] for b in lag["bins"]},
         "n_participants_per_bin": {b["lag"]: b["n_participants"] for b in lag["bins"]},
@@ -343,7 +352,8 @@ def model_measures(run_dir: Path) -> dict[str, Any]:
         out["M3_nback_error_structure"] = ES.nback_error_profile(
             ES.nback_model_trials(run_dir))
     if (run_dir / "tasks/wm_word_recognition.jsonl").exists():
-        out["M4_word_recognition_lag"] = ES.wr_lag_summary(ES.wr_lag_model(run_dir))
+        out["M4_word_recognition_lag"] = ES.wr_lag_summary(
+            ES.wr_lag_model(run_dir), post_fix=ES.wr_is_post_fix(run_dir))
     for task in ("narrative_qa", "factual_qa"):
         if (run_dir / f"tasks/wm_{task}.jsonl").exists():
             counts = ES.distractor_counts_model(run_dir, task)
@@ -543,8 +553,16 @@ def print_table(run_dir: Path, ref: dict) -> None:
             href = measures[key]
             rows = _rows_for(key, href, mres.get(key))
             flags = []
-            if href.get("task_is_broken"):
-                flags.append("TASK IS BROKEN -- see caveat")
+            # `task_is_broken` is a property of the side being measured, and the two sides can
+            # differ: word_recognition's human protocol always showed one word at a time, while
+            # the model harness printed all 100 until 2026-09-29. So prefer the MODEL measure's
+            # own flag when a model run is present, and fall back to the human reference only
+            # when there is none. Reading it off the human reference alone labelled every run
+            # by whether the HUMANS were broken, which on this measure they never were.
+            mmeas = mres.get(key) or {}
+            broken = mmeas.get("task_is_broken", href.get("task_is_broken"))
+            if broken:
+                flags.append("MODEL SIDE IS BROKEN -- see caveat")
             if href.get("pooled_only"):
                 flags.append("pooled only")
             if href.get("not_a_distractor_measure"):

@@ -2002,7 +2002,7 @@
       }
     },
     "M4_word_recognition_lag": {
-      "caveat": "all test words are visible in one list and 'Old' means 'appeared earlier in this list', so this curve measures list inspection as well as memory",
+      "caveat": "HUMAN side: words were always presented one at a time, so this is a memory curve. It rises with lag (0.506 at lag 1-2 to 0.950 at 11-20), which no memory account here explains; a likely part of it is survivorship, since the session stops at 3 errors so long-lag bins exist only for participants who survived that long (n per bin falls 53/51/44/40/27)",
       "filters": [
         {
           "n_after": 53,
@@ -2267,7 +2267,7 @@
         ]
       },
       "task": "word_recognition",
-      "task_is_broken": true,
+      "task_is_broken": false,
       "unit": "accuracy on old trials (proportion correct) within a lag bin",
       "values": {
         "1-2": 0.5059,

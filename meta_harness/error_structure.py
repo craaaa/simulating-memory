@@ -599,8 +599,25 @@ def wr_lag_model(run_dir) -> list[list[float | None]]:
     return out
 
 
+def wr_is_post_fix(run_dir) -> bool:
+    """True if this run's word_recognition rows came from the one-word-per-turn harness.
+
+    Decided from the rows rather than assumed: post-2026-09-29 rows carry `trials_presented`
+    and have no `recall_raw`. Used to label the lag curve honestly -- see `wr_lag_summary`.
+    """
+    path = Path(run_dir) / "tasks/wm_word_recognition.jsonl"
+    if not path.exists():
+        return False
+    for line in path.read_text().splitlines():
+        if line.strip():
+            r = json.loads(line)
+            return "trials_presented" in r and "recall_raw" not in r
+    return False
+
+
 def wr_lag_summary(sessions: list[list[float | None]],
-                   min_participants: int = MIN_LAG_PARTICIPANTS) -> dict:
+                   min_participants: int = MIN_LAG_PARTICIPANTS,
+                   post_fix: bool = False) -> dict:
     bins = []
     for i, label in enumerate(LAG_BIN_LABELS):
         vals = [s[i] for s in sessions if s[i] is not None]
@@ -614,11 +631,24 @@ def wr_lag_summary(sessions: list[list[float | None]],
                           f"minimum {min_participants}"),
             "per_participant": vals,
         })
+    # `task_is_broken` describes the MODEL side and is decided from the rows, because the
+    # defect it names was fixed on 2026-09-29. A post-fix row is presented one word per turn
+    # and carries `trials_presented`; a pre-fix row answered all 100 at once from a visible
+    # list. Hard-coding True here would have kept labelling a fixed task broken, and the
+    # arm-1 report of job 18781213 did exactly that before this was changed.
+    broken = not post_fix
     return {
-        "task_is_broken": True,
+        "task_is_broken": broken,
         "caveat": ("all test words are visible in one list and 'Old' means "
                    "'appeared earlier in this list', so this curve measures list "
-                   "inspection as well as memory"),
+                   "inspection as well as memory"
+                   if broken else
+                   "one word per turn, answered before storing, list never re-shown "
+                   "(fixed 2026-09-29), so this curve is a memory curve on the model side. "
+                   "The HUMAN side is unchanged and its rise with lag may be partly "
+                   "survivorship: both sides stop at 3 errors, so long-lag bins exist only "
+                   "for participants who survived that long (human n per bin falls "
+                   "53/51/44/40/27)"),
         "unit": "accuracy on old trials (proportion correct) within a lag bin",
         "n_sessions": len(sessions),
         "bins": bins,
