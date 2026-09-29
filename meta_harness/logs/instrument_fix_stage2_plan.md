@@ -231,6 +231,13 @@ accuracy, because the human data contains none. The honest headline measures for
 curve in `report_error_shape.py`), both of which are shape comparisons and survive the
 missing accuracy.
 
+**Field trap, for whoever measures survival length.** Use the row's `trials_presented` or
+`stopped_at_third_error`. **`metrics.first_error_at` is misnamed**: `score_game` assigns
+`third_error_at` and returns it under that key, so it holds the index of the THIRD error, not
+the first. Pre-existing and deliberately not changed here, but it is now the field a reader
+would naturally reach for — and it happens to be the right number for survival length while
+being the wrong number for what its name says.
+
 ## 6. Re-baseline needed
 
 - `run_to_run_floor.json` lists `word_recognition` noise as 0.0000 and
