@@ -131,6 +131,13 @@ verbatim over-recall at 366 is the outlier, not the norm.
   `iter11postfix/baseline` run) and on n-back it is too *conservative* (7.48 against 3.10). The
   n-back ratio here is M3's own statistic and is NOT affected by the A2 change; M3 keeps reporting
   a ratio, with the ≥30-false-alarm withholding rule that makes it readable.
+  **UNAFFECTED by the 2026-09-29 "Option D" n-back scoring fix** (per `(participant, n-level)` on
+  both sides, human lead-in dropped — `logs/nback_denominator_decision.md`): M3 was **already** on
+  that shape, already dropping the lead-in and already sourcing the level from the block name, so
+  all six numbers above stand and `logs/human_error_shape.json` is byte-identical after a rebuild.
+  This remains the live n-back target, and it is now the *only* one: n-back humanlikeness went
+  0.9344 → **0.9622** on this run under Option D, so there is very little score headroom left, and
+  the response-bias asymmetry is the substance.
   A single "the model over-false-alarms" story does
   not cover both, and any candidate framed as fixing response bias has to say which direction it
   is fixing and on which task. Two things are ruled out as explanations on n-back: position

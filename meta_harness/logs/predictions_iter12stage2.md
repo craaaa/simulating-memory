@@ -117,6 +117,14 @@ No code touching `nback`, `narrative_qa`, `semantic_story_recall` or `craft_task
 must stay inside **2× its measured 3-repeat spread**, doubled because three repeats pin a spread
 only to about a third of itself:
 
+> **ANNOTATION 2026-09-29 [TOOL]: the `nback` row is a FROZEN PRE-REGISTRATION on the
+> pre-Option-D scoring shape, and is NOT re-fitted.** Since the Option D fix
+> (`logs/nback_denominator_decision.md`) n-back scores ≈0.962 on these arms, which would blow a
+> ±0.0068 band and report a REJECT about the *scoring change* rather than about the run.
+> `check_iter12_predictions.py` therefore evaluates this one row against
+> `score.nback_human_scores_legacy_pooled()`, i.e. on the shape the band was registered on.
+> Re-fitting a band after seeing the new reference would void the pre-registration.
+
 | task | iter11postfix | spread | must stay within |
 |---|---|---|---|
 | nback | 0.9344 | 0.0034 | ±0.0068 |

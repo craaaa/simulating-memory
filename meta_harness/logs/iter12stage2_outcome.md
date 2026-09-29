@@ -1,5 +1,17 @@
 # Stage-2 outcome — job 18781213: word_recognition +0.2914, and 8 of 9 predictions held
 
+> **ANNOTATION 2026-09-29 [TOOL] — the two n-back humanlikeness figures in the table below are
+> on the PRE-OPTION-D SCORING SHAPE, and are deliberately NOT recomputed here.** This is a
+> frozen record. Under Option D (`logs/nback_denominator_decision.md`: per `(participant,
+> n-level)` on both sides, human lead-in dropped) the same arms give n-back **0.9622** for
+> `iter11postfix` and **0.9633** for `iter12stage2`, a delta of **+0.0011** rather than
+> −0.0004, with a 3-repeat spread of 0.0060 / 0.0035 rather than 0.0034 / 0.0061. The
+> `comparable? yes` verdict for n-back **still holds** — both columns move together, because
+> the change is on the human side, which is shared. Re-derived aggregates: mean over 8 becomes
+> 0.8862 → **0.9167** (+0.0305, was +0.0302); mean over the 6 comparable tasks becomes
+> 0.8703 → **0.9176** (+0.0473, was +0.0470). **The headline result is unaffected**: it rests
+> on `word_recognition`, which this change does not touch.
+
 Three Qwen baseline repeats, `runs/iter12stage2/baseline{,_rep2,_rep3}`, run from
 `/scratch/cl5625/mh-postfix` at commit **a14b59d**. **COMPLETED, exit 0, 1h32m** on one H200.
 All three arms hold all 8 tasks at full row counts (6810 rows total).

@@ -1517,3 +1517,141 @@ with the ≥30-false-alarm withholding rule; that ratio is a different measure o
 and is unchanged. The pre-registered A2 thresholds in `check_predictions.py` (P3–P6, C1, P10, R1)
 still read the legacy ratio fields on purpose, so the registered checks keep the meaning they were
 registered with.
+
+---
+
+## AMENDMENT 2026-09-29 (n-back scoring: Option D — M6 + M7 landed together)
+
+**Decision [USER]: "Option D".** n-back is scored per `(participant, n-level)` on **both** sides,
+with the human **lead-in** trials excluded, so both sides count only trials where the task is
+well-defined. This closes audit items **M6** (unmatched denominators) and **M7** (unmatched
+granularity) in one change, and **M8** (112 impossible `target: true` flags) as a consequence.
+Analysis-side only — nothing under `bench/`, `data/` or `runs/` was touched, and no run was
+repeated. Landed in `src/score.py`: `_nback_level`, `_nback_is_leadin`,
+`nback_human_by_level`, `nback_human_scores`, and a `human_scores("nback")` that dispatches to
+them. Guarded by `test_error_shape.test_nback_scoring_shape`.
+
+**Which line this supersedes in this file.** The comparability table at ~line 588 reads
+"`nback` | after correction | model scored per `(participant, n_level)`, human pooled over levels
+→ `nback_levels.py`, per level on both sides". That is now **corrected, not merely correctable**,
+and the fix is in `src/score.py` rather than in `nback_levels.py`, which delegates to it.
+
+**What each defect was.** A block at level *n* opens with *n* lead-in letters, where no letter *n*
+positions back exists yet. Human blocks hold exactly 14 non-practice trials **including** those
+lead-in trials, `trial` indexed from 1, verified at each of n=1,2,3 for every usable record. The
+model is presented its lead-in letters separately (`buffer_letters`, responses in
+`model_parsed_buffer`) and they are **excluded** from `acc_over_14`. So the human was scored over
+14 trials, 3 of them lead-in at n=3, and the model over 14 genuine trials. The human lead-in
+trials are not measurements: accuracy on them is flat at **0.9182** at every level while real
+accuracy falls 0.9492 → 0.8553 → 0.7496, and **112 of 318** carry `target: true`, which cannot
+happen when no letter *n* back exists.
+
+**The model side needed no change.** `llm_scores("nback")` already emitted one value per
+`(participant, level)` from `acc_over_14`, which already excluded the lead-in. Option D is
+entirely a human-side fix. This is counterintuitive and worth stating: M7 was not a mismatch
+between two wrong implementations but a human side that was coarser than the model side.
+
+**Results.** Humanlikeness = 1 − Wasserstein-1 between the model's and the humans'
+per-participant score distributions, in [0,1], computed with the project's own
+`src/score.wasserstein_1d`. Three arms per run-set, mean over arms. Only `nback` moves; every
+other task is byte-identical, which was verified by re-running `score_repeats.py` on both
+run-sets.
+
+| task | `iter11postfix` before | `iter11postfix` after | `iter12stage2` before | `iter12stage2` after |
+|---|---|---|---|---|
+| digit_span_forward | 0.9012 | 0.9012 | 0.8712 | 0.8712 |
+| digit_span_reverse | 0.9666 | 0.9666 | 0.9568 | 0.9568 |
+| **nback** | **0.9344** | **0.9622** | **0.9340** | **0.9633** |
+| word_recognition | 0.5364 | 0.5364 | 0.8278 | 0.8278 |
+| variable_mapping | 0.9643 | 0.9643 | 0.9662 | 0.9662 |
+| narrative_qa | 0.9444 | 0.9444 | 0.9522 | 0.9522 |
+| semantic_story_recall | 0.9470 | 0.9470 | 0.9510 | 0.9510 |
+| craft_task | 0.8679 | 0.8679 | 0.8451 | 0.8451 |
+| **mean over 8** | **0.8828** | **0.8862** | **0.9130** | **0.9167** |
+
+Decomposition on the three `iter12stage2` arms: legacy shape **0.9340**; M6 alone (pooled human,
+lead-in excluded) **0.9419**; M7 alone (per-level both sides, lead-in included) **0.9627**;
+M6 + M7 **0.9633**.
+
+**M7 dominates and M6 is nearly free — this reverses the earlier framing in
+`logs/nback_denominator_decision.md` and `logs/open_decisions_brief.md`, which both treated the
+denominator as the big fix.** M7 alone is **+0.0287**; M6 adds **+0.0006** on top of it, which is
+smaller than n-back's measured run-to-run spread of 0.0061 and whose **sign is not identified**
+across reasonable specifications (it is −0.0020 if the human pool is restricted to the 49
+level-carrying records). The **0.0378** figure those briefs quoted is per-level **accuracy** at
+n=3, **not** humanlikeness; they compared it against a humanlikeness estimate and concluded M6 was
+four times larger than the audit thought. **M6 is a correctness fix, not a scoring gain**, and the
+worry that it "flatters the model" was misplaced.
+
+**M6 makes the n=3 DISTRIBUTION match slightly worse even though it closes the mean gap.**
+Dropping the lead-in **widens** the human n=3 spread — population sd 0.1459 → 0.1618 at the
+53-record pool, 0.1492 → 0.1657 at the 49-record pool — while the model sits at sd 0.0970. So the
+mean gap closes and the **dispersion** gap opens, and the per-level humanlikeness at n=3 can fall
+while the means converge. **Wherever the n=3 mean gap is quoted, the two sds must be quoted with
+it.** The gap itself: human 0.7496 against the three-arm model mean 0.7405, i.e. **−0.0091**
+proportion-correct, superseding the **−0.0016** and **+0.0008** literals recorded earlier (both
+were computed at the 49-participant pool).
+
+**Human n is 53 participants × 3 levels = 159 cells, not 49 × 3.** Of the 57 released records: 49
+carry an integer `level` on every scored trial; **4** carry `level: null` and also `phase: null`,
+but their blocks are named `1-back` / `2-back` / `3-back` with exactly 14 trials indexed 1..14 each
+— structurally identical to the other 49 — so their level is recovered from the block name, which
+is what `error_structure.nback_human_trials` already did for the M3 measure. The remaining **4**
+have an empty `payload` **and** an empty `summary`: no trials, no `accuracyPercent`, nothing to
+score on any shape, and they were already absent from every n-back figure this project has
+reported. Keeping the recoverable 4 means the legacy pooled path and the new per-level path use the
+**same 53 participants**, so the before/after above is not confounded by a sample change. A filter
+on `phase == "scored"` instead of `phase != "practice"` would silently drop them and land the human
+n at 49 — a number that looks plausible and matches every pre-decision measurement — which is why
+the test asserts 53.
+
+Consequently the lead-in totals differ by record scope, and both are correct: **294 trials / 106
+impossible `target: true`** at the 49-record scope used in `logs/nback_denominator_decision.md` and
+`logs/open_decisions_brief.md`; **318 / 112** at the 53-record scope used by `error_structure.py`,
+`logs/protocol_mismatch_audit.md` and the landed code.
+
+**The legacy shape is preserved, not rewritten.** `score.nback_human_scores_legacy_pooled()`
+returns the pre-Option-D human vector, and `score._score_human_record("nback", …)` is unchanged
+and labelled legacy. It reproduces the recorded figures exactly — 0.9344 for `iter11postfix`, and
+run-to-run spreads 0.0034 / 0.0061 matching `score_candidate.RUN_TO_RUN_SPREAD`'s documented
+table — which is the check that the legacy path still works. **No historical row in
+`logs/evolution_summary.jsonl` was rewritten.** In `nback_levels.report()` the fields
+`per_row_humanlikeness`, `pooled_humanlikeness`, `per_row_sd`, `pooled_sd` and `human_sd` keep
+their recorded meaning and are now explicitly labelled legacy; the new figure has a new name,
+`matched_humanlikeness`, rather than overloading an existing one.
+
+**Frozen pre-registrations were annotated, not re-fitted.** `check_iter12_predictions.py`'s P6
+band for n-back (0.9344 ± 0.0068) is evaluated against the legacy human vector, on the shape it
+was registered on; under the new shape the same arms read ≈0.963 and would report a REJECT about
+the scoring change rather than about the run. `check_predictions.py`'s P3 absolute bar (≥ 0.7309)
+is left as registered and marked uninformative for post-Option-D runs — read the delta against the
+baseline instead, which is shape-invariant because the human side is shared.
+
+**Noise constants: measured, reported, deliberately not retightened.** Under the new shape the
+three-arm n-back spread is **0.0060** (`iter11postfix`) and **0.0035** (`iter12stage2`), against
+the old shape's 0.0034 / 0.0061. The kept constant 0.0061 bounds both, so
+`score_candidate.RUN_TO_RUN_SPREAD`, `score_repeats.SAME_FAMILY_SD` (0.0056),
+`score_candidate.NOISE_FLOOR` (0.060) and `history.NOISE_FLOOR` (0.025) are all left at their
+values and annotated as calibrated on a superseded shape. Recalibrating them is a user decision.
+
+**What is still open on n-back, and was not fixed here.**
+
+- **M9 survives M6, and M6 does not fix it** — an error in an earlier draft of this amendment,
+  corrected here. After dropping the human lead-in the human has 14 − n scored trials per block
+  (13 / 12 / 11) and the model still has **14**, so the model answers proportionally more
+  high-load trials and its per-cell accuracy comes from a slightly larger sample. Closing it needs
+  `bench/tasks/nback.py` to present 14 + n letters per block, which was out of scope.
+- **M21** stays documented-only and is moot on the current instrument (`n_no_answers` is 0 at
+  every level).
+- **M14** — "a participant" is a person on the human side and a seeded stimulus set on the model
+  side — is the likeliest explanation for the n=3 dispersion gap, and is a design property rather
+  than a bug.
+
+**Verification run.** `test_error_shape.py` (all, including the new `test_nback_scoring_shape`),
+`test_guards.py`, `pytest test_turn_boundary_reset.py -q` (14 passed), `test_history.py`: all
+pass. `logs/human_error_shape.json` was rebuilt with
+`report_error_shape.py --rebuild-human-cache` and is **byte-identical**, md5
+`e8668d4c1361ede1bb9b92f90935ab9b` before and after — zero leaf fields moved. That is the expected
+result and an independent confirmation of the approach: M3 was already per-`(participant, level)`,
+already lead-in-excluded and already block-name-sourced, so agreeing with it exactly is the test
+that the landed filters are the repo's validated ones.

@@ -54,10 +54,10 @@ size; **COSMETIC** = real difference, no measured effect on a reported number.
 | M3 | variable_mapping | axis **A4** human reference is the stopping rule, not load-dependence | **INVALIDATING** (already retracted) | (c) documented; strike the human column |
 | M4 | digit span (fwd + rev) | `best_span` is estimated from **1 trial/span** on the model side and **2 trials/span** on the human side; the estimator is strongly sensitive to this | **INVALIDATING** | (b) analysis-side: 2 trials/span on both, and re-baseline the digit-span humanlikeness figures |
 | M5 | digit span (fwd + rev) | human staircase terminates on double failure; model administers all 19 spans (2–20) | BIASING (subsumed by M4 once the estimator is matched) | (b) analysis-side, as `protocol_match._administer` already does |
-| M6 | n-back | human score divides by **all 42 non-practice trials** including the 6 lead-in trials where no answer is possible; model's `acc_over_14` divides by scored trials only | BIASING, −0.0088 score units | (b) analysis-side |
-| M7 | n-back | scoring granularity: model = one observation per (participant, n-level); human = one pooled observation per participant | BIASING, +0.065 humanlikeness when corrected | (b) analysis-side (`meta_harness/nback_levels.py` already does it) |
-| M8 | n-back | 112 of 318 human lead-in trials carry an impossible `target: true` | BIASING (inside M6) | (c) document; excluded once M6 is fixed |
-| M9 | n-back | model gets 14 scored trials per block; human gets 14 − n (13/12/11) | BIASING, small | (c) document |
+| M6 | n-back | human score divides by **all 42 non-practice trials** including the 6 lead-in trials where no answer is possible; model's `acc_over_14` divides by scored trials only | BIASING, −0.0088 score units | **FIXED 2026-09-29 [USER], Option D** — (b) landed in `src/score.py` |
+| M7 | n-back | scoring granularity: model = one observation per (participant, n-level); human = one pooled observation per participant | BIASING, +0.065 humanlikeness when corrected | **FIXED 2026-09-29 [USER], Option D** — (b) landed in `src/score.py`; `nback_levels.py` now delegates to it |
+| M8 | n-back | 112 of 318 human lead-in trials carry an impossible `target: true` | BIASING (inside M6) | **RESOLVED 2026-09-29 via M6** — those trials no longer enter the denominator |
+| M9 | n-back | model gets 14 scored trials per block; human gets 14 − n (13/12/11) | BIASING, small | **STILL OPEN after M6** — see the amendment in §4; M6 does *not* fix it, and it cannot be fixed analysis-side |
 | M10 | narrative_qa | 49 of 520 human questions come from `data/narrative_QA_easy.json`, which the model never sees | BIASING | (c) document, or (b) drop the 4.5 affected human records |
 | M11 | craft_task | 5 of 54 human records used `data/craft_task_old.json` (v2.0), which the model never sees | BIASING | (c) document, or (b) drop those 5 human records |
 | M12 | craft_task, map_task | scoring granularity: model = one observation per 5-question trial; human = one pooled observation per 15 questions | BIASING, ±0.02 humanlikeness | (b) analysis-side |
@@ -425,6 +425,33 @@ sensitivity:
 ---
 
 ## 4. n-back
+
+> **AMENDMENT 2026-09-29 [USER] — M6, M7 and M8 are FIXED; M9 is NOT, and M6 did not fix it.**
+> The user approved "Option D" (`logs/nback_denominator_decision.md`): n-back is scored per
+> `(participant, n-level)` on both sides, with the human lead-in trials excluded. Landed in
+> `src/score.py` (`nback_human_by_level`, `nback_human_scores`), guarded by
+> `test_error_shape.test_nback_scoring_shape`.
+>
+> **This section's measurements below are all still correct; only their "proposed fix" status
+> changes.** Two numbers to carry forward, and one correction:
+>
+> - **The M7 estimate was in the right place but understated.** This section predicted +0.065
+>   humanlikeness on qwenA for "model pooled + human scored-only". On the current instrument
+>   (`runs/iter12stage2`, three arms) the landed per-level fix gives **+0.0293** in total,
+>   of which **M7 supplies +0.0287** and **M6 only +0.0006**. So the audit's ordering was
+>   right — granularity is the big one — even though the magnitude differs, because qwenA and
+>   iter12stage2 are different instruments.
+> - **M6's own effect on humanlikeness is smaller than this section implies.** Its −0.0088
+>   proportion-correct on the human *reference* is real (and reproduces: the pooled human mean
+>   goes 0.8657 → 0.8569, reproducing this section's table exactly), but that is an accuracy,
+>   not a humanlikeness. M6's humanlikeness
+>   increment sits inside n-back's 0.0061 run-to-run spread and its sign is not identified.
+> - **M9 SURVIVES M6 and is not fixable analysis-side.** Dropping the human lead-in leaves the
+>   human at 14 − n scored trials per block (13/12/11) and the model at **14**, so the model
+>   still answers proportionally more high-load trials and its per-cell accuracy is estimated
+>   from a slightly larger sample. That is a property of the two block structures, and closing
+>   it would need a change in `bench/tasks/nback.py` to present 14 + n letters per block.
+>   Recorded here rather than acted on: `bench/` was out of scope for this change.
 
 ### M6 — human denominator includes the lead-in trials
 

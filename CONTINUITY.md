@@ -1,5 +1,94 @@
 # CONTINUITY — session state, 2026-09-28 / 29
 
+## 2026-09-29T00:00Z [USER] — OPEN ITEM 2 DECIDED AND LANDED: n-back scored per (participant, level) on both sides, human lead-in dropped ("Option D")
+
+Decision 2 of `logs/open_decisions_brief.md` / `logs/nback_denominator_decision.md` is taken and
+implemented: **both** the denominator fix (audit **M6**) and the granularity fix (audit **M7**),
+as one change. Analysis-side only; nothing under `bench/`, `data/` or `runs/` touched, no re-run.
+Commit: see `git log` for `fix(nback): score per (participant, level)`.
+
+- **What changed.** [CODE, `src/score.py`] `human_scores("nback")` now returns one value per
+  `(participant, n-level)` — 159 values — instead of one pooled value per participant, and the *n*
+  **lead-in** trials of each human block are dropped. Lead-in = the opening trials where no letter
+  *n* positions back exists; human accuracy on them is flat at **0.9182** at every level while real
+  accuracy falls 0.9492 → 0.8553 → 0.7496, and **112 of 318** are logged `target: true`, which is
+  impossible. **The model side needed no change** — `llm_scores("nback")` already emitted one value
+  per `(participant, level)` from `acc_over_14`, which already excluded the lead-in. M7 was a human
+  side coarser than the model side, not two wrong implementations.
+- **Results.** [TOOL, `score_repeats.py` on 3 arms each] n-back humanlikeness (= 1 − W₁, in [0,1])
+  `iter11postfix` **0.9344 → 0.9622**, `iter12stage2` **0.9340 → 0.9633**. Mean over the 8 search
+  tasks **0.8828 → 0.8862** and **0.9130 → 0.9167**. No other task moves by any amount.
+- **M7 dominates; M6 is nearly free.** [TOOL] On the three `iter12stage2` arms: legacy 0.9340,
+  M6 alone 0.9419, **M7 alone 0.9627**, M6+M7 0.9633. M7 is **+0.0287**; M6 adds **+0.0006**,
+  inside n-back's 0.0061 run-to-run spread, and its sign is **not identified** (−0.0020 at the
+  49-participant human pool). **The 0.0378 figure both briefs quoted is per-level *accuracy* at
+  n=3, not humanlikeness** — they compared it to a humanlikeness estimate and concluded M6 was the
+  big fix. It is not. M6 is a correctness fix, not a scoring gain, and the fear that it "flatters
+  the model" was misplaced.
+- **M6 opens the n=3 dispersion gap while closing the mean gap.** [TOOL] Dropping the lead-in
+  widens the human n=3 spread (population sd 0.1459 → 0.1618 at 53 participants; 0.1492 → 0.1657
+  at 49) while the model sits at sd 0.0970. The n=3 mean gap is now **−0.0091** proportion-correct
+  (human 0.7496, three-arm model mean 0.7405), superseding the **−0.0016** and **+0.0008** literals
+  recorded earlier, both computed at the 49-pool. **Never quote that gap without the two sds** — it
+  reads as a stronger result than it is. Also: **n=2 is now the worst-matched level** (−0.0791), not
+  n=3.
+- **Human n is 53 × 3 = 159, not 49 × 3.** [TOOL] Of 57 records: 49 carry an integer `level`;
+  **4** carry `level: null` *and* `phase: null` but have blocks named `1-back`/`2-back`/`3-back`
+  with 14 trials indexed 1..14 each, so their level is recovered from the block name — as
+  `error_structure.nback_human_trials` already did for M3; the remaining **4** have an empty
+  `payload` and an empty `summary`, so they have no trials and no accuracy on any shape and were
+  already absent from every n-back figure ever reported here. Keeping the recoverable 4 means the
+  legacy and new paths use the **same 53 participants**, so the before/after is not confounded by a
+  sample change. A `phase == "scored"` filter would silently drop them and land on 49;
+  `test_error_shape.test_nback_scoring_shape` asserts 53.
+- **Record-scope note, both correct.** Lead-in totals are **294 / 106 impossible targets** at the
+  49-record scope used in the two decision briefs, **318 / 112** at the 53-record scope used by
+  `error_structure.py`, `logs/protocol_mismatch_audit.md` and the landed code.
+- **The 0.9375-vs-0.9340 discrepancy is RESOLVED: 0.9340 is right.** [TOOL] The brief's 0.9375 for
+  the legacy shape differs from `score_repeats.py`'s 0.9340 for **two** reasons, not one: the human
+  pool (49 vs 53, worth +0.0021) *and* the W₁ implementation (`scipy.stats.wasserstein_distance`
+  vs the project's grid-clipped `src/score.wasserstein_1d`, worth +0.0018). All four cells of that
+  2×2 were reproduced exactly. The project's canonical metric is `src/score.wasserstein_1d`, and
+  the legacy path scores 53 records, so **0.9340**. Every brief literal reproduced exactly once
+  metric and pool were specified: 0.9375 / 0.9418 / 0.9662 / 0.9665 are all scipy-at-49.
+- **Legacy preserved, nothing rewritten.** [CODE] `score.nback_human_scores_legacy_pooled()`
+  returns the old human vector and reproduces the recorded 0.9344 and both recorded run-to-run
+  spreads (0.0034 / 0.0061) exactly. No row in `logs/evolution_summary.jsonl` was rewritten;
+  `nback_levels.report()`'s `per_row_humanlikeness` / `pooled_humanlikeness` / `*_sd` keep their
+  recorded meaning and are labelled legacy, with the new figure under a new name,
+  `matched_humanlikeness`. `logs/nback_turn_order_outcome.md` and `logs/iter12stage2_outcome.md`
+  were **annotated, not recomputed**, overriding the closing instruction in
+  `nback_denominator_decision.md` to recompute them.
+- **Frozen pre-registrations annotated, not re-fitted.** [CODE] `check_iter12_predictions.py`'s P6
+  n-back band (0.9344 ± 0.0068) is evaluated against the legacy human vector, on the shape it was
+  registered on; `check_predictions.py`'s P3 absolute bar (≥ 0.7309) is left as registered and
+  marked uninformative after Option D — read the delta, which is shape-invariant.
+- **Noise constants measured, reported, NOT retightened.** [TOOL] New-shape three-arm n-back
+  spread **0.0060** (`iter11postfix`) / **0.0035** (`iter12stage2`), against the old shape's
+  0.0034 / 0.0061. The kept 0.0061 bounds both. `score_candidate.RUN_TO_RUN_SPREAD` (0.0061),
+  `score_repeats.SAME_FAMILY_SD` (0.0056), `score_candidate.NOISE_FLOOR` (0.060) and
+  `history.NOISE_FLOOR` (0.025) are annotated as calibrated on a superseded shape. **Recalibrating
+  them is an open user decision.**
+- **Still open on n-back.** **M9 survives M6** — the human keeps 14 − n scored trials per block
+  (13/12/11) and the model 14, so the model still answers proportionally more high-load trials.
+  M6 does **not** fix it and it cannot be fixed analysis-side; it needs `bench/tasks/nback.py` to
+  present 14 + n letters, which was out of scope. **M21** stays documented-only and is moot on this
+  instrument (`n_no_answers` = 0 at every level). **M14** — "a participant" is a person on the human
+  side and a seeded stimulus set on the model side — is the likeliest cause of the n=3 dispersion
+  gap and is a design property, not a bug.
+- **Verification.** [TOOL] `test_error_shape.py` (incl. the new `test_nback_scoring_shape`),
+  `test_guards.py`, `pytest test_turn_boundary_reset.py -q` (14 passed), `test_history.py`: all
+  pass. `logs/human_error_shape.json` rebuilt with `report_error_shape.py --rebuild-human-cache`
+  and **byte-identical**, md5 `e8668d4c1361ede1bb9b92f90935ab9b` before and after — **zero leaf
+  fields moved**. Expected, and an independent confirmation: M3 was already
+  per-`(participant, level)`, already lead-in-excluded and already block-name-sourced, so exact
+  agreement with it is the test that the landed filters are the repo's validated ones.
+- **Label note.** `test_error_shape.py`'s M1–M6 are the six *error-shape measures*; `test_m6_gist`
+  is the story-gist measure and is **unrelated** to audit item M6. The collision is in the
+  project's labels. Also: **A1 is retired** (2026-09-29) and **A4's human reference is void**
+  (2026-09-29, `logs/a4_human_reference_invalid.md`).
+
+
 ## 2026-09-29T00:00Z [USER] — OPEN ITEM 1 DECIDED: A2 becomes `miss − false-alarm`, report-only
 
 Decision 1 of `logs/open_decisions_brief.md` is taken: **option A + option C**. A2's scalar is
@@ -50,6 +139,7 @@ before the run produced output. Precondition held on all four untouched tasks.
 | word_recognition | 0.5364 | **0.8278** | **+0.2914** | yes |
 | variable_mapping | 0.9643 | 0.9662 | +0.0019 | yes |
 | nback | 0.9344 | 0.9340 | −0.0004 | yes |
+| ~~nback~~ **superseded 2026-09-29, Option D** | **0.9622** | **0.9633** | **+0.0011** | yes |
 | narrative_qa | 0.9444 | 0.9522 | +0.0078 | yes |
 | semantic_story_recall | 0.9470 | 0.9510 | +0.0040 | yes |
 | craft_task | 0.8679 | 0.8451 | −0.0228 | yes, inside its 0.0342 spread |
@@ -75,8 +165,13 @@ reach 3 errors where 12 did. The model went from far too good to somewhat too ba
    *undefined*, not small. The axis `domain_spec.md` calls "the axis" has no value on its own
    substrate and needs a bounded replacement (miss − FA, or d′). Substantively it moved from
    0.3901 *past* the human 6.094 to absolutely conservative.
-2. **The n-back denominator decision** (`logs/nback_denominator_decision.md`) — would erase the
-   remaining n=3 deficit (0.7799 → 0.7421 human reference against a model 0.7429). Not taken.
+2. ~~**The n-back denominator decision**~~ **DECIDED AND LANDED 2026-09-29 [USER] as "Option D" —
+   see the entry at the top of this file.** Both M6 (lead-in) and M7 (granularity) fixed together.
+   The framing below was wrong in emphasis: M7 supplied +0.0287 humanlikeness and M6 only +0.0006,
+   and the human reference at the 53-participant pool is 0.7496, not 0.7421. The original note
+   follows. **The n-back denominator decision** (`logs/nback_denominator_decision.md`) — would
+   erase the remaining n=3 deficit (0.7799 → 0.7421 human reference against a model 0.7429).
+   ~~Not taken.~~
 3. **M4's grouping decision** for `best_span`, which has four incompatible values on the same
    model: 8.70 / 9.47 / 18.40 / 20.0 digits. The 18.40 in `score_candidate.py`'s guard commentary
    is from a grouping the scorer does not use, and at 9.47 the "wrongly signed" argument I wrote
@@ -128,6 +223,15 @@ run-to-run spread**: C2003 Q4 was wrong for 50/50 participants in repeat 1, 29/5
 27/50 in repeat 3. The task's entire variability is one question flipping. Audit **M12's** proposed
 fix (pool to the human's 15-question unit) makes it *worse* — verified: `baseline` pools to a
 single value 0.9333 with sd exactly 0.0000, the state the audit itself called pathological.
+
+**2. ~~NOT LANDED~~ — LANDED 2026-09-29 [USER] as "Option D", with M7, see the entry at the top of
+this file.** Three corrections to the note that follows: (a) the "4× that" claim compares a
+per-level *accuracy* (0.0378) against a *humanlikeness* estimate (0.0088) — M6's humanlikeness
+effect is **+0.0006**, inside the 0.0061 run-to-run spread, and M7's is **+0.0287**, so the
+denominator was never the big fix; (b) the counts are 294/106 at the 49-record pool and **318/112**
+at the 53-record pool the landed code uses; (c) the human n=3 reference is **0.7496** at 53
+participants, and the mean gap is **−0.0091**, which must be quoted with the sds (human 0.1618,
+model 0.0970) because excluding the lead-in *widens* the human spread.
 
 **2. Matching the n-back denominators erases the remaining n=3 deficit — NOT LANDED, needs a
 decision.** `logs/nback_denominator_decision.md`. Human blocks hold 14 non-practice trials

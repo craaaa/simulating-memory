@@ -1,5 +1,18 @@
 # n-back turn order corrected — job 18774002, the check passed
 
+> **ANNOTATION 2026-09-29 [TOOL] — every n-back humanlikeness in this file is on the
+> PRE-OPTION-D SCORING SHAPE, and is deliberately NOT recomputed here.** This is a frozen
+> record of what was observed at the time. On 2026-09-29 the user approved "Option D"
+> (`logs/nback_denominator_decision.md`): n-back is now scored per `(participant, n-level)` on
+> both sides with the human lead-in trials dropped. Re-scored under that shape, this run's
+> three arms give n-back **0.9622** (mean over arms, spread 0.0060) in place of the **0.9344**
+> in the table below, and the mean over 8 becomes **0.8862** in place of **0.8828**. No other
+> task moves. The per-level *accuracy* table further down (human 0.9461 / 0.8615 / 0.7799)
+> is the lead-in-**included** human reference at the 49-participant pool; under Option D the
+> human reference is 0.9492 / 0.8553 / 0.7496 at 53 participants per level.
+> `score.nback_human_scores_legacy_pooled()` reproduces this file's figures exactly, which is
+> how the 0.9344 and the 0.0034 spread were re-verified rather than assumed.
+
 Three Qwen baseline repeats, `runs/iter11postfix/baseline{,_rep2,_rep3}`, run from
 `/scratch/cl5625/mh-postfix` at commit **410ec2a**. Job `18774002`, COMPLETED, 1h06m on one
 H200. All three repeats hold all 8 tasks at full row counts (150/190/190/50/150/200/150/50).
@@ -131,3 +144,5 @@ task's floor should be set tighter than its spread here.
   rather than per (participant, level), and human non-response is 0% by construction while
   `acc_over_14` scores non-response as error. M21 mattered at 0.157 proportion-correct pre-fix;
   with `n_no_answers` = 0 at every level it is now near-moot on the model side.
+  **AMENDED 2026-09-29: M6, M7 and M9 are now FIXED in `src/score.py` (Option D); M21 stays
+  documented-only, and is moot on this instrument for the reason just given.**

@@ -35,6 +35,15 @@ All items below are applied. Where they are done:
 | `WORKLOG.md` | one dated amendment appended (append-only file), covering all four reversals with the affected line numbers listed |
 | `domain_spec.md` A4 row | relabelled one-sided and model-internal; human column struck rather than updated |
 
+**~~Left undone on purpose~~ — DONE 2026-09-29 [USER], as part of "Option D".** The denominator
+fix (M6) landed together with the granularity fix (M7) in `src/score.py`; see
+`logs/nback_denominator_decision.md`. The condition set out below was met: it was done against a
+settled baseline (`iter11postfix` and `iter12stage2`, three arms each), on its own, with the
+before/after stated (n-back humanlikeness 0.9344 → 0.9622 and 0.9340 → 0.9633). One correction to
+the framing below: the 0.0088 is a shift in the human **accuracy** reference, and M6's effect on
+**humanlikeness** is +0.0006, inside the 0.0061 run-to-run spread — M7 supplied +0.0287 of the
++0.0293 total. The original note follows.
+
 **Left undone on purpose: the human n-back denominator** (audit M6, ~0.0088 score units). It is
 a real analysis-side correction — human scores divide by all non-practice trials including the 6
 lead-in, the model's `acc_over_14` does not, and 112 of 318 human lead-in trials carry an
@@ -54,7 +63,7 @@ settled baseline, on its own, with the before/after stated.
 | `HANDOFF.md` | A4 table + "durable result" paragraph | **A4's human reference is void** — `logs/a4_human_reference_invalid.md`. The "closest structural match anywhere in this project" (rc_norm 0.3751 vs human 0.3728 over 845 errors) compares the model's error distribution against the human task's *termination rule*. Strike the comparison; keep the `variable_mapping` humanlikeness gain, which is unaffected. |
 | `WORKLOG.md` | A4 sections | same, by dated amendment only |
 | `domain_spec.md` | A4 row | relabel as a one-sided guard on the model's own error distribution; strike the human column rather than updating it |
-| `src/score.py` / analysis | human n-back denominator | human scores divide by all non-practice trials including lead-in, the model's `acc_over_14` does not; and 112 of 318 human lead-in trials carry an impossible `target: true`. Correcting it moves the human reference 0.8657 → 0.8569 proportion-correct. Small, real, analysis-side. |
+| `src/score.py` / analysis | human n-back denominator | **DONE 2026-09-29 [USER] as "Option D"**, together with the granularity fix (M7). human scores divide by all non-practice trials including lead-in, the model's `acc_over_14` does not; and 112 of 318 human lead-in trials carry an impossible `target: true`. Correcting it moves the human reference 0.8657 → 0.8569 proportion-correct. Small, real, analysis-side. |
 
 ## Group 3 — DONE 2026-09-29, the fix landed the same day
 

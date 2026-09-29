@@ -1,8 +1,76 @@
 # n-back: the two sides count different trials, and fixing it erases the remaining deficit
 
+> ## RESOLVED 2026-09-29 [USER] — **Option D: Option A *plus* the M7 per-level fix, as one change.**
+>
+> Landed in `src/score.py` (`nback_human_by_level`, `nback_human_scores`,
+> `human_scores("nback")`). n-back is scored per `(participant, n-level)` on **both** sides,
+> with the human **lead-in trials excluded**, so both sides count only trials where the task
+> is well-defined. Neither Option A nor Option C alone was chosen; Option B was rejected for
+> the reason given below. Labels, from `protocol_mismatch_audit.md`: **M6** = unmatched
+> denominators (the lead-in), **M7** = unmatched granularity.
+>
+> **Outcome, in humanlikeness (= 1 − W₁ between the two score distributions, in [0,1]), mean
+> over three arms per run-set, using the project's own `score.wasserstein_1d`:**
+>
+> | combination | `iter11postfix` | `iter12stage2` |
+> |---|---|---|
+> | legacy shape (pooled human, lead-in included) | 0.9344 | 0.9340 |
+> | M6 only (pooled human, lead-in excluded) | — | 0.9419 |
+> | M7 only (per-level both sides, lead-in included) | — | 0.9627 |
+> | **M6 + M7 (landed)** | **0.9622** | **0.9633** |
+>
+> Mean over the 8 search tasks: `iter11postfix` 0.8828 → 0.8862, `iter12stage2`
+> 0.9130 → 0.9167.
+>
+> **Two corrections to the recommendation below, both material.**
+>
+> 1. **M7 dominates and M6 is nearly free — the opposite of this file's emphasis.** M7 alone
+>    is **+0.0287** humanlikeness; M6 adds **+0.0006** on top of it, which is *inside*
+>    n-back's measured run-to-run spread of 0.0061, and its sign is **not identified** across
+>    reasonable specifications (it is −0.0020 if the human pool is restricted to the 49
+>    level-carrying records). The **0.0378** figure quoted under Option C below is per-level
+>    **accuracy** at n=3, not humanlikeness, and this file conflated the two when it called
+>    the denominator the big fix. M6 is a correctness fix, not a scoring gain, and the
+>    worry that it "flatters the model" was misplaced: almost none of the movement is M6's.
+>
+> 2. **M6 makes the n=3 DISTRIBUTION match slightly worse even though it closes the mean
+>    gap.** Excluding the lead-in widens the human n=3 spread (sd 0.1492 → 0.1657 at the
+>    49-record pool; 0.1459 → 0.1618 at the 53-record pool actually used) while the model
+>    sits at sd ≈ 0.096. Closing the mean gap therefore opens the **dispersion** gap. **Any
+>    statement of the n=3 mean gap must carry this caveat**, or it reads as a stronger result
+>    than it is.
+>
+> **The n=3 gap literal below is superseded.** "0.7429 against 0.7421, a gap of 0.0008" was
+> computed on the 49-participant human pool against `iter11postfix/baseline`. The landed code
+> uses **53** participants per level (see next paragraph), giving a human n=3 mean of
+> **0.7496**; against `iter12stage2/baseline`'s model 0.7214 the gap is **−0.0282**
+> proportion-correct, and against the three-arm model mean 0.7405 it is **−0.0091**. The
+> qualitative claim — the n=3 mean gap is small — survives; the number does not, and the
+> dispersion caveat above applies wherever it is quoted.
+>
+> **The human n is 53 participants per level, not 49.** 4 of the 57 records carry
+> `level: null` on every trial; their level is recovered from the block name ("2-back"),
+> exactly as `error_structure.nback_human_trials` already did for the M3 measure, and their
+> blocks are structurally identical to the other 49 (14 trials indexed 1..14 at each of
+> n=1,2,3). Keeping them means the legacy pooled path and the new per-level path use the
+> **same** 53 participants, so the before/after above is not confounded by a sample change.
+> The remaining 4 of the 57 have an empty `payload` **and** an empty `summary`, so they have
+> no trials and no accuracy on any shape, legacy included; they were already absent from
+> every n-back figure this project has ever reported. Consequently the lead-in totals differ
+> by record scope: **294 trials / 106 impossible `target: true`** at the 49-record scope used
+> throughout this file, **318 / 112** at the 53-record scope the landed code uses. Both are
+> correct for their scope; `error_structure.py` and `test_error_shape.py` use 318/112.
+>
+> **The historical figures are preserved, not recomputed.** This file's closing instruction
+> to recompute `logs/nback_turn_order_outcome.md` was **not** followed: that file and
+> `logs/iter12stage2_outcome.md` are frozen records of what was observed at the time and are
+> **annotated in place** instead. `score.nback_human_scores_legacy_pooled()` reproduces the
+> old shape exactly — it returns the recorded 0.9344 for `iter11postfix` and the recorded
+> run-to-run spreads 0.0034 / 0.0061, which is the check that the legacy path still works.
+
 **NOT LANDED. This needs a decision, because applying it changes the headline n-back result in a
 direction that flatters the model.** Measured 2026-09-29 against
-`runs/iter11postfix/baseline`.
+`runs/iter11postfix/baseline`. *(Superseded by the RESOLVED block above — it is landed.)*
 
 ## Units
 
@@ -88,14 +156,22 @@ at n=3, four times larger, and it lands exactly on the number the project would 
 the current one. But it must be a decision, and whichever is chosen, the n-back humanlikeness
 figures in `logs/nback_turn_order_outcome.md` need recomputing and the old ones marked superseded.
 
+> **DECIDED 2026-09-29 [USER]: Option D — Option A *and* M7 together.** The re-statement above
+> is directionally right at 53 participants (n=2 remains the worst-matched level: model 0.7800
+> against human 0.8553, a gap of −0.0753) but the n=3 "matches" claim needs the dispersion
+> caveat in the RESOLVED block. The instruction to recompute `nback_turn_order_outcome.md` was
+> **overridden**: frozen outcome records are annotated, never recomputed in place.
+
 ## Also still open on n-back, unchanged by this
 
-- **M7, granularity.** The model is scored per (participant, level) — 150 points — and the human
-  pooled over their three levels — 53 points. `nback_levels.py` measures the artefact directly:
-  per-row humanlikeness 0.9366 against pooled 0.9489 on this run. The human records carry a
-  `level` field on 49 of 57 participants, so the matched fix is per-level on both sides, which
-  also gives three comparisons instead of one. Interacts with the denominator choice above, so
-  decide them together.
+- **M7, granularity.** ~~Still open.~~ **RESOLVED 2026-09-29 [USER], landed with M6 as Option
+  D — see the RESOLVED block at the top.** The model is scored per (participant, level) — 150
+  points — and the human *was* pooled over their three levels — 53 points. `nback_levels.py`
+  measures the artefact directly: per-row humanlikeness 0.9366 against pooled 0.9489 on this
+  run. The human records carry a `level` field on 49 of 57 participants — **and the level is
+  recoverable from the block name for 4 more, so the landed fix uses 53 per level, not 49.**
+  Both sides are now per level. M7 is the fix that actually moved the number: +0.0287 of the
+  +0.0293 total.
 - **M9**, the unequal scoreable count (14 model vs 14−n human), is a consequence of the block
   structure and cannot be fixed analysis-side without also fixing M6.
 - **M21** is now near-moot: model `n_no_answers` is 0 at every level, so scoring non-response as

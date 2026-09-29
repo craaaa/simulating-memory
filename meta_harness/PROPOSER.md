@@ -389,6 +389,40 @@ n=1 and n=2 are effectively solved. At n=3 the store saturates and the model
 > ([2.41, 3.93]), disjoint intervals — it declines to call matches where humans over-call.
 > That, not omission, is the remaining n-back target. `logs/nback_turn_order_outcome.md`,
 > `logs/error_shape_first_model_numbers.md`.
+>
+> > **SUPERSEDED AGAIN 2026-09-29 [USER] — the SCORING is fixed too ("Option D"), so the human
+> > column above and the 0.9344 are both stale.** n-back is now scored per
+> > `(participant, n-level)` on **both** sides, with the human *n* **lead-in** trials dropped —
+> > they are the opening trials of each block where no letter *n* back exists, and 112 of 318 of
+> > them are logged `target: true`, which is impossible. See `logs/nback_denominator_decision.md`.
+> > Current figures, `runs/iter12stage2`, 3 arms, human *n* = 53 participants per level:
+> >
+> > | n | model accuracy | human accuracy | mean gap | model sd | human sd |
+> > |---|---|---|---|---|---|
+> > | 1 | 0.9943 | 0.9492 | **+0.0451** | 0.046 | 0.072 |
+> > | 2 | 0.7762 | 0.8553 | **−0.0791** | 0.092 | 0.129 |
+> > | 3 | 0.7405 | 0.7496 | **−0.0091** | 0.097 | 0.162 |
+> >
+> > All six numbers are proportion of trials correct, not humanlikeness. **n-back
+> > humanlikeness is now 0.9633** (mean over the three arms), up from 0.9340 on the same arms
+> > under the old shape. The granularity fix alone gets to 0.9627, i.e. **+0.0287 of the
+> > +0.0293**; the denominator fix contributes the remaining +0.0006, which is inside n-back's
+> > 0.0061 run-to-run spread.
+> >
+> > **Two things a proposer must not misread.**
+> >
+> > 1. **n=2, not n=3, is now the worst-matched level** (−0.0791 against −0.0091). The
+> >    "the deficit is at n=3" framing above is retired.
+> > 2. **The n=3 mean gap of −0.0091 is not the whole story, and quoting it alone overstates the
+> >    match.** Dropping the lead-in *widened* the human n=3 spread (sd 0.1459 → 0.1618) while
+> >    the model sits at 0.097. The mean gap closed and the **dispersion** gap opened: the model
+> >    is far too homogeneous at n=3, which is the M14 "a participant is a seeded stimulus set"
+> >    property, not something a memory mechanism can fix. **Never quote the n=3 mean gap
+> >    without the two sds.**
+> >
+> > The response-bias target (miss/false-alarm ratio 7.48 against human 3.10) is **unaffected**
+> > — that is M3's own statistic, computed per `(participant, level)` with the lead-in already
+> > dropped, and it was always on the matched shape. It remains the live n-back target.
 Compare `full_context`: 14.00/14 answered, acc-over-answered only 0.770, **and it
 holds just 1.06 keys** — with capacity 10 000 it holds *fewer* keys than the
 baseline, because never refusing lets it overwrite one rolling key instead of

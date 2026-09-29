@@ -134,6 +134,34 @@ project's own function is used, for comparability with every other `1 − W_1` i
 
 # Decision 2 — matching the n-back denominators erases the remaining n=3 deficit
 
+> ## DECISION 2 RESOLVED 2026-09-29 [USER] — **Option D = the recommendation below (Option A
+> plus the M7 per-level fix), landed as one change.**
+>
+> Landed in `src/score.py`; see `logs/nback_denominator_decision.md` for the full RESOLVED
+> block. Summary of what this section got right and what it got wrong:
+>
+> - **Right:** M6 and M7 had to be decided together; Option B was correctly rejected;
+>   analysis-side only, no re-run.
+> - **Wrong, and it matters:** this section's emphasis. **M7 is the fix that moves the number**
+>   (+0.0287 humanlikeness on the three `iter12stage2` arms); M6 adds **+0.0006**, inside
+>   n-back's 0.0061 run-to-run spread and with a sign that is not identified across
+>   specifications. The **0.0378** quoted under "Why I did not just do it" is per-level
+>   **accuracy** at n=3, **not** humanlikeness — this section compared it to a humanlikeness
+>   estimate and concluded M6 was four times bigger than the audit thought. The worry that the
+>   fix "flatters the model" was therefore misplaced: essentially none of the gain is M6's.
+> - **Wrong:** the n=3 tables below are at the **49-participant** human pool. 4 more records
+>   carry `level: null` but have recoverable levels (from the block name, as
+>   `error_structure.py` already did), so the landed code uses **53** per level. At 53 the
+>   human n=3 mean is **0.7496** (lead-in excluded), not 0.7421, and the lead-in totals are
+>   **318 trials / 112 impossible targets**, not 294 / 106.
+> - **Missing, and required wherever the n=3 gap is quoted:** excluding the lead-in **widens**
+>   the human n=3 spread (sd 0.1492 → 0.1657 at the 49-pool, 0.1459 → 0.1618 at 53) while the
+>   model sits near 0.096. So M6 closes the n=3 **mean** gap and *opens* the **dispersion**
+>   gap. "The n=3 deficit disappears" is true of the mean only.
+>
+> Net effect: n-back humanlikeness 0.9340 → **0.9633** on `iter12stage2`, 0.9344 → **0.9622** on
+> `iter11postfix`; mean over 8 search tasks +0.0037 and +0.0035.
+
 ## The situation
 
 A block at n-back level *n* opens with *n* **lead-in** letters, where no letter *n* positions back
@@ -212,6 +240,12 @@ than making it and saying so loudly.
 
 **Cost:** analysis-side only, no re-run. Half a day including re-recording every n-back figure in
 the logs.
+
+> **ACCEPTED 2026-09-29 [USER] as "Option D".** One deviation from the plan: the old n-back
+> figures in `logs/nback_turn_order_outcome.md` and `logs/iter12stage2_outcome.md` were
+> **annotated, not re-recorded** — they are frozen records of what was observed at the time, and
+> this project supersedes explicitly rather than rewriting. `score.nback_human_scores_legacy_pooled()`
+> reproduces the old shape exactly so those figures stay checkable.
 
 ---
 

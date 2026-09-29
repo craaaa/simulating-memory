@@ -21,7 +21,11 @@ Three things below are superseded.
    -0.1377), as does `episodic_reset_v3` (-0.2454). Averaging overturned two Qwen
    rejections and was worth re-running here; it overturns neither of these.
 3. **"Route 3 is the only thing between `evicting_reset` and a both-substrate pass" is too
-   optimistic.** Hermes's baseline `nback` humanlikeness is already **0.874**; Qwen's is
+   optimistic.** *(All `nback` humanlikeness figures in items 1–3 of this list are on the
+   pre-2026-09-29 scoring shape and are not comparable with anything scored after Option D —
+   see item 3 of the "comparability" list below. The qualitative point, that there is little
+   n-back headroom, holds and is if anything stronger: n-back now scores 0.9633 against a
+   mean-over-8 of 0.9167.)* Hermes's baseline `nback` humanlikeness is already **0.874**; Qwen's is
    0.791. There is almost no n-back headroom on the held-out model, so the n-back gains that
    drove the entire search (+0.08 to +0.17) were specific to Qwen's worse baseline. On Hermes
    the episodic framing *costs* n-back. A route-3 fix can plausibly recover the -0.1377, but
@@ -197,6 +201,20 @@ rehearsing.
    (`protocol_match.py`, `nback_levels.py`). The human staircase terminates on double
    failure; the model ran all 19 spans. Human n-back is one pooled score per participant;
    the model's is per `(participant, level)`.
+   > **AMENDED 2026-09-29 [USER], "Option D" — the n-back half of this is now DONE, in
+   > `src/score.py` itself rather than in a side module.** `human_scores("nback")` returns one
+   > value per `(participant, n-level)`, matching the model, and the human's *n* **lead-in**
+   > trials are dropped (no letter *n* back exists there; 112 of 318 are logged `target: true`,
+   > which is impossible). `nback_levels.py` now delegates to `score.nback_human_by_level`
+   > instead of carrying its own copy. Human *n* is 53 participants × 3 levels: 4 records have
+   > `level: null` and their level is recovered from the block name. n-back humanlikeness moves
+   > 0.9344 → **0.9622** on `iter11postfix` and 0.9340 → **0.9633** on `iter12stage2`, both
+   > means over 3 arms; every n-back humanlikeness recorded before this date is on the old shape
+   > and is **not** comparable. `score.nback_human_scores_legacy_pooled()` reproduces the old
+   > shape. **The digit-span half is still open** — 1 trial/span on the model side against 2 on
+   > the human side (audit M4). So is n-back's M9: the human keeps 14 − n scored trials per
+   > block and the model 14, which M6 does not fix and which would need a `bench/` change.
+   > See `logs/nback_denominator_decision.md`.
 4. **The refusal loop distorts every n-back number the benchmark has produced.** A full
    store costs up to three tool calls to change one slot against a 1.5/turn budget;
    `tool_call_cap_hit` fires on 76% of n=3 turns. Arms that refuse answer 5.2–6.8 of 14;
@@ -234,6 +252,14 @@ rehearsing.
   must clear both them and the sampling floor. `word_recognition` 0.0000 was flagged in this file
   as unable to survive a task change, correctly — it is now 0.0199 and will change again once the
   one-word-per-turn rewrite is re-baselined.
+
+  **AMENDED AGAIN 2026-09-29: every `nback` spread above is on the pre-Option-D scoring shape.**
+  Re-measured under the new shape on the same six arms: **0.0060** (`iter11postfix`) and
+  **0.0035** (`iter12stage2`), against the 0.0034 / 0.0061 recorded for the old shape. The kept
+  constant, `score_candidate.RUN_TO_RUN_SPREAD["nback"] = 0.0061`, still bounds both, so nothing
+  was retightened — the repo's rule is to keep the larger of two measurements. Note the two
+  run-sets swapped which is the wider one, which is what three repeats pinning a spread only
+  loosely looks like.
 
 ## What to distrust in my own conclusions
 

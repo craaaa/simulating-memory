@@ -92,6 +92,16 @@ per-participant distribution to take a Wasserstein distance over.
 
 ## Related, found in the same pass and much smaller
 
+> **FIXED 2026-09-29 [USER] as "Option D"** — this is audit item M6, landed in `src/score.py`
+> together with the granularity fix M7. See `logs/nback_denominator_decision.md`. The two
+> measurements in the table below reproduce exactly under the landed code (pooled human
+> 0.8657 → 0.8569 proportion-correct). One correction: the sentence "the model's over-accuracy
+> gap is slightly larger than recorded" is wrong in sign on these baselines — the model is
+> *below* the human on n-back (`iter12stage2` three-arm means 0.9943 / 0.7762 / 0.7405 against
+> human 0.9492 / 0.8553 / 0.7496, so it is above only at n=1), so moving the human reference
+> down *narrows* the gap at n=2 and n=3. `logs/protocol_mismatch_audit.md` §4 M6 already noted
+> this discrepancy with this file; the audit is the one that is right.
+
 Human n-back scores divide by **all** non-practice trials, including the *n* lead-in trials,
 while the model's `acc_over_14` counts scored trials only. And 112 of 318 human lead-in trials
 are logged `target: true`, which is impossible — there is no letter *n* back — affecting 48 of

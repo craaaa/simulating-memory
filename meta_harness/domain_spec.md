@@ -60,6 +60,33 @@ All numbers here are measured from released data in this repo; see
 >    "bimodal / episodic collapse" reading was an artifact of scoring granularity,
 >    and the deficit is entirely at n=3 where the model stops *answering*.
 >
+>    **SUPERSEDED 2026-09-29 [USER] — the granularity artifact is now FIXED, not merely
+>    diagnosed ("Option D", `logs/nback_denominator_decision.md`).** N-back is scored per
+>    `(participant, n-level)` on **both** sides, and the human's *n* **lead-in** trials —
+>    the opening trials of each block, where no letter *n* back exists and where 112 of 318
+>    are nonetheless logged `target: true` — are dropped, matching the model's
+>    `acc_over_14`, which never contained them. Two labels, from
+>    `logs/protocol_mismatch_audit.md`: **M6** = the unmatched denominators, **M7** = the
+>    unmatched granularity.
+>
+>    Effect on n-back humanlikeness (= 1 − W₁, in [0,1]), mean over the three
+>    `runs/iter12stage2` arms: **0.9340 → 0.9633**; over the three `runs/iter11postfix`
+>    arms, **0.9344 → 0.9622**. The mean over the 8 search tasks moves **0.9130 → 0.9167**
+>    and **0.8828 → 0.8862** respectively. M7 supplies almost all of it (+0.0287 alone);
+>    M6 adds **+0.0006**, which is inside n-back's measured run-to-run spread of 0.0061 and
+>    whose *sign* is not identified across specifications. **M6 is a correctness fix, not a
+>    scoring gain.** Human *n* is 53 participants × 3 levels.
+>
+>    **Every n-back humanlikeness recorded before 2026-09-29 is on the old shape and is not
+>    comparable with one recorded after.** `score.nback_human_scores_legacy_pooled()`
+>    reproduces the old shape exactly for reading historical rows.
+>
+>    The "deficit is entirely at n=3" reading survives, but the n=3 *mean* gap is now small
+>    (human 0.7496 against model 0.7214 on `iter12stage2/baseline`) while the **dispersion**
+>    gap is not: human sd 0.1618 against model sd 0.0961. Dropping the lead-in *widens* the
+>    human spread, so it closes the mean gap and opens the dispersion gap. Do not quote the
+>    n=3 mean gap without the sd beside it.
+>
 > The through-line: four separate defects in which the human and model sides were
 > not measuring the same thing — digit-span protocol, variable-mapping exposure,
 > N-Back granularity, word-recognition prompt leak. Three of the eight search
@@ -502,7 +529,12 @@ Human reference: a fixed random **half** of each task's participants.
 floor, per task: digit span 0.036, reverse 0.026, n-back 0.025, word
 recognition 0.075, variable mapping 0.041, factual QA 0.061, narrative QA
 0.053, free recall 0.042, map task 0.054, craft task 0.041. Mean attainable
-ceiling **0.955**. Model-side bootstrap CIs on the observed W_1 are ~±0.045
+ceiling **0.955**. *(AMENDED 2026-09-29: the n-back 0.025 was split-halved on the
+pre-Option-D scoring shape, in which the human unit was the participant rather than the
+`(participant, level)` cell, so it is calibrated on a superseded shape and has deliberately
+not been retightened. Same caveat on `score_candidate.NOISE_FLOOR["nback"] = 0.060`. The
+three-arm run-to-run spread under the new shape is 0.0060 / 0.0035, against a kept 0.0061,
+so the constants are not underestimates.)* Model-side bootstrap CIs on the observed W_1 are ~±0.045
 at released n. **Any candidate delta under 0.05 on a single task is noise.**
 
 **Runtime.** One reduced-set candidate on qwen3-30b-a3b under vLLM: ~10-30 min
@@ -662,6 +694,14 @@ hours, and the declared capacity/decay parameters.
   the model's exhaustive 19 spans).
 - **N-Back direction conflict.** N-Back is the one task where the model is
   *worse* than humans (0.699 vs 0.866), so it opposes every other task's
-  gradient. Whether the search can satisfy both with one harness, or whether
+  gradient.
+  *(AMENDED 2026-09-29: those two figures are pooled-over-levels mean
+  proportion-correct on the pre-Option-D shape and are both superseded. Per level on
+  `iter12stage2/baseline`, model vs human mean accuracy is n=1 1.000 / 0.9492,
+  n=2 0.7800 / 0.8553, n=3 0.7214 / 0.7496 — so the model is now **better** than humans at
+  n=1 and worse at n=2 and n=3, and the "direction conflict" is level-specific rather than
+  task-wide. It has not disappeared: n-back humanlikeness is 0.9633 against a mean-over-8
+  of 0.9167, so n-back is now one of the *better*-matched tasks and has correspondingly
+  little headroom to give.)* Whether the search can satisfy both with one harness, or whether
   this exposes a real limit of a single 4-slot mechanism, is an open empirical
   question — and arguably the most interesting result the search could produce.
