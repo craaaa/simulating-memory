@@ -242,9 +242,14 @@ def main() -> int:
     print(f"=== {rec['id']}  candidate averaged over {rec['n_repeats']} repeats, "
           f"baseline over {nb}")
     print("    all three score columns are humanlikeness = 1 - Wasserstein-1 between the "
-          "model's and\n    the humans' per-participant score distributions: range 0-1, "
-          "in units of task\n    proportion-correct. `delta` is candidate minus baseline "
-          "in those same units, so it\n    is the only column that can be negative.")
+          "model's and\n    the humans' per-participant score distributions: range 0-1. "
+          "`delta` is candidate minus\n    baseline in those same units, so it is the only "
+          "column that can be negative.\n"
+          "    The per-participant score is task proportion-correct, EXCEPT on "
+          "word_recognition and\n    variable_mapping, where it is SURVIVAL LENGTH -- items "
+          "presented before the human\n    stopping rule fires, over its censoring point "
+          "(100 words, 10 questions). Those two\n    human protocols stop on a fixed error "
+          "count, so neither has a human accuracy at all.")
     print(f"\n{'task':<26}{'baseline':>10}{'candidate':>11}{'delta':>9}{'spread':>9}"
           f"  candidate per-run")
     bhl = rec.get("baseline_humanlikeness_by_task") or {}

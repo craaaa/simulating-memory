@@ -96,7 +96,8 @@ HUMAN_TASK_DIR = {
     "craft_task": "procedure-memory-craft-task",
 }
 
-# Per-task denominator so that 1.0 = perfect.
+# Per-task denominator so that 1.0 = perfect. For the two SURVIVAL_TASKS below it is
+# instead the censoring point: 1.0 means "never stopped".
 TASK_DENOM = {
     "digit_span_forward": 20.0,
     "digit_span_reverse": 20.0,
@@ -109,6 +110,45 @@ TASK_DENOM = {
     "map_task": 15.0,
     "craft_task": 15.0,
 }
+
+# ---------------------------------------------------------------------------
+# Survival length, for the two tasks whose human protocol stops on a fixed error count
+# ---------------------------------------------------------------------------
+# DECISION 2026-09-29 [USER]: "Use survival length on both sides."
+#
+# Neither of these two tasks has a human accuracy, and no denominator choice creates one.
+# Both human protocols end a session after a fixed number of mistakes, so the number of
+# errors is pinned by the protocol and the only free quantity is WHEN the last one landed:
+#
+#   word_recognition  `trialsCompleted - correctResponses == 3` for 53 of 53 human records,
+#                     so the old `correctResponses / 100` was identically (n_survived - 3)/100.
+#                     Human n_survived: mean 34.49, median 32, min 4, max 102.
+#   variable_mapping  exactly one error in 152 of 152 human records, always the participant's
+#                     LAST question, so the old `correct_count / 10` was identically
+#                     (n_survived - 1)/10. Human n_survived: mean 4.99, median 5, min 2, max 16.
+#
+# So both sides now report survival length -- the number of items the participant was
+# presented before stopping -- divided by TASK_DENOM, which here is the censoring point
+# rather than a perfect score.
+#
+# CENSORING IS NOT SYMMETRIC ON variable_mapping AND MUST BE STATED WHEN THE NUMBER IS
+# QUOTED. No human record is censored (every one ends in an error) and 5 of 152 humans ran
+# past 10 questions, to 11, 15 and 16. `bench` asks exactly 10, so the model cannot exceed
+# 10 and 5 of 150 sit at that ceiling. Clipping the human side at 10 is the lesser
+# distortion -- using 16 as the denominator would impose an artificial 0.625 ceiling on the
+# model -- but the fix is to let `bench` ask more than 10 questions.
+#
+# word_recognition is nearly symmetric: the human list is 100 long (one record reports 102,
+# clipped here) and the model's is 100.
+SURVIVAL_TASKS = ("word_recognition", "variable_mapping")
+
+
+def _survival(n_presented: float | None, denom: float) -> float | None:
+    """Survival length as a fraction of the censoring point, clipped to 1.0."""
+    if n_presented is None:
+        return None
+    return min(float(n_presented) / denom, 1.0)
+
 
 PROMPT_CONDITIONS = ["C1", "C2", "C3"]
 CONDITION_DISPLAY = {
@@ -171,16 +211,18 @@ def _score_human_record(task: str, rec: dict[str, Any]) -> float | None:
         return None if pct is None else float(pct) / 100.0
 
     if task == "word_recognition":
-        correct = summary.get("correctResponses")
-        return None if correct is None else float(correct) / denom
+        # Survival length: words presented before the 3-strike stop. See SURVIVAL_TASKS.
+        return _survival(summary.get("trialsCompleted"), denom)
 
     if task == "variable_mapping":
+        # Survival length: questions presented before the stop-on-first-error.
         questions = payload.get("questions") or []
         if questions:
-            correct = sum(1 for q in questions if q.get("correct"))
-            return min(correct, int(denom)) / denom
-        best = summary.get("bestScore")
-        return None if best is None else float(best) / denom
+            return _survival(len(questions), denom)
+        # No per-question payload. `turnsCompleted` counts turns, not questions, and
+        # `bestScore` is the old correct-count; neither is a survival length, so refuse
+        # rather than mix quantities inside one distribution.
+        return None
 
     if task in ("factual_qa", "narrative_qa"):
         total = summary.get("totalQuestions") or 10
@@ -238,12 +280,27 @@ def _score_llm_row(task: str, row: dict[str, Any]) -> float | None:
         return None if acc is None else float(acc)
 
     if task == "word_recognition":
-        score = metrics.get("score")
-        return None if score is None else float(score) / denom
+        # Survival length: trials presented before the 3-strike stop. `trials_presented` is
+        # written by the post-2026-09-29 one-word-per-turn harness; before that the harness
+        # answered all 100 at once and `score_game` truncated `per_trial` at the third error,
+        # which lands on the same index. `metrics.first_error_at` is NOT usable here -- it is
+        # misnamed and holds the third error's index, not the first.
+        n = row.get("trials_presented")
+        if n is None:
+            per_trial = row.get("per_trial")
+            n = len(per_trial) if per_trial else None
+        return _survival(n, denom)
 
     if task == "variable_mapping":
-        score = metrics.get("score")
-        return None if score is None else float(score) / denom
+        # Survival length: the first error's position, or the full question count if the run
+        # never erred (censored). Here `first_error_at` really is the first error: verified
+        # against an independent re-grade from `parsed_answers` + `options` + `correct_city`,
+        # 150 of 150 rows agreeing, 0 unparsed answers.
+        fe = metrics.get("first_error_at")
+        if fe:
+            return _survival(fe, denom)
+        n_q = metrics.get("n_questions") or len(row.get("questions") or []) or None
+        return _survival(n_q, denom)
 
     if task in ("factual_qa", "narrative_qa"):
         acc = metrics.get("accuracy")
