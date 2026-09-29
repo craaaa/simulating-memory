@@ -5,6 +5,62 @@ Written 2026-09-27. Entry point for picking this up later. Read this, then
 
 ---
 
+## Amendment, 2026-09-28: the held-out set is now repeated, and it changes the plan
+
+Three things below are superseded.
+
+1. **`respond_first` fails held-out, hard.** Three Hermes repeats against two baseline
+   repeats (job 18719683, one job, so no cross-job variation): `nback` **-0.7326**, and it
+   is not degradation but cessation — `answered` is 0.00 of 14 at all three levels in all
+   150 blocks, and on the 2100 turns where an answer is due the reply is `"no response"`
+   99.1% of the time, against 87.9% `"same"`/`"different"` for the baseline. Identical
+   per-level figures across three repeats. The response-ordering block is necessary for the
+   collapse (`evicting_reset`, the same harness without it, answers 14.0/8.88/9.72); whether
+   it is *sufficient* is what the queued `respond_only` Hermes job decides.
+2. **`evicting_reset` still fails held-out against the averaged baseline** (`nback`
+   -0.1377), as does `episodic_reset_v3` (-0.2454). Averaging overturned two Qwen
+   rejections and was worth re-running here; it overturns neither of these.
+3. **"Route 3 is the only thing between `evicting_reset` and a both-substrate pass" is too
+   optimistic.** Hermes's baseline `nback` humanlikeness is already **0.874**; Qwen's is
+   0.791. There is almost no n-back headroom on the held-out model, so the n-back gains that
+   drove the entire search (+0.08 to +0.17) were specific to Qwen's worse baseline. On Hermes
+   the episodic framing *costs* n-back. A route-3 fix can plausibly recover the -0.1377, but
+   it cannot turn n-back into a gain there, and the contract's floor is what has to be
+   cleared.
+
+What survives untouched, and is still the durable result: closing the history leak is worth
+**+0.34 to +0.60 on `variable_mapping`** — on Hermes it moves 0.3524 to 0.9533, the largest
+single-task gain measured anywhere in this project. I checked whether A4 could actually see
+it, since the guard passed on the first repeat only and A4's ceiling depends on a run's own
+error count — the shape of a defect already fixed once here. It can, and it agrees:
+
+    arm                  errors   rc_raw  ceiling  rc_norm  dist from human (0.3728)
+    baseline                 30   1.2221   1.2564   0.8662   0.4934
+    respond_first           845   1.3170   1.8451   0.3751   0.0023
+    respond_first_rep2      835   1.2948   1.8219   0.3587   0.0141
+    respond_first_rep3      852   1.3081   1.8621   0.3574   0.0154
+    evicting_reset         1136   0.9320   2.6742  -0.0406   0.4134
+
+All well past the 30-error trust threshold. `respond_first` on Hermes is the closest match to
+human interference structure measured anywhere in this project (0.0023), and it gets there
+with 845 errors rather than by having too few to characterise. The baseline sits *exactly* at
+the threshold (30), so its 0.8662 is the least trustworthy figure in that column. Note also
+that `evicting_reset`'s ratio is *below* 1.0 — errors slightly ANTI-correlated with load —
+which is a different failure from the baseline's, not a milder version of it.
+
+Two measurement notes. `score_repeats.py` now takes several `--baseline` dirs and averages
+them, and its standard error counts the baseline's noise even when the baseline ran once (a
+single draw carries the full family variance, not zero) and never trusts an observed sd of 0.
+Under that correction **primacy's craft violation is inside 2 SE, not outside** — I had
+reported it as one of the most robust effects here, on a spread that describes the
+candidate's three runs rather than the difference against a once-measured baseline. Two more
+Qwen baseline runs are queued (18754201, 18754204) so that term stops being an assumption.
+
+Finally: job 18719683's baseline arm **overwrote** the earlier Hermes baseline run, and
+`runs/` is gitignored, so the originally recorded `evicting_reset` held-out comparison cannot
+be reproduced from disk. The `heldout_evicting_reset` record in `evolution_summary.jsonl`
+supersedes it.
+
 ## Where it stands in one paragraph
 
 Five waves, twelve candidates, two substrates. **No candidate passes the contract on both
