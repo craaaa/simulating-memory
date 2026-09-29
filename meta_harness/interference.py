@@ -105,6 +105,101 @@ def _classify(selected: str, correct: str, name: str,
     return "novel_guess"
 
 
+# ------------------------------------------- M1: intrusion type (REPORT ONLY)
+#
+# A4 above gestures at the human signature through a load *correlation*
+# (rc_ratio). M1 names the signature directly: which city a wrong answer picked.
+# It is report-only -- nothing here gates, floors, or enters
+# mean_humanlikeness_search.
+#
+# Unit: share of errors, in [0,1]; the reference point is the same participant's
+# own error total (not their trial total), so the three classes sum to 1.000.
+#
+# The collapsed three-way keeps `_classify`'s exact class names and precedence, so
+# it stays commensurable with A4's `intrusion_share` / `stale_share`. The four-way
+# underneath splits the other-name class by whether the chosen city is that other
+# person's CURRENT binding or a superseded one -- the distinction the spec's
+# phrase "currently bound to a different person" asks for, which `_classify`
+# cannot express.
+MIN_ERRORS_INTRUSION = 30          # same bar A4 uses for `trustworthy`
+INTRUSION_CLASSES = ("stale_same_name", "intrusion_other_name", "novel_guess")
+INTRUSION_CLASSES4 = ("own_stale", "other_current", "other_stale", "novel")
+
+
+def _classify4(selected: str, correct: str, name: str,
+               assigned_before: dict[str, list[str]]) -> str:
+    """Four-way refinement of `_classify`, same precedence for the own-name case.
+
+    `assigned_before[n]` is n's assignment history in turn order, so its last
+    element is n's CURRENT city at question time.
+    """
+    own_previous = [c for c in assigned_before.get(name, []) if c != correct]
+    if selected in own_previous:
+        return "own_stale"
+    current = {cities[-1] for cities in assigned_before.values() if cities}
+    if selected in current:
+        return "other_current"
+    if any(selected in cities for cities in assigned_before.values()):
+        return "other_stale"
+    return "novel"
+
+
+def intrusion_profile(trials: list[dict[str, Any]],
+                      min_errors: int = MIN_ERRORS_INTRUSION) -> dict[str, Any]:
+    """Pooled shares of each error class, plus the per-participant picture.
+
+    Pooled is the headline and per-participant is reported only as a count of
+    participants who clear `min_errors`, because on the human side it is
+    essentially always zero: 154 participants answer 10 questions each and make
+    152 errors in total, so a per-participant share is one or two observations
+    and a 1 - W_1 over them would be measuring rounding. Stated rather than
+    silently pooled.
+    """
+    errs = [t for t in trials if not t["correct"]]
+    n_err = len(errs)
+    counts = {k: 0 for k in INTRUSION_CLASSES}
+    counts4 = {k: 0 for k in INTRUSION_CLASSES4}
+    for t in errs:
+        counts[t["kind"]] += 1
+        if t.get("kind4") in counts4:
+            counts4[t["kind4"]] += 1
+
+    by_p: dict[Any, int] = {}
+    for t in trials:
+        if not t["correct"]:
+            by_p[t.get("participant")] = by_p.get(t.get("participant"), 0) + 1
+
+    out: dict[str, Any] = {
+        "unit": "share of that side's errors (sums to 1.000 over the 3 classes)",
+        "n_trials": len(trials),
+        "n_errors": n_err,
+        "n_participants_with_errors": len(by_p),
+        "max_errors_per_participant": max(by_p.values()) if by_p else 0,
+        "n_participants_over_min": sum(1 for v in by_p.values() if v >= min_errors),
+        "min_errors": min_errors,
+        "sufficient": bool(n_err >= min_errors),
+        "counts": counts,
+        "counts4": counts4,
+    }
+    if n_err >= min_errors:
+        out["shares"] = {k: round(v / n_err, 4) for k, v in counts.items()}
+        out["shares4"] = {k: round(v / n_err, 4) for k, v in counts4.items()}
+    else:
+        out["shares"] = None
+        out["shares4"] = None
+        out["note"] = f"insufficient (n={n_err}); minimum {min_errors} errors"
+    return out
+
+
+def intrusion_human() -> dict[str, Any]:
+    """Human reference for M1, over all released variable-mapping records."""
+    return intrusion_profile(human_trials())
+
+
+def intrusion_model(run_dir: Path) -> dict[str, Any]:
+    return intrusion_profile(model_trials(Path(run_dir)))
+
+
 def _summarize(trials: list[dict[str, Any]]) -> dict[str, Any]:
     errs = [t for t in trials if not t["correct"]]
     oks = [t for t in trials if t["correct"]]
@@ -155,6 +250,9 @@ def human_trials() -> list[dict[str, Any]]:
                 "correct": bool(q.get("correct")),
                 "rc": q.get("relationCount"),
                 "kind": _classify(sel, cor, q.get("name"), before),
+                # M1 only; A4's _summarize ignores it.
+                "kind4": _classify4(sel, cor, q.get("name"), before),
+                "participant": Path(f).name,
                 "chance": (float(np.mean([o in assigned for o in wrong]))
                            if wrong else None),
             })
@@ -221,6 +319,13 @@ def model_trials(run_dir: Path) -> list[dict[str, Any]]:
                 "rc": q.get("relation_count"),
                 "kind": ("novel_guess" if selected is None
                          else _classify(selected, cor, q.get("name"), before)),
+                # M1 only. An unparseable answer has no identifiable content, so
+                # it is booked to the same class A4 books it to rather than
+                # dropped, which would flatter a candidate that degrades by
+                # emitting garbage.
+                "kind4": ("novel" if selected is None
+                          else _classify4(selected, cor, q.get("name"), before)),
+                "participant": r.get("participant_id", r.get("id")),
                 "chance": (float(np.mean([o in assigned for o in wrong]))
                            if wrong else None),
             })

@@ -29,7 +29,9 @@ synthetic trials: every trial used is one the model actually produced.
 """
 from __future__ import annotations
 
+import collections
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Iterable
@@ -42,22 +44,36 @@ HUMAN_DIR = ROOT / "runs/human/working-memory-digit-span"
 TRIALS_PER_SPAN = 2
 
 
-def _staircase(by_span: dict[int, list[bool]]) -> dict | None:
-    """Apply the human stop rule to a span -> [outcomes] mapping.
+def _administer(by_span: dict[int, list], is_correct) -> tuple[list[tuple[int, object]], int]:
+    """The human stop rule, over arbitrary per-trial items.
 
-    Returns the administered trials, the ceiling, and the sub-span leak rate.
+    Extracted from `_staircase` so the error typology and serial-position curves
+    below run on EXACTLY the trials A1 runs on -- one stop rule, one place. With
+    `is_correct=bool` and boolean items this is byte-for-byte the old behaviour;
+    `test_error_shape.py` asserts A1's human summary is unchanged.
+
+    Returns (administered [(span, item)], best span).
     """
-    administered: list[tuple[int, bool]] = []
+    administered: list[tuple[int, object]] = []
     best = 0
     for span in sorted(by_span):
         block = by_span[span][:TRIALS_PER_SPAN]
         if len(block) < TRIALS_PER_SPAN:
             break
-        administered.extend((span, ok) for ok in block)
-        if any(block):
+        administered.extend((span, it) for it in block)
+        if any(is_correct(it) for it in block):
             best = span
         else:
             break  # both failed -> staircase terminates
+    return administered, best
+
+
+def _staircase(by_span: dict[int, list[bool]]) -> dict | None:
+    """Apply the human stop rule to a span -> [outcomes] mapping.
+
+    Returns the administered trials, the ceiling, and the sub-span leak rate.
+    """
+    administered, best = _administer(by_span, bool)
     if not administered or best == 0:
         return None
     sub = [ok for span, ok in administered if span <= best]
@@ -176,6 +192,251 @@ def variable_mapping_scores(jsonl_path: Path, condition: str = "C2") -> list[flo
                     correct += 1
         out.append(min(correct, 10) / 10.0)
     return out
+
+
+# =========================== M2: digit-span error typology + serial position ==
+#
+# REPORT ONLY. Nothing below gates, floors, or enters mean_humanlikeness_search.
+#
+# Why here and not in a new module: these run on the *administered* trials only,
+# i.e. the ones `_administer` above hands A1. Both digit-span tasks have come out
+# at exactly +0.0000 humanlikeness delta for every candidate measured so far, so
+# the score metric is blind to them; if anything about digit span discriminates,
+# it has to be the shape of the wrong answers and where in the list they go wrong.
+#
+# UNITS, each with its own reference point:
+#   * typology  -- share of that side's ADMINISTERED ERRORS falling in a class,
+#                  in [0,1], the six classes summing to 1.000. Reference point is
+#                  the error count, not the trial count.
+#   * serial position -- proportion of PRESENTED positions reported with the right
+#                  digit in the right place, in [0,1], over administered trials.
+#                  Reference point is the trial's own length, so the relative
+#                  thirds are comparable across spans.
+#   * reversal (reverse span only) -- share of administered errors on
+#                  NON-PALINDROMIC sequences, because when presented == reversed
+#                  (e.g. span-2 "33") a forward-order report is indistinguishable
+#                  from a correct one and belongs in neither numerator nor
+#                  denominator.
+#
+# MINIMUM n. Measured on the released runs, the matched staircase yields roughly
+# 30 administered errors per model run on forward span and 20 on reverse (against
+# 160 and 169 on the human side), and the typology splits those six ways. The bar
+# below is deliberately the same 30 A4 uses; reverse span will usually print
+# `insufficient` rather than a six-way split of 20 errors, which is the honest
+# outcome and not a reason to widen the filter. The unmatched all-19-spans variant
+# is available for a bigger n and is labelled NOT human-comparable, because the
+# extra trials are ones no human was ever administered.
+HUMAN_REVERSE_DIR = ROOT / "runs/human/working-memory-reverse-digit-span"
+
+MIN_ERRORS_TYPOLOGY = 30
+SPAN_ERROR_CLASSES = ("reversal", "transposition", "truncation", "omission",
+                      "substitution", "other")
+_DIGITS = re.compile(r"\d")
+
+
+def _digits(v) -> tuple[int, ...]:
+    if v is None:
+        return ()
+    if isinstance(v, (list, tuple)):
+        return tuple(int(x) for x in v)
+    return tuple(int(c) for c in _DIGITS.findall(str(v)))
+
+
+def classify_span_error(gold: tuple[int, ...], response: tuple[int, ...],
+                        presented: tuple[int, ...] | None = None,
+                        reverse: bool = False) -> str:
+    """Name the shape of one wrong digit-span response.
+
+    Precedence is fixed and ordered from most specific to least, so a response can
+    only land in one class:
+
+      reversal      reverse span only: the presented order was reported verbatim.
+                    Undefined (and excluded by the caller) when the sequence is a
+                    palindrome, where it coincides with the correct answer.
+      transposition the right digits in the wrong order -- same multiset, same
+                    length. This is the classic working-memory order error.
+      truncation    a proper prefix of the target: the participant stopped early
+                    rather than losing an item from the middle.
+      omission      a subset of the target's digits, shorter, not a prefix.
+      substitution  the right length, but at least one digit is not in the target.
+      other         anything else, including responses LONGER than the target.
+    """
+    if reverse and presented and response == presented and gold != presented:
+        return "reversal"
+    if len(response) == len(gold) and sorted(response) == sorted(gold):
+        return "transposition"
+    if len(response) < len(gold) and response == gold[:len(response)]:
+        return "truncation"
+    if len(response) < len(gold) and not (
+            collections.Counter(response) - collections.Counter(gold)):
+        return "omission"
+    if len(response) == len(gold):
+        return "substitution"
+    return "other"
+
+
+def _span_trial(span: int, presented, gold, response, correct: bool) -> dict:
+    return {"span": span, "presented": _digits(presented), "gold": _digits(gold),
+            "response": _digits(response), "correct": bool(correct)}
+
+
+def human_span_trials(reverse: bool = False) -> list[list[dict]]:
+    """Administered trials per human participant, under the real staircase."""
+    out: list[list[dict]] = []
+    folder = HUMAN_REVERSE_DIR if reverse else HUMAN_DIR
+    for f in sorted(folder.glob("run-*.json")):
+        trials = json.load(open(f)).get("payload", {}).get("trials", [])
+        by_span: dict[int, list[dict]] = defaultdict(list)
+        for t in trials:
+            if t.get("length") is None:
+                continue
+            by_span[int(t["length"])].append(_span_trial(
+                int(t["length"]), t.get("presentedSequence"),
+                t.get("expectedResponse"), t.get("userResponse"),
+                bool(t.get("correct"))))
+        adm, best = _administer(by_span, lambda it: it["correct"])
+        if adm and best:
+            out.append([it for _, it in adm])
+    return out
+
+
+def model_span_trials(jsonl_path: Path, condition: str = "C2") -> list[list[dict]]:
+    """Administered trials per model pseudo-participant, same stop rule.
+
+    Pseudo-participants are adjacent `sequence_index` pairs, exactly as
+    `model_participants` builds them, so M2 and A1 see the same trials. NOTE the
+    released meta_harness runs carry 10 sequence_index values, not the 100 the
+    module docstring describes (that count came from `runs/compactor/`), so this
+    yields 5 pseudo-participants per run and the per-participant n is small on the
+    model side -- reported, not hidden.
+    """
+    by_seq: dict[int, dict[int, dict]] = defaultdict(dict)
+    for line in Path(jsonl_path).read_text().splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        if (r.get("condition_id") or r.get("condition")) != condition:
+            continue
+        by_seq[int(r["sequence_index"])][int(r["span_length"])] = _span_trial(
+            int(r["span_length"]), r.get("digits"), r.get("gold"), r.get("pred"),
+            bool((r.get("metrics") or {}).get("exact", 0) >= 1.0))
+
+    seqs = sorted(by_seq)
+    out: list[list[dict]] = []
+    for a, b in zip(seqs[0::2], seqs[1::2]):
+        merged: dict[int, list[dict]] = defaultdict(list)
+        for span in sorted(set(by_seq[a]) | set(by_seq[b])):
+            for src in (a, b):
+                if span in by_seq[src]:
+                    merged[span].append(by_seq[src][span])
+        adm, best = _administer(merged, lambda it: it["correct"])
+        if adm and best:
+            out.append([it for _, it in adm])
+    return out
+
+
+def all_span_trials(jsonl_path: Path, condition: str = "C2") -> list[list[dict]]:
+    """Every model trial, staircase NOT applied. NOT human-comparable.
+
+    Exists only so a typology that prints `insufficient` under the matched
+    protocol can still be inspected at a usable n. Any number from here is about
+    the model's own behaviour on a schedule no human was administered.
+    """
+    rows: list[dict] = []
+    for line in Path(jsonl_path).read_text().splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        if (r.get("condition_id") or r.get("condition")) != condition:
+            continue
+        rows.append(_span_trial(
+            int(r["span_length"]), r.get("digits"), r.get("gold"), r.get("pred"),
+            bool((r.get("metrics") or {}).get("exact", 0) >= 1.0)))
+    return [rows]
+
+
+def span_typology(participants: list[list[dict]], reverse: bool = False,
+                  min_errors: int = MIN_ERRORS_TYPOLOGY) -> dict:
+    """Pooled error-class shares over administered trials."""
+    counts = {k: 0 for k in SPAN_ERROR_CLASSES}
+    n_err = n_tr = 0
+    n_err_nonpalin = 0
+    for trials in participants:
+        for t in trials:
+            n_tr += 1
+            if t["correct"]:
+                continue
+            n_err += 1
+            palin = bool(t["presented"]) and t["presented"] == t["presented"][::-1]
+            if not palin:
+                n_err_nonpalin += 1
+            counts[classify_span_error(t["gold"], t["response"], t["presented"],
+                                       reverse=reverse and not palin)] += 1
+    res: dict = {
+        "unit": "share of administered errors (6 classes sum to 1.000)",
+        "n_participants": len(participants),
+        "n_trials": n_tr,
+        "n_errors": n_err,
+        "n_errors_nonpalindromic": n_err_nonpalin,
+        "min_errors": min_errors,
+        "sufficient": bool(n_err >= min_errors),
+        "counts": counts,
+    }
+    if n_err >= min_errors:
+        res["shares"] = {k: round(v / n_err, 4) for k, v in counts.items()}
+        # The reversal class has its own denominator: palindromic sequences cannot
+        # express it, so they are excluded from both sides of that one share.
+        res["reversal_share_nonpalindromic"] = (
+            round(counts["reversal"] / n_err_nonpalin, 4) if n_err_nonpalin else None)
+    else:
+        res["shares"] = None
+        res["reversal_share_nonpalindromic"] = None
+        res["note"] = f"insufficient (n={n_err}); minimum {min_errors} errors"
+    return res
+
+
+def _positional_hits(t: dict) -> list[bool]:
+    """Position i of the target reported with the right digit in place i."""
+    gold, resp = t["gold"], t["response"]
+    return [i < len(resp) and resp[i] == gold[i] for i in range(len(gold))]
+
+
+def serial_position(participants: list[list[dict]], n_bins: int = 3) -> dict:
+    """Recall probability by RELATIVE serial position -- the primacy/recency curve.
+
+    Relative rather than absolute, because the staircase administers different span
+    lengths to different participants: pooling absolute position 5 mixes "the last
+    item of a 5-span" with "the middle of a 12-span". Position i of a length-L
+    target falls in bin `min(n_bins-1, n_bins*i // L)`, so bin 0 is the primacy
+    end and bin n_bins-1 the recency end for every length.
+
+    Per-participant values are returned so a 1 - W_1 over them is possible; the
+    absolute-position curve is returned pooled, as a descriptive companion.
+    """
+    per_p: list[list[float]] = []
+    abs_hits: dict[int, list[bool]] = defaultdict(list)
+    for trials in participants:
+        bins: list[list[bool]] = [[] for _ in range(n_bins)]
+        for t in trials:
+            hits = _positional_hits(t)
+            L = len(hits)
+            for i, ok in enumerate(hits):
+                bins[min(n_bins - 1, n_bins * i // L)].append(ok)
+                abs_hits[i + 1].append(ok)
+        if all(bins):
+            per_p.append([float(np.mean(b)) for b in bins])
+    arr = np.asarray(per_p, float)
+    return {
+        "unit": ("proportion of presented positions reported with the right digit "
+                 "in the right place"),
+        "n_bins": n_bins,
+        "n_participants": int(arr.shape[0]),
+        "bin_means": [round(float(v), 4) for v in arr.mean(axis=0)] if arr.size else None,
+        "per_participant": per_p,
+        "absolute_curve": {str(k): round(float(np.mean(v)), 4)
+                           for k, v in sorted(abs_hits.items())},
+        "absolute_n": {str(k): len(v) for k, v in sorted(abs_hits.items())},
+    }
 
 
 def summarize(label: str, recs: Iterable[dict]) -> dict:
