@@ -48,15 +48,32 @@ Counterweight: `respond_first` takes Hermes variable_mapping from 0.3524 to 0.95
 with A4 error structure at normalized rc_ratio 0.3751 against the human 0.3728 — distance
 0.0023 over 845 errors, the closest structural match in the project.
 
-## The single mechanism everything reduces to
+## ~~The single mechanism everything reduces to~~ SUPERSEDED 2026-09-28T04:10Z [TOOL]
 
-Tools get denied → the model types the tool call out as text instead of answering → that text
+> **Superseded, do not build on the struck text below.** The post-fix Qwen runs
+> (`iter9postA`/`B`) falsified it: spoken tool calls on n-back answer turns went 553 of 2100 →
+> **0 of 2100** while trials answered went **10.86 → 10.85 of 14**, and the baseline's own
+> n-back humanlikeness did not move (0.7848 → 0.7838). Evidence and the replacement account:
+> the OUTCOME section of `meta_harness/logs/postfix_prediction.md` and
+> `meta_harness/logs/unanswered_cause.md`.
+>
+> **Replacement account.** An n-back trial goes unanswered because the model spends that turn
+> on memory bookkeeping and emits no label — 418 of 472 unanswered turns returned **empty
+> assistant content**, the rest returned prose about the write. Every unanswered trial's own
+> turn had `tool_call_cap_hit` set (964 of 965) and no turn without it was ever unanswered
+> (0 of 2339); the *cumulative* budget explains 6 of 965. And the sign of the old story was
+> wrong: model n-back accuracy is 0.694 against humans' 0.8657, so an unanswered trial pushes
+> the model **below** the human distribution. **Route 3 in `HANDOFF.md` is therefore dead**;
+> routes 1 and 2 stand.
+
+~~Tools get denied → the model types the tool call out as text instead of answering → that text
 carries no classification → the trial is recorded unanswered → its score drops → since the model
-is too accurate, the score *moves toward* the human distribution. **An uncollected trial looks
-like humanlikeness.**
+is too accurate, the score *moves toward* the human distribution. An uncollected trial looks
+like humanlikeness.~~
 
-Cause: the harness sent `tools=TOOLS` with `tool_choice="none"` on turns that forbid calls. The
-schemas render into the chat template regardless, so the model speaks the call.
+~~Cause: the harness sent `tools=TOOLS` with `tool_choice="none"` on turns that forbid calls. The
+schemas render into the chat template regardless, so the model speaks the call.~~ (The
+`tools`/`tool_choice` defect was real and is fixed in eb3e96f; it simply changes no score.)
 
 ## Work done today, with commits
 
