@@ -821,9 +821,19 @@ def primacy_checks(run_dir: Path, baseline: Path | None) -> list[dict[str, Any]]
     # --- C1 covariate: NO directional prediction, but a disconfirming condition
     d_wr = delta.get("word_recognition")
     a2 = ax.get("A2") or {}
+    # NOTE 2026-09-29 [USER]. A2's scalar became miss_rate - fa_rate (`diff`, a
+    # proportion in [-1,+1]); `ratio` and `distance` are the superseded ratio of
+    # population means and its unbounded distance from 6.094. Every A2 threshold in
+    # this file was pre-registered against those fields and is deliberately left
+    # reading them, so the registered checks keep the meaning they were registered
+    # with. `diff` is added to the reported observation dicts only -- do not
+    # re-point a registered threshold at it: the scales are not comparable
+    # (|ratio - 6.094| is unbounded, |diff - 0.2273| lies in [0,2]), so a threshold
+    # like P6's "> 4.0" would become vacuously true.
     obs_c1 = {"delta_hl": d_wr, "miss_rate": a2.get("miss_rate"),
-              "fa_rate": a2.get("fa_rate"), "ratio": a2.get("ratio"),
-              "distance": a2.get("distance"),
+              "fa_rate": a2.get("fa_rate"), "diff": a2.get("diff"),
+              "ratio_legacy": a2.get("ratio"),
+              "distance_legacy": a2.get("distance"),
               "trials_attempted": a2.get("trials_attempted")}
     if d_wr is None or a2.get("fa_rate") is None:
         add("C1 word_recognition / A2 (reported; disconfirms if fa_rate > 0.211)",

@@ -13,8 +13,18 @@ move if the stack differed:
                               judged against the human split-half noise floor
                               (0.075 for this task).  A difference below the
                               floor is indistinguishable from sampling noise.
-  * miss / false-alarm     -- the A2 axis, released value 0.018
-  * trials attempted       -- released mean 87.5; this drives A2's denominator
+  * miss / false-alarm     -- the A2 measure. AMENDED 2026-09-29 [USER]: A2's scalar
+                              is now miss_rate - fa_rate, a proportion difference in
+                              [-1,+1]; the ratio (released value 0.018) is legacy and
+                              is printed only for continuity with the released
+                              figures. Both are printed below. Note that here the
+                              difference is between the two POOLED rates, not a mean
+                              of per-participant differences: this file's local `a2()`
+                              collects miss and fa on different participant sets, so
+                              they are not paired. The paired per-participant version
+                              lives in error_structure.a2_diff.
+  * trials attempted       -- released mean 87.5; this drove the legacy ratio's
+                              denominator
 
 Usage:
     python meta_harness/check_gate.py <fresh_wm_word_recognition.jsonl>
@@ -109,7 +119,8 @@ def main() -> None:
     print(f"  {'mean score':<26}{a.mean():>12.3f}{b.mean():>12.3f}{a.mean()-b.mean():>12.3f}")
     print(f"  {'miss rate':<26}{fm:>12.3f}{rm:>12.3f}{fm-rm:>12.3f}")
     print(f"  {'false-alarm rate':<26}{ff:>12.3f}{rf:>12.3f}{ff-rf:>12.3f}")
-    print(f"  {'miss/fa ratio (A2)':<26}{fr:>12.3f}{rr:>12.3f}{fr-rr:>12.3f}")
+    print(f"  {'miss - fa (A2, pooled)':<26}{fm-ff:>12.3f}{rm-rf:>12.3f}{(fm-ff)-(rm-rf):>12.3f}")
+    print(f"  {'miss/fa ratio (A2 LEGACY)':<26}{fr:>12.3f}{rr:>12.3f}{fr-rr:>12.3f}")
     print(f"  {'trials attempted':<26}{ft:>12.1f}{rt:>12.1f}{ft-rt:>12.1f}")
     print()
     print(f"  W_1(local, released) = {w:.3f}  95% CI [{lo:.3f}, {hi:.3f}]")

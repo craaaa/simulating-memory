@@ -4,10 +4,18 @@ What this is for. `mean_humanlikeness_search` is 1 - W_1 between the model's and
 the humans' per-participant score distributions, averaged over 8 tasks. It is a
 SCALAR PER TASK: it counts how many items were right and can say nothing about
 which ones or how. Two runs with identical score distributions can fail in
-completely different ways, and the four existing axes only look at three tasks
+completely different ways, and the pre-existing axes only look at three tasks
 (A1 digit span, A2 word recognition, A3 story recall) plus A4 on variable mapping.
 This module adds an error-shape measure for every task so the evaluation does not
 hinge on one of them.
+
+Two amendments to that axis list, both 2026-09-29 [USER]. A1 is RETIRED (a null model
+reproduces the human value; see score_candidate.py). A2's scalar is now
+miss_rate - fa_rate, a proportion difference in [-1,+1], not the miss/false-alarm
+ratio -- the ratio was undefined for most individual participants, so it could never
+have been scored as a distribution. A2 stays REPORT ONLY and has NOT been promoted.
+Nothing in this module reports A2; `score_candidate.axes()` is its surface. The
+miss_rate / fa_rate / ratio columns below belong to M3 (n-back) and are untouched.
 
 NOTHING HERE GATES. No floors, no guards, no change to `mean_humanlikeness_search`,
 and deliberately no entry in `score_candidate.axes()` -- anything added there lands

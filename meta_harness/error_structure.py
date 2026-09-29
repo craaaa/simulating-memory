@@ -12,8 +12,33 @@ and each one a noise-injecting harness would fail:
 
   A2  word recognition, error asymmetry
       miss_rate = P(say "new" | word was old),  fa_rate = P(say "old" | new)
-      Humans show a characteristic miss/false-alarm ratio.  Random responding
-      drives that ratio to 1.
+      Both are proportions in [0,1].
+
+      AMENDED 2026-09-29 [USER].  The scalar is now `diff = miss_rate - fa_rate`,
+      a proportion difference in [-1,+1], and the miss and fa rates are reported
+      separately beside it.  The SUPERSEDED scalar was the RATIO miss_rate/fa_rate,
+      "humans 6.09", which was a ratio of two population means that no individual
+      participant exhibits: per-participant fa_rate is exactly 0 for 31 of 53
+      humans (58%) and for 50 of 50 model participants in
+      runs/iter12stage2/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507, so the ratio is
+      computable for 22 of 53 humans and 0 of 50 of those models, and the mean of
+      the per-participant ratios where defined is 1.513, not 6.094.  The ratio is
+      kept as a clearly-labelled legacy field with its n_defined count so the
+      historical records in logs/evolution_summary.jsonl stay readable.
+
+      `diff` is defined for every participant on both sides, so unlike the ratio it
+      yields a DISTRIBUTION and is eligible to be scored the way the project's
+      objective asks (1 - W_1 against the human distribution).  Measured, in
+      proportion units: humans mean +0.2273, sd 0.2658 (population sd, ddof=0),
+      n=53.  A2 remains REPORT ONLY and has deliberately NOT been promoted to a
+      guard or into the objective; promotion needs a measured run-to-run spread for
+      `diff` itself and is a separate user decision.  Random responding drives
+      `diff` to 0, as it drove the old ratio to 1.
+
+      d' with a log-linear correction was evaluated as the replacement and REJECTED:
+      it is unbounded, so it has no [0,1] distance, it reads -0.6205 as a 1 - W_1 on
+      runs/iter11postfix/baseline, and when fa_rate is 0 it is driven by the
+      correction constant rather than by the data.
 
   A3  story recall, verbatim vs gist
       Humans reconstruct gist; a harness that stores text verbatim scores high
@@ -246,8 +271,55 @@ def a3_precision_model(model_dir, n=4):
     return out
 
 
+def a2_diff(miss, fa):
+    """Per-participant miss_rate - fa_rate, a proportion difference in [-1,+1].
+
+    Defined for every participant for whom either rate is defined, which is what
+    the superseded ratio was not (see the A2 note in the module docstring).  Takes
+    the same two parallel lists `a2_human()` / `a2_model()` return, so the two
+    sides are always computed by the same code path.
+    """
+    miss, fa = np.asarray(miss, float), np.asarray(fa, float)
+    return miss - fa
+
+
+def a2_diff_ci(miss, fa, n_boot=2000, seed=0):
+    """Bootstrap the mean of miss_rate - fa_rate, in proportion units.
+
+    Participant-level resample, drawn ONCE per replicate and applied to both
+    arrays, so miss and fa stay paired within a participant; resampling them
+    independently would inflate the interval.  Same shape as `a2_ratio_ci`, which
+    it replaces as the reported uncertainty for the A2 scalar.
+    """
+    rng = np.random.default_rng(seed)
+    d = a2_diff(miss, fa)
+    if d.size == 0:
+        return float("nan"), float("nan")
+    out = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, d.size, d.size)
+        out.append(np.nanmean(d[idx]))
+    return np.nanpercentile(out, [2.5, 97.5])
+
+
+def a2_ratio_defined(miss, fa):
+    """LEGACY.  (mean of per-participant miss/fa where fa > 0, n_defined).
+
+    Reported only to make visible how few participants the superseded ratio was
+    ever defined for.  Returns (nan, 0) when no participant has fa > 0.
+    """
+    miss, fa = np.asarray(miss, float), np.asarray(fa, float)
+    ok = (fa > 0) & ~np.isnan(miss) & ~np.isnan(fa)
+    n = int(ok.sum())
+    return (float(np.mean(miss[ok] / fa[ok])) if n else float("nan")), n
+
+
 def a2_ratio_ci(miss, fa, n_boot=2000, seed=0):
-    """Bootstrap the miss/false-alarm ratio.
+    """LEGACY (A2).  Bootstrap the miss/false-alarm ratio of population means.
+
+    Superseded 2026-09-29 [USER] by `a2_diff_ci` for A2; kept because M3 (n-back)
+    reports its own miss/fa ratio through this function and because the historical
+    A2 records in logs/evolution_summary.jsonl carry `ratio` and `ratio_ci`.
 
     The denominator is small: word recognition terminates at 3 strikes, so each
     participant contributes only the trials they attempted.  A harness change
@@ -1029,20 +1101,27 @@ def main() -> None:
               f"{pct(np.nanmean([x[0] for x in v])):>15}{pct(np.nanmean([x[1] for x in v])):>16}")
 
     print("\nA2  WORD RECOGNITION error asymmetry")
-    print(f"    {'source':<44}{'n':>5}{'miss_rate':>11}{'fa_rate':>9}{'miss/fa':>9}"
-          f"{'ratio_ci':>18}{'trials':>8}")
+    print("    scalar = miss_rate - fa_rate, a PROPORTION difference in [-1,+1], with a")
+    print("    participant bootstrap 95% CI.  legacy_ratio is the SUPERSEDED scalar: the")
+    print("    ratio of the two population means, undefined per participant wherever")
+    print("    fa_rate == 0 (n_def = participants with fa_rate > 0).")
+    print(f"    {'source':<44}{'n':>5}{'miss_rate':>11}{'fa_rate':>9}{'miss-fa':>9}"
+          f"{'diff_ci':>18}{'legacy_r':>10}{'n_def':>6}{'trials':>8}")
     hm, hf, ht = a2_human()
-    lo, hi = a2_ratio_ci(hm, hf)
-    print(f"    {'HUMANS':<44}{len(hm):>5}{pct(np.nanmean(hm)):>11}{pct(np.nanmean(hf)):>9}"
-          f"{pct(np.nanmean(hm)/np.nanmean(hf) if np.nanmean(hf) else np.nan):>9}"
-          f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(ht):>8.1f}")
+
+    def _row(label, m, f, t):
+        lo, hi = a2_diff_ci(m, f)
+        pooled = np.nanmean(m) / np.nanmean(f) if np.nanmean(f) else np.nan
+        _, n_def = a2_ratio_defined(m, f)
+        print(f"    {label:<44}{len(m):>5}{pct(np.nanmean(m)):>11}{pct(np.nanmean(f)):>9}"
+              f"{pct(np.nanmean(a2_diff(m, f))):>9}"
+              f"  [{lo:+.3f},{hi:+.3f}]".rjust(18)
+              + f"{pct(pooled):>10}{n_def:>6}{np.mean(t):>8.1f}")
+
+    _row("HUMANS", hm, hf, ht)
     for md in MODELS:
         m, f, t = a2_model(md)
-        r = np.nanmean(m)/np.nanmean(f) if f and np.nanmean(f) else np.nan
-        lo, hi = a2_ratio_ci(m, f)
-        print(f"    {Path(md).name:<44}{len(m):>5}{pct(np.nanmean(m)):>11}"
-              f"{pct(np.nanmean(f)):>9}{pct(r):>9}"
-              f"  [{lo:.2f},{hi:.2f}]".rjust(18) + f"{np.mean(t):>8.1f}")
+        _row(Path(md).name, m, f, t)
 
     print("\nA3  STORY RECALL verbatim vs gist")
     print(f"    {'source':<44}{'n':>5}{'BLEU':>9}{'embed_sim':>11}{'words':>8}")

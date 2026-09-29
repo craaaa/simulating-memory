@@ -9,8 +9,20 @@ Decision rules, from domain_spec.md:
 
   primary      mean humanlikeness over the search tasks
   floor        no task may regress more than FLOOR below the baseline
-  A2 (axis)    word-recognition miss/false-alarm ratio, humans 6.09 -- the only
-               axis with real headroom on qwen3-30b
+  A2 (report)  word-recognition miss_rate - fa_rate, a proportion difference in
+               [-1,+1], humans +0.2273 (sd 0.2658, n=53). REPORT ONLY -- NOT a guard,
+               NOT in mean_humanlikeness_search. AMENDED 2026-09-29 [USER]: the
+               scalar was the miss/false-alarm RATIO, "humans 6.09 -- the only axis
+               with real headroom on qwen3-30b". That framing is withdrawn: 6.09 is
+               a ratio of two population means that no individual participant
+               exhibits (fa_rate is exactly 0 for 31 of 53 humans and for 50 of 50
+               model participants at iter12stage2/baseline), so it could not be
+               scored as a distribution and its "headroom" was not a distance any
+               candidate could close. miss - fa is defined per participant on both
+               sides, so A2 is now ELIGIBLE for the objective -- promotion is a
+               separate user decision and needs a measured run-to-run spread for
+               miss - fa itself. The ratio survives as clearly-labelled legacy
+               fields only.
   ~~A1~~       RETIRED 2026-09-29 [USER]. The digit-span sub-span leak was demoted to
                report-only that morning and removed the same day: a null model with no
                memory mechanism at all reproduces the human value at slope s ~= 0.55, and
@@ -30,6 +42,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +58,17 @@ from meta_harness import interference as IF  # noqa: E402
 from meta_harness import nback_levels as NL  # noqa: E402
 from meta_harness import protocol_match as PM  # noqa: E402
 
+# A2 human reference. SUPERSEDED 2026-09-29 [USER]: HUMAN_A2_RATIO is a ratio of two
+# POPULATION MEANS (0.2719 / 0.0446 = 6.094) that no individual human exhibits -- 31 of
+# the 53 humans have fa_rate exactly 0, so the ratio is computable for 22 of 53, and the
+# mean of those 22 per-participant ratios is 1.513. Kept only so historical records
+# remain readable; the current scalar is HUMAN_A2_DIFF. Both are computed below from
+# error_structure.a2_human(), not hard-coded, so the two sides share one code path.
 HUMAN_A2_RATIO = 6.094
+HUMAN_A2_DIFF = 0.2273        # mean of per-participant (miss_rate - fa_rate), proportion
+HUMAN_A2_DIFF_SD = 0.2658     # population sd (ddof=0) of the same, proportion
+HUMAN_A2_MISS = 0.2719        # mean human miss rate, proportion
+HUMAN_A2_FA = 0.0446          # mean human false-alarm rate, proportion
 HUMAN_A3_BLEU = 0.002
 HUMAN_A3_WORDS = 137.2
 # Median clipped 4-gram precision over the 53 usable human story-recall records,
@@ -273,6 +296,41 @@ def variable_mapping_matched(run_dir: Path) -> dict[str, Any] | None:
     }
 
 
+@lru_cache(maxsize=1)
+def human_a2() -> dict[str, Any]:
+    """The A2 human reference, recomputed from `error_structure.a2_human()`.
+
+    Deliberately the project's own human-side function rather than a
+    reimplementation, so the human and model sides of A2 are produced by one code
+    path.  The module-level HUMAN_A2_* literals are the documented reference values;
+    this checks them against the data and raises rather than silently drifting.
+    """
+    miss, fa, _ = ES.a2_human()
+    miss, fa = np.asarray(miss, float), np.asarray(fa, float)
+    diff = ES.a2_diff(miss, fa)
+    ratio_def, n_def = ES.a2_ratio_defined(miss, fa)
+    got = {
+        "n": int(miss.size),
+        "miss_rate": float(np.nanmean(miss)),
+        "fa_rate": float(np.nanmean(fa)),
+        "diff": diff,
+        "diff_mean": float(np.nanmean(diff)),
+        "diff_sd": float(np.nanstd(diff)),          # population sd, ddof=0
+        "ratio_mean_per_participant": ratio_def,
+        "ratio_n_defined": n_def,
+    }
+    for name, live, lit in (("HUMAN_A2_DIFF", got["diff_mean"], HUMAN_A2_DIFF),
+                            ("HUMAN_A2_DIFF_SD", got["diff_sd"], HUMAN_A2_DIFF_SD),
+                            ("HUMAN_A2_MISS", got["miss_rate"], HUMAN_A2_MISS),
+                            ("HUMAN_A2_FA", got["fa_rate"], HUMAN_A2_FA)):
+        if abs(live - lit) > 5e-5:
+            raise SystemExit(
+                f"A2 human reference drift: {name} literal {lit} but a2_human() over "
+                f"n={got['n']} records gives {live:.6f}. Refusing to score against a "
+                "stale human reference -- reconcile the literal against the data.")
+    return got
+
+
 def axes(run_dir: Path) -> dict[str, Any]:
     res: dict[str, Any] = {}
 
@@ -282,12 +340,66 @@ def axes(run_dir: Path) -> dict[str, Any]:
         m, f = float(np.nanmean(miss)), float(np.nanmean(fa))
         ratio = m / f if f else float("nan")
         lo, hi = ES.a2_ratio_ci(miss, fa)
+        legacy_ratio_def, legacy_n_def = ES.a2_ratio_defined(miss, fa)
+
+        h = human_a2()
+        diff = ES.a2_diff(miss, fa)
+        dmean = float(np.nanmean(diff))
+        dlo, dhi = ES.a2_diff_ci(miss, fa)
         res["A2"] = {
+            # CURRENT SCALAR, as of 2026-09-29 [USER]. Proportion difference in
+            # [-1,+1]; 0 is what random responding gives.
+            "diff": round(dmean, 4),
+            "diff_ci": [round(float(dlo), 4), round(float(dhi), 4)],
+            "diff_sd": round(float(np.nanstd(diff)), 4),          # population sd, ddof=0
+            "human_diff": HUMAN_A2_DIFF,
+            "human_diff_sd": HUMAN_A2_DIFF_SD,
+            "diff_distance": round(abs(dmean - HUMAN_A2_DIFF), 4),
+            # 1 - W_1 over per-participant diff values, in PROPORTION units, NOT
+            # humanlikeness (see error_structure.one_minus_w1). Computed with the
+            # project's own src/score.wasserstein_1d for comparability with every
+            # other 1 - W_1 in the project; scipy.stats.wasserstein_distance gives a
+            # slightly larger W_1 on the same values (its grid is not clipped).
+            "diff_one_minus_w1": ES.one_minus_w1(h["diff"], diff),
+            "n_diff": int(np.sum(~np.isnan(diff))),
+
+            # Component rates, each a proportion, each with its own distance.
             "miss_rate": round(m, 4), "fa_rate": round(f, 4),
+            "human_miss_rate": HUMAN_A2_MISS,
+            "human_fa_rate": HUMAN_A2_FA,
+            "miss_distance": round(abs(m - HUMAN_A2_MISS), 4),
+            "fa_distance": round(abs(f - HUMAN_A2_FA), 4),
+
+            # LEGACY, SUPERSEDED 2026-09-29. `ratio`, `ratio_ci`, `human_ratio` and
+            # `distance` are the old scalar: a ratio of two POPULATION MEANS, kept
+            # under their original names so historical rows in
+            # logs/evolution_summary.jsonl and history.py's A2_dist column stay
+            # readable. Do not read `distance` as the A2 distance any more -- it is
+            # dimensionless and unbounded, and the ratio is undefined for most
+            # individual participants (legacy_ratio_n_defined below).
             "ratio": round(ratio, 4), "ratio_ci": [round(lo, 3), round(hi, 3)],
             "human_ratio": HUMAN_A2_RATIO,
             "distance": round(abs(ratio - HUMAN_A2_RATIO), 4),
+            "legacy_ratio_mean_per_participant": (round(legacy_ratio_def, 4)
+                                                  if legacy_n_def else None),
+            "legacy_ratio_n_defined": legacy_n_def,
+            "legacy_ratio_n_total": int(len(miss)),
+            "legacy_human_ratio_n_defined": h["ratio_n_defined"],
+            "legacy_note": (
+                "SUPERSEDED: ratio/ratio_ci/human_ratio/distance are the pre-2026-09-29 "
+                "scalar, miss_rate/fa_rate over population means. Not computable per "
+                f"participant (fa_rate == 0, or a rate undefined) for "
+                f"{len(miss) - legacy_n_def} of {len(miss)} participants here and for "
+                "31 of 53 humans. The current scalar is `diff`."),
+
             "trials_attempted": round(float(np.mean(trials)), 2),
+            "units": ("miss_rate, fa_rate and diff are proportions; diff in [-1,+1]. "
+                      "diff_one_minus_w1 is 1 - W_1 in proportion units, NOT "
+                      "humanlikeness. ratio is dimensionless."),
+            "status": ("REPORT ONLY. A2 is now eligible to be scored as a "
+                       "distribution (diff is defined per participant on both "
+                       "sides) but has deliberately NOT been promoted to a guard or "
+                       "into mean_humanlikeness_search. Only A3 is enforced."),
         }
 
     ds = run_dir / "tasks/wm_digit_span_forward.jsonl"

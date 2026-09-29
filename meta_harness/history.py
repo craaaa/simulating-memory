@@ -55,8 +55,23 @@ def load_rows() -> list[dict[str, Any]]:
 
 
 def _a2(row: dict) -> float | None:
+    """LEGACY A2 distance: |ratio - 6.094|, dimensionless.
+
+    Deliberately still reads `axes.A2.distance` and NOT the post-2026-09-29 scalar
+    `axes.A2.diff_distance`. Every historical row in evolution_summary.jsonl carries
+    only the ratio fields, so switching the key would blank this column for the whole
+    history. The two are not comparable in any case: this one is an unbounded ratio
+    distance and is NaN wherever fa_rate == 0, while `diff_distance` is a proportion
+    in [0,2]. See `_a2_diff` for the current scalar.
+    """
     a2 = (row.get("axes") or {}).get("A2") or {}
     return a2.get("distance")
+
+
+def _a2_diff(row: dict) -> float | None:
+    """Current A2 scalar, miss_rate - fa_rate, a proportion. None on older rows."""
+    a2 = (row.get("axes") or {}).get("A2") or {}
+    return a2.get("diff")
 
 
 def _mean(row: dict) -> float | None:
@@ -72,13 +87,17 @@ def cmd_list(args: argparse.Namespace) -> int:
            "a2": lambda r: (_a2(r) if _a2(r) is not None else 1e9),
            "iteration": lambda r: r.get("iteration", 0)}[args.sort]
     rows.sort(key=key)
-    print(f"{'iter':>4} {'candidate':<24} {'mean_HL':>8} {'A2_dist':>8} "
+    # A2ratio_d is the LEGACY ratio distance, kept because it is the only A2 number
+    # historical rows have; A2_diff is the current scalar (miss - fa, a proportion) and
+    # prints n/a on rows scored before 2026-09-29.
+    print(f"{'iter':>4} {'candidate':<24} {'mean_HL':>8} {'A2ratio_d':>10} {'A2_diff':>8} "
           f"{'floor':>6} {'guards':>7}  parent")
     for r in rows:
-        m, a = _mean(r), _a2(r)
+        m, a, dd = _mean(r), _a2(r), _a2_diff(r)
         print(f"{r.get('iteration', 0):>4} {str(r.get('id'))[:24]:<24} "
               f"{(f'{m:.4f}' if m is not None else 'n/a'):>8} "
-              f"{(f'{a:.3f}' if a is not None else 'n/a'):>8} "
+              f"{(f'{a:.3f}' if a is not None else 'n/a'):>10} "
+              f"{(f'{dd:+.4f}' if dd is not None else 'n/a'):>8} "
               f"{('ok' if r.get('passes_floor', True) else 'FAIL'):>6} "
               f"{('ok' if r.get('passes_guards', True) else 'FAIL'):>7}  "
               f"{r.get('parent') or '-'}")
