@@ -86,12 +86,40 @@ REJECTION CRITERION, stated before the run. Two of the three newly-live tasks (n
 variable_mapping) are LEAKY per `score_candidate.py`: the model answers from the
 current stimulus and no store change moves the score -- random decay, capacity 4 and
 capacity 10 000 all produced 0.992 on variable_mapping. So overshoot there should be
-invisible. word_recognition is BOTTLENECKED and carries A2. If its survival length
+invisible in the SCORE. word_recognition is BOTTLENECKED. If its survival length
 collapses below the human minimum (4 of 100 trials) for most scored units, 0.35 is too
 high for the per-turn regime and the hypothesis is rejected: a v4 would lower
 DECAY_MAX or make the total expected loss, rather than the per-turn rate, the constant.
-Passing the adversary's own pass condition (mean humanlikeness >= baseline + 0.05 while
-A2 distance stays >= 2x the baseline's) cannot be checked offline; it needs the GPU run.
+
+WHAT THIS ADVERSARY IS EVALUATED AGAINST -- amended 2026-09-29 [USER]
+    The pass condition's SECOND leg is withdrawn. It read "A2 distance >= 2x the
+    baseline's", and it is unsatisfiable in the direction this mechanism pushes:
+    dropping stored keys raises misses and lowers false alarms, which moves A2 TOWARD
+    the human value, not away. Measured on the existing runs, A2 distance was 5.4288
+    for v1 and 5.4344 for v2 against a baseline 5.754 -- both about 0.32 CLOSER to
+    human, never 2x further. A2's scalar also changed the same day, from the
+    miss/false-alarm ratio to miss_rate - fa_rate (a proportion in [-1,+1], human
+    +0.2273), and there is no faithful translation of "2x" across that change. So A2's
+    fields are OBSERVATIONS for this candidate, never a verdict.
+
+    The measure that random key-dropping should actually break is M1, the
+    variable_mapping intrusion typology in `report_error_shape.py` / `interference.py`.
+    Naming the person's own PREVIOUS city requires the superseded binding still to be
+    represented; random dropping destroys the binding outright, so `stale_same_name`
+    should fall toward 0 and `novel_guess` rise. Human shares: stale_same_name 0.2303,
+    intrusion_other_name 0.4605, novel_guess 0.3092 (shares of that side's errors,
+    summing to 1). This is the first version of the adversary that COULD move M1 at
+    all: M1's task is variable_mapping, one of the three tasks where v1 and v2 were
+    measured no-ops. M2, the digit-span error typology, is the second candidate but is
+    weaker here -- the baseline already sits at the truncation/omission end that random
+    dropping is supposed to produce (forward: baseline truncation 0.3131 + omission
+    0.3737, substitution 0.0808, against a human substitution of 0.4125).
+
+    Neither M1 nor M2 has a measured run-to-run spread, which is why no error-shape
+    measure has been promoted to a guard. Until one fails by more than its own spread,
+    this adversary's verdict is "untested rather than validated", in domain_spec.md's
+    own words for a weak adversary. Hence the run is 3 repeats, so the spread can be
+    measured from it.
 
 Calibrating an attack downward is legitimate, as v2 argued. Nothing here is a
 psychological claim and none of it may inform a real candidate.
@@ -199,12 +227,26 @@ MANIFEST = {
         "at R=17 and ~0 at R=100. Rejected if word_recognition survival length falls "
         "below the human minimum of 4 of 100 trials for most scored units."
     ),
+    "pass_condition": (
+        "AMENDED 2026-09-29 [USER]. Leg 1 stands: mean humanlikeness over the 8 search "
+        "tasks >= baseline + 0.05 (1 - Wasserstein-1, in [0,1]). Leg 2, 'A2 distance "
+        ">= 2x the baseline's', is WITHDRAWN as unsatisfiable in the direction key "
+        "dropping pushes -- it moves A2 toward human (v1 5.4288, v2 5.4344 vs baseline "
+        "5.754 on the old ratio scale) -- and A2's scalar has since changed to "
+        "miss_rate - fa_rate, across which '2x' does not translate. A2 is an "
+        "OBSERVATION for this candidate. The replacement candidates for leg 2 are M1 "
+        "(variable_mapping intrusion typology: stale_same_name should fall toward 0 and "
+        "novel_guess rise) and, more weakly, M2 (digit-span error typology). Neither has "
+        "a measured run-to-run spread, so until one fails by more than its own spread "
+        "the verdict is 'untested rather than validated'. Run as 3 repeats so that "
+        "spread can be measured."
+    ),
     "summary": (
         "Third attempt at the validity control. v1 overshot the human distribution and "
         "v2 was calibrated for it, but an audit found both were no-ops on 3 of the 8 "
-        "search tasks and drew as few as 3 distinct rates across 150 rows on another. "
-        "v3 fixes coverage (step() hook) and seeding (participant_id). Pass condition "
-        "unchanged: mean humanlikeness >= baseline + 0.05 while A2 distance stays >= 2x "
-        "the baseline's. Passing both would invalidate the axes."
+        "search tasks -- including variable_mapping, which carries M1 -- and drew as few "
+        "as 3 distinct rates across 150 rows on another. v3 fixes coverage (step() hook) "
+        "and seeding (participant_id), which makes it the first version that could move "
+        "M1 at all."
     ),
 }
