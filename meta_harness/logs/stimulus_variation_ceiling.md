@@ -86,6 +86,30 @@ is vLLM batch nondeterminism on one fixed input, compared against between-person
 humans. Continuing with the current procedure is a defensible choice; this is what it costs, stated
 in numbers.
 
+## This also settles audit M12, in the opposite direction from the audit's reading
+
+**M12** is that the model is scored per 5-question trial while the human is scored per 15
+questions, and the audit proposed pooling the model to the human's 15-question unit
+(rated ±0.02 humanlikeness, "sign not constant across substrates").
+
+**Pooling makes the degeneracy total.** The model's 15 questions per participant are exactly
+C2001 + C2002 + C2003. Verified by pooling all three repeats:
+
+| repeat | pooled-to-15 values | sd |
+|---|---|---|
+| baseline | **{0.9333}** — one value | **0.0000** |
+| baseline_rep2 | {0.9333, 1.0} | 0.0329 |
+| baseline_rep3 | {0.9333, 1.0} | 0.0332 |
+
+In `baseline` all 50 participants land on 14/15 with **sd exactly 0.0000**, which is precisely the
+state the audit flagged as pathological on hermes. The other two repeats escape it only because
+C2003 Q4 flipped for some participants — i.e. the only thing standing between this task and a
+degenerate point mass is serving nondeterminism.
+
+So M12's fix is correct about the granularity mismatch and would make the resulting distribution
+*less* usable, not more. The mismatch is real; pooling is not the remedy. The remedy is more
+stimuli (option 3 below).
+
 ## Options, none taken
 
 1. **Leave it and weight the mean by resolution**, or report craft_task separately rather than as
