@@ -181,11 +181,15 @@ def test_nback_encode_answer_split() -> None:
     assert "New letter (position 2):" in enc_msg, enc_msg
     assert block.full_sequence[1] in enc_msg, enc_msg
 
-    # answer turn: store + restated instructions + position, NO letter presented
+    # answer turn: store + restated instructions + the count, NO letter presented
     assert "Your working memory currently contains:" in ans_msg, ans_msg
     assert "Original task instructions:" in ans_msg, ans_msg
-    assert "answer for the letter at position 2" in ans_msg, ans_msg
+    assert "Letters presented so far in this block: 2." in ans_msg, ans_msg
     assert "New letter" not in ans_msg, ans_msg
+    # a lead-in turn must not presuppose a letter that does not exist yet
+    lead = log[res["answer_steps"][0]]["user_message"]
+    assert "Letters presented so far in this block: 1." in lead, lead
+    assert "at position" not in lead, lead
 
     # the answer turn must carry no tool schemas
     ans_requests = [r for r in llm.requests if r["kind"] == "tools"
@@ -198,6 +202,39 @@ def test_nback_encode_answer_split() -> None:
     by_pos = res["answer_step_by_position"]
     assert by_pos[block.n + 1] == res["answer_steps"][block.n], (by_pos, res)
     print("ok  n-back runs encode+answer per letter, answer turn is store-only, tools off")
+
+
+def test_trial_accounting_survives_the_split() -> None:
+    """Two step() calls per letter must not change the scoring denominator.
+
+    Every prediction in logs/instrument_fix.md is stated in trials out of 14. The split
+    doubles the number of turns, so `answered` and `acc_over_14` are the numbers most likely
+    to be silently wrong -- 28 or 17 instead of 14.
+    """
+    import random
+
+    from bench.tasks.nback import generate_block, score_block
+    from bench.tasks.wm_nback import run_nback_block
+
+    class AlwaysDifferent:
+        def generate_with_tools(self, messages, tools, **kw):
+            return LLMToolResponse(tool_calls=[], content="different",
+                                   finish_reason="stop")
+
+    for n in (1, 2, 3):
+        block = generate_block(n=n, rng=random.Random(0))
+        res = run_nback_block(llm=AlwaysDifferent(), block=block, condition_id="C2",
+                              temperature=0.0, debug=False)
+        sc = score_block(block, res["trial_map"])
+        n_letters = len(block.full_sequence)
+        assert len(res["step_log"]) == 2 * n_letters, (n, len(res["step_log"]))
+        assert sc["answered"] == 14, (n, sc["answered"])
+        assert len(sc["per_trial"]) == 14, (n, len(sc["per_trial"]))
+        # all 14 answered, so acc_over_14 and acc_over_answered must agree
+        assert abs(sc["accuracy_over_14"] - sc["accuracy_over_answered"]) < 1e-9, (n, sc)
+        # the n lead-in turns are scored into buffer_map, never into the 14
+        assert len(res["buffer_map"]) == n, (n, res["buffer_map"])
+    print("ok  trial accounting is still 14 trials per block at every n level")
 
 
 def test_variable_mapping_encode_shows_the_store() -> None:
@@ -215,5 +252,6 @@ if __name__ == "__main__":
     test_store_survives_the_reset()
     test_batch_path_request_sequence_unchanged()
     test_nback_encode_answer_split()
+    test_trial_accounting_survives_the_split()
     test_variable_mapping_encode_shows_the_store()
     print("\nall turn-boundary tests passed")

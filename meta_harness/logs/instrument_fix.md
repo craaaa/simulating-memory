@@ -117,7 +117,13 @@ committed in advance and will be reported as stated whether or not they hold.
 | 2 | `nback` model mean accuracy **falls** — the store is now the only channel, with `MAX_KEYS = 4` slots against an n=3 comparison | 0.694 | **< 0.65**, direction relative to human 0.8657 unknown |
 | 3 | `nback` trials answered rises, because the answer turn cannot be crowded out by a tool call | 10.85 of 14 | **≥ 13.0 of 14** |
 | 4 | A4 normalized `rc_ratio` in the **baseline** approaches the human 0.3728, since the baseline now closes the leak the candidates closed | 0.8662 (30 errors, least trustworthy figure in that column) | **< 0.55** with ≥ 30 errors |
-| 5 | the six batch tasks' humanlikeness is unchanged within their measured run-to-run noise | mean-8 0.7861 | per-task delta inside the `run_to_run_floor.json` spread |
+| 5 | the **five intact** batch tasks' humanlikeness is unchanged within their measured run-to-run noise | mean-8 0.7861 | per-task delta inside the `run_to_run_floor.json` spread |
+
+Prediction 5 covers `digit_span_forward`, `digit_span_reverse`, `semantic_story_recall`,
+`narrative_qa` and `craft_task`. **`word_recognition` is excluded**: its score does not depend
+on the store at all (all 100 test words are shown at once and "Old" means "appeared earlier in
+this list"), so a move there says nothing about whether the reset leaked somewhere it should
+not have.
 
 Prediction 2 is the one that matters and its direction is genuinely unknown: n-back could
 overshoot below the human distribution, as `respond_first_v2` did (accuracy 0.588, humanlikeness

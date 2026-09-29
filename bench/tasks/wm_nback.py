@@ -60,6 +60,13 @@ WM_SYSTEM_PROMPTS = {
 # The position index is given explicitly because clearing the transcript removes the
 # agent's only cue to where it is in the block. A human participant watching letters appear
 # has that cue for free; `variable_mapping` supplies the same thing as "Question {q_idx}".
+#
+# The answer turn states the count ("Letters presented so far: P") rather than asking about
+# "the letter at position P", because for P <= n there is no letter n positions back and the
+# question would presuppose one. The count is factual and does not name the expected reply;
+# the restated instructions are what say to answer "no response" for the first n letters.
+# Those turns feed `buffer_map`, not `trial_map`, so they do not enter `acc_over_14` -- but
+# they do consume store slots and shape what gets written for the scored trials that follow.
 ENCODE_PROMPT = """\
 Your working memory currently contains:
 {wm_contents}
@@ -76,7 +83,9 @@ Your working memory currently contains:
 Original task instructions:
 {task_prompt}
 
-Based ONLY on the above contents, answer for the letter at position {pos}:
+Letters presented so far in this block: {pos}.
+
+Based ONLY on the above contents, answer for the most recent letter:
 Does it match the letter {n} position(s) back?
 
 Output ONLY one of: same, different, no response.
