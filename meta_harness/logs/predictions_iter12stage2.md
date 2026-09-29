@@ -31,6 +31,15 @@ toward the human range and its humanlikeness rise.
 **Reference.** Model survival 84.80 words (median 100, 38 of 50 never reaching 3 errors);
 human survival 34.49 (median 32). humanlikeness 0.5364, 3-repeat spread 0.0199.
 
+> **CORRECTION 2026-09-29, before the run finished: the 84.80 figure is from the wrong run.**
+> It is `iter10postfix`, taken from `logs/error_shape_first_model_numbers.md`. Recomputed on
+> `iter11postfix/baseline`, the actual current model survival is **80.82 words** (median 100).
+> **The bands are NOT moved** — "rejects if survival > 80" stands exactly as registered, and it
+> happens to sit just below the true reference, which makes it a tight but still meaningful
+> test: 80.82 is essentially "unchanged". Stating this rather than silently re-fitting the band,
+> because re-fitting after seeing a reference is how a pre-registration stops being one.
+> The humanlikeness reference 0.5364 is the 3-repeat mean and is correct.
+
 | | supports | rejects |
 |---|---|---|
 | model mean survival | **< 60 words** | **> 80 words** |
