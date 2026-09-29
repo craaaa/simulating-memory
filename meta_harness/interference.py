@@ -150,10 +150,15 @@ def intrusion_profile(trials: list[dict[str, Any]],
 
     Pooled is the headline and per-participant is reported only as a count of
     participants who clear `min_errors`, because on the human side it is
-    essentially always zero: 154 participants answer 10 questions each and make
-    152 errors in total, so a per-participant share is one or two observations
-    and a 1 - W_1 over them would be measuring rounding. Stated rather than
-    silently pooled.
+    essentially always zero -- and for a stronger reason than first recorded here.
+    The original comment said "154 participants answer 10 questions each and make
+    152 errors in total". The first half is wrong: humans answer 2 to 16 questions
+    (mean 4.99, median 5), because the task ENDS at their first error. So each of
+    the 152 records with questions holds exactly one error, always its last
+    question, and a per-participant error-class share is a single observation.
+    A 1 - W_1 over those would be measuring rounding. Stated rather than silently
+    pooled. This is the same stopping-rule artefact that void A4 entirely; see
+    logs/a4_human_reference_invalid.md.
     """
     errs = [t for t in trials if not t["correct"]]
     n_err = len(errs)

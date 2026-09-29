@@ -85,9 +85,25 @@ CONDITIONS: Dict[str, Dict[str, str]] = {
 
 
 TURNS_PER_QUESTION = 2
-N_QUESTIONS = 10
+# RAISED 2026-09-29 [USER] from 10 to 20, to match the human question schedule.
+#
+# The human app offered at least 16 questions: across 152 human records the maximum questions
+# answered is 16 and the maximum turn index is 32, i.e. 2 turns per question exactly as here.
+# bench offered 10, so a model that never erred was censored at 10 while no human record is
+# censored at all. Under survival-length scoring (src/score.py) that ceiling is the whole
+# measurement, so it has to sit above the human maximum. 20 clears it.
+#
+# TARGET_RELATIONS deliberately stays 10: humans are not the ones being matched loosely here.
+# `relationCount` in the human data maxes at EXACTLY 10 over all 152 records, so the human app
+# also introduced 10 distinct people and then only re-moved existing ones. Turns past the
+# tenth pick an existing name, which is what the `turn <= cap` branch below already does.
+N_QUESTIONS = 20
 N_ASSIGNMENTS = TURNS_PER_QUESTION * N_QUESTIONS
-# Distinct name→city relations to build before random moves; score ceiling is this value per run.
+# Distinct name→city relations to build before random moves. This was also the per-run score
+# ceiling for `metrics.score`, which is now VESTIGIAL: that score is `relation_count` of the
+# last consecutively correct question and it saturates by question 5, which is why survival
+# length replaced it. Scoring reads `metrics.first_error_at`. Left in place so old rows stay
+# readable; do not build anything new on it.
 TARGET_RELATIONS = 10
 
 

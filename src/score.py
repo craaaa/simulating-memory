@@ -103,7 +103,7 @@ TASK_DENOM = {
     "digit_span_reverse": 20.0,
     "nback": 1.0,
     "word_recognition": 100.0,
-    "variable_mapping": 10.0,
+    "variable_mapping": 16.0,   # PINNED survival scale, NOT the question count -- see below
     "factual_qa": 10.0,
     "narrative_qa": 10.0,
     "semantic_story_recall": 1.0,
@@ -128,18 +128,27 @@ TASK_DENOM = {
 #                     (n_survived - 1)/10. Human n_survived: mean 4.99, median 5, min 2, max 16.
 #
 # So both sides now report survival length -- the number of items the participant was
-# presented before stopping -- divided by TASK_DENOM, which here is the censoring point
-# rather than a perfect score.
+# presented before stopping -- divided by TASK_DENOM, which for these two tasks is a fixed
+# scale and clipping point rather than a perfect score.
 #
-# CENSORING IS NOT SYMMETRIC ON variable_mapping AND MUST BE STATED WHEN THE NUMBER IS
-# QUOTED. No human record is censored (every one ends in an error) and 5 of 152 humans ran
-# past 10 questions, to 11, 15 and 16. `bench` asks exactly 10, so the model cannot exceed
-# 10 and 5 of 150 sit at that ceiling. Clipping the human side at 10 is the lesser
-# distortion -- using 16 as the denominator would impose an artificial 0.625 ceiling on the
-# model -- but the fix is to let `bench` ask more than 10 questions.
+# THE variable_mapping DENOMINATOR IS PINNED AT 16 AND MUST NOT TRACK THE QUESTION COUNT.
+# 16 is the human maximum: over 152 records the most questions anyone answered is 16, and no
+# human record is censored, because every one ends in an error.
 #
-# word_recognition is nearly symmetric: the human list is 100 long (one record reports 102,
-# clipped here) and the model's is 100.
+# Why pinned rather than "however many questions bench asks". Wasserstein-1 scales with the
+# denominator, so a denominator that follows the schedule length would make humanlikeness rise
+# by roughly 0.02 for a longer task at identical behaviour -- a metric that improves when you
+# lengthen the task. The scale is therefore fixed once, at the human maximum, and survival
+# beyond it clips to 1.0.
+#
+# History: this was 10 until 2026-09-29, matching a `bench` schedule of 10 questions that
+# censored the model at 10 while leaving humans uncensored. `bench` now asks 20
+# (`variable_mapping.N_QUESTIONS`), so model censoring moves from 10 to 16 and the ~5 of 150
+# rows that used to pile on the ceiling are resolved. **Humanlikeness computed at denominator
+# 10 is NOT comparable with 16** -- rescore from the run dirs rather than comparing across it.
+#
+# word_recognition is nearly symmetric and needs no such pinning: the human list is 100 long
+# (one record reports 102, clipped here) and the model's is 100.
 SURVIVAL_TASKS = ("word_recognition", "variable_mapping")
 
 
