@@ -59,9 +59,19 @@ def encode_turns(row: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
         enc = row.get("encode_steps") or []
         if enc:
             return {i + 1: log[v] for i, v in enumerate(enc) if v < len(log)}
-        # Every answer turn is preceded by its own encode turn.
-        return {pos: log[i - 1] for pos, i in _by_position(row).items()
-                if 0 <= i - 1 < len(log)}
+        # No `encode_steps` recorded. The encode turn is adjacent to its answer turn, but
+        # which side depends on the generation: the first split ran encode-then-answer, and
+        # since 2026-09-29 n-back runs answer-then-encode (encoding first overwrote the
+        # comparison target at n=1). So pick the neighbour that is not itself an answer step
+        # rather than assuming a side.
+        ans_idx = set(_by_position(row).values())
+        out: Dict[int, Dict[str, Any]] = {}
+        for pos, i in _by_position(row).items():
+            for j in (i + 1, i - 1):
+                if 0 <= j < len(log) and j not in ans_idx:
+                    out[pos] = log[j]
+                    break
+        return out
     return {i: log[i] for i in range(1, len(log))}
 
 

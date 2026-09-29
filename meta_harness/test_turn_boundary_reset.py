@@ -21,6 +21,7 @@ Run: python meta_harness/test_turn_boundary_reset.py
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -149,14 +150,16 @@ def test_nback_encode_answer_split() -> None:
     block = generate_block(n=2, rng=__import__("random").Random(0))
     n_letters = len(block.full_sequence)
 
-    # every encode turn writes one key, every answer turn replies
+    # Per letter, in the order the task now issues them: the ANSWER turn replies (one
+    # request, tools off), then the ENCODE turn writes one key (two requests: the tool call,
+    # then the follow-up).
     replies: list[Any] = []
     for i in range(n_letters):
+        replies.append(_reply("different"))
         replies.append(LLMToolResponse(
             tool_calls=[_call("write_memory", f"position_{i + 1}", f"c{i}")],
             content=None, finish_reason="tool_calls"))
         replies.append(_reply("stored"))
-        replies.append(_reply("different"))
     llm = RecordingLLM(replies)
 
     res = run_nback_block(llm=llm, block=block, condition_id="C2",
@@ -164,13 +167,13 @@ def test_nback_encode_answer_split() -> None:
 
     assert len(res["encode_steps"]) == n_letters, res["encode_steps"]
     assert len(res["answer_steps"]) == n_letters, res["answer_steps"]
-    # no standalone instruction turn: step 0 is the first letter's encode turn
-    assert res["encode_steps"][0] == 0, res["encode_steps"]
-    # the two interleave, encode before answer, for every letter
-    assert res["encode_steps"] < res["answer_steps"], (res["encode_steps"],
-                                                       res["answer_steps"])
-    for e, a in zip(res["encode_steps"], res["answer_steps"]):
-        assert e < a, (e, a)
+    # no standalone instruction turn: step 0 is the first letter's ANSWER turn
+    assert res["answer_steps"][0] == 0, res["answer_steps"]
+    # ANSWER precedes ENCODE for every letter. Encoding first overwrote the comparison
+    # target at n=1 -- the model keeps one `previous_letter` key and destroyed it before
+    # being asked. See logs/postfix_baseline_outcome.md.
+    for a, e in zip(res["answer_steps"], res["encode_steps"]):
+        assert a < e, (a, e)
 
     log = res["step_log"]
     enc_msg = log[res["encode_steps"][1]]["user_message"]
@@ -181,14 +184,15 @@ def test_nback_encode_answer_split() -> None:
     assert "New letter (position 2):" in enc_msg, enc_msg
     assert block.full_sequence[1] in enc_msg, enc_msg
 
-    # answer turn: store + restated instructions + the count, NO letter presented
+    # answer turn: store + restated instructions + the count + THE CURRENT LETTER. Only the
+    # letter n positions back must come from the store; the stimulus is on screen for a human.
     assert "Your working memory currently contains:" in ans_msg, ans_msg
     assert "Original task instructions:" in ans_msg, ans_msg
-    assert "Letters presented so far in this block: 2." in ans_msg, ans_msg
-    assert "New letter" not in ans_msg, ans_msg
+    assert "including this one: 2." in ans_msg, ans_msg
+    assert f"Next letter: {block.full_sequence[1]}" in ans_msg, ans_msg
     # a lead-in turn must not presuppose a letter that does not exist yet
     lead = log[res["answer_steps"][0]]["user_message"]
-    assert "Letters presented so far in this block: 1." in lead, lead
+    assert "including this one: 1." in lead, lead
     assert "at position" not in lead, lead
 
     # the answer turn must carry no tool schemas
@@ -201,7 +205,62 @@ def test_nback_encode_answer_split() -> None:
     # scored trial k is answer_step_by_position[n + k], not step n + k
     by_pos = res["answer_step_by_position"]
     assert by_pos[block.n + 1] == res["answer_steps"][block.n], (by_pos, res)
-    print("ok  n-back runs encode+answer per letter, answer turn is store-only, tools off")
+    print("ok  n-back runs answer+encode per letter; answer turn shows the letter, tools off")
+
+
+def test_nback_answer_sees_the_letter_n_back_at_n1() -> None:
+    """The n=1 regression: a single-key store must still hold the PREVIOUS letter when asked.
+
+    The first version of the encode/answer split encoded first, so a model keeping one
+    `previous_letter` key overwrote it with the current letter before being asked about it.
+    n=1 accuracy fell 0.9943 -> 0.4786 and 149 of 150 n=1 blocks ended with at most one key.
+    This simulates exactly that model -- one key, always overwritten -- and asserts the
+    answer turn can still see the letter one position back.
+    """
+    import random
+
+    from bench.tasks.nback import generate_block
+    from bench.tasks.wm_nback import run_nback_block
+
+    class OneKeyModel:
+        """Writes `previous_letter` = the letter in the encode prompt, nothing else."""
+
+        def generate_with_tools(self, messages, tools, **kw):
+            msg = messages[1]["content"]
+            if "New letter (position" in msg:            # encode turn
+                if any(m.get("role") == "tool" for m in messages):
+                    return _reply("stored")
+                letter = msg.split("New letter (position")[1].split(":")[1].split()[0]
+                return LLMToolResponse(
+                    tool_calls=[{"id": "c1", "type": "function",
+                                 "function": {"name": "write_memory",
+                                              "arguments": json.dumps(
+                                                  {"key": "previous_letter",
+                                                   "value": letter})}}],
+                    content=None, finish_reason="tool_calls")
+            return _reply("different")                    # answer turn
+
+    block = generate_block(n=1, rng=random.Random(7))
+    res = run_nback_block(llm=OneKeyModel(), block=block, condition_id="C2",
+                          temperature=0.0, debug=False)
+    log = res["step_log"]
+    assert res["final_kv"] and len(res["final_kv"]) == 1, res["final_kv"]
+
+    # For every letter after the first, the answer turn's store must show the PREVIOUS
+    # letter, not the current one.
+    checked = 0
+    for pos in range(2, len(block.full_sequence) + 1):
+        msg = log[res["answer_step_by_position"][pos]]["user_message"]
+        store = msg.split("Original task")[0]
+        prev, cur = block.full_sequence[pos - 2], block.full_sequence[pos - 1]
+        assert f"previous_letter: {prev}" in store, (pos, prev, cur, store)
+        if prev != cur:
+            assert f"previous_letter: {cur}" not in store, (pos, cur, store)
+        # and the current letter is present as the stimulus
+        assert f"Next letter: {cur}" in msg, (pos, msg)
+        checked += 1
+    assert checked >= 10, checked
+    print(f"ok  n=1 answer turn still sees the previous letter ({checked} letters checked)")
 
 
 def test_trial_accounting_survives_the_split() -> None:
@@ -292,6 +351,7 @@ if __name__ == "__main__":
     test_store_survives_the_reset()
     test_batch_path_request_sequence_unchanged()
     test_nback_encode_answer_split()
+    test_nback_answer_sees_the_letter_n_back_at_n1()
     test_trial_accounting_survives_the_split()
     test_variable_mapping_encode_shows_the_store()
     test_nback_steps_handles_both_row_generations()

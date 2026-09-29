@@ -49,9 +49,27 @@ WM_SYSTEM_PROMPTS = {
 }
 
 
-# Turn prompts. These mirror `wm_variable_mapping`'s pair exactly -- an encode turn that
-# shows the store and the new stimulus with tools ON, then an answer turn that shows the
-# store and restates the task instructions with tools OFF and no stimulus. Before this,
+# Turn prompts. Two turns per letter: an ANSWER turn (store + the letter, instructions
+# restated, tools OFF) and then an ENCODE turn (store + the letter, tools ON).
+#
+# The answer comes FIRST, and that order is load-bearing. The first version of this split
+# encoded before answering, mirroring `wm_variable_mapping`, and it made n=1 unanswerable:
+# the model keeps a single key for the previous letter, the encode turn overwrites it with
+# the current letter, and the letter one position back is destroyed before it is asked
+# about. Measured: 149 of 150 n=1 blocks ended with at most one key, and n=1 accuracy fell
+# from 0.9943 to 0.4786 while n=3 -- where positional keys let history survive -- rose from
+# 0.3248 to 0.5867. See `meta_harness/logs/postfix_baseline_outcome.md`.
+#
+# The answer turn also SHOWS the current letter, which the first version hid. Hiding it was
+# justified as "the current letter must be in the store for the comparison to be possible",
+# and that was simply wrong: the current letter is the stimulus, and a human participant sees
+# it on screen while judging. Only the letter n positions BACK has to come from memory.
+#
+# `wm_variable_mapping` keeps the opposite order on purpose: its question asks about stored
+# content ("Where does X live?"), not about the stimulus just presented, so encoding first is
+# correct there. Do not "fix" these two into agreement.
+#
+# Before this,
 # n-back was the only one of the eight working-memory tasks that never showed the agent its
 # own store: `TOOLS` has only `write_memory` and `delete_key`, there is no read tool, and
 # the turn was the bare string "Next letter: X". The store was write-only and every answer
@@ -83,10 +101,11 @@ Your working memory currently contains:
 Original task instructions:
 {task_prompt}
 
-Letters presented so far in this block: {pos}.
+Letters presented so far in this block, including this one: {pos}.
 
-Based ONLY on the above contents, answer for the most recent letter:
-Does it match the letter {n} position(s) back?
+Next letter: {letter}
+
+Based ONLY on the above, does this letter match the letter {n} position(s) back?
 
 Output ONLY one of: same, different, no response.
 No extra text."""
@@ -113,11 +132,15 @@ def run_nback_block(
 ) -> Dict[str, Any]:
     """Run one n-back block turn-by-turn using the WM agent's step() method.
 
-    Two turns per letter, matching `wm_variable_mapping`: an encode turn (store + letter,
-    tools ON) then an answer turn (store + instructions, tools OFF, no letter). The answer
-    is therefore reachable only through the key-value store, which is the point -- the
-    current letter must have been written for the comparison to be possible at all, against
-    a MAX_KEYS-slot store.
+    Two turns per letter: an answer turn (store + this letter + restated instructions, tools
+    OFF) then an encode turn (store + this letter, tools ON). Only the letter *n positions
+    back* has to come from the MAX_KEYS-slot store; the current letter is the stimulus and is
+    shown, as it is on screen for a human participant.
+
+    The answer precedes the encode deliberately. Encoding first destroyed the comparison
+    target at n=1 -- the model overwrote its single `previous_letter` key before being asked
+    about it. `wm_variable_mapping` keeps the opposite order for a reason of its own; see the
+    note above ANSWER_PROMPT.
 
     The standalone instruction turn this function used to open with is gone: `step()` now
     clears the transcript at every turn boundary, so a one-off instruction turn would be
@@ -152,6 +175,22 @@ def run_nback_block(
         if debug:
             print(f"  Letter {global_pos}: {letter}")
 
+        # ANSWER first: the store still holds the letter n positions back. Encoding first
+        # overwrote it -- see the note on ANSWER_PROMPT above.
+        response_text = agent.step(
+            ANSWER_PROMPT.format(
+                wm_contents=agent.wm.to_recall_text(),
+                task_prompt=TASK_DESC_BY_N[n].strip(),
+                pos=global_pos,
+                letter=letter,
+                n=n,
+            ),
+            allow_tools=False,
+            max_tokens=512,
+        )
+        answer_steps.append(len(agent.get_step_log()) - 1)
+        answer_step_by_position[global_pos] = answer_steps[-1]
+
         agent.step(
             ENCODE_PROMPT.format(
                 wm_contents=agent.wm.to_recall_text(),
@@ -162,19 +201,6 @@ def run_nback_block(
             max_tokens=512,
         )
         encode_steps.append(len(agent.get_step_log()) - 1)
-
-        response_text = agent.step(
-            ANSWER_PROMPT.format(
-                wm_contents=agent.wm.to_recall_text(),
-                task_prompt=TASK_DESC_BY_N[n].strip(),
-                pos=global_pos,
-                n=n,
-            ),
-            allow_tools=False,
-            max_tokens=512,
-        )
-        answer_steps.append(len(agent.get_step_log()) - 1)
-        answer_step_by_position[global_pos] = answer_steps[-1]
 
         classification = _parse_classification(response_text)
 
