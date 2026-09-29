@@ -27,6 +27,33 @@ FETCH_HEAD`. Provenance stays intact and the sbatch's `git rev-parse HEAD` still
 node before switching to `srun --account=torch_pr_287_general --time=00:10:00 --mem=4G -c 2`.
 `sbatch` itself from the login node is fine and is what the HPC skill prescribes.
 
+### Found while waiting on the queue — two things that change how the objective should be read
+
+**1. `craft_task` has 3 stimuli and 2 score values: 1/8 of the objective, one bit of resolution.**
+`logs/stimulus_variation_ceiling.md`. Five of eight tasks give every pseudo-participant its own
+stimulus; three do not — narrative_qa 10 stimuli for 50 rows, story recall 4 for 200, **craft_task
+3 for 150**. For craft and story recall the 50 "participants" are 50 reruns of a byte-identical
+input. The banks are exhausted (3 craft items, 10 narrative passages), so it is a design ceiling.
+All 50 craft participants produced the **identical** signature C2001=1.0 / C2002=1.0 / C2003=0.8 —
+one distinct signature, zero between-participant variance. This **fully explains craft's 0.0357
+run-to-run spread**: C2003 Q4 was wrong for 50/50 participants in repeat 1, 29/50 in repeat 2,
+27/50 in repeat 3. The task's entire variability is one question flipping. Audit **M12's** proposed
+fix (pool to the human's 15-question unit) makes it *worse* — verified: `baseline` pools to a
+single value 0.9333 with sd exactly 0.0000, the state the audit itself called pathological.
+
+**2. Matching the n-back denominators erases the remaining n=3 deficit — NOT LANDED, needs a
+decision.** `logs/nback_denominator_decision.md`. Human blocks hold 14 non-practice trials
+*including* the n lead-in; the model gets n lead-in separately *plus* 14 scored. 106 of 294 human
+lead-in trials carry an impossible `target: true`. Excluding them moves human n=3 from 0.7799 to
+0.7421 against a model 0.7429 — the gap goes −0.0370 → **+0.0008**. Deliberately not applied: it
+favours the model, rests on a field the data shows to be corrupt, and the audit's 0.0088 estimate
+was for the *pooled* score (per level it is 4× that). Decide together with M7 (granularity).
+
+Also measured: story recall agrees in aggregate (0.5626 vs 0.5969) and **not per story** — humans
+flat across all four, model spanning 0.499–0.626 with almost the whole deficit on Baseball
+(−0.0936). Audit **M17**'s reweighting is real but **+0.0109 against a 0.0115 spread**, i.e. inside
+noise, so not worth a scorer change.
+
 **Everything else on the blocked list is done.** Error-shape measures run against the model for
 the first time (`logs/error_shape_first_model_numbers.md`) — **score and shape disagree on four
 of six tasks**; run-to-run noise re-measured and wired into the floors, resolving craft_task at
