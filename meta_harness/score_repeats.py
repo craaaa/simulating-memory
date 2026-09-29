@@ -35,7 +35,7 @@ the per-run spread beside the average so the margin is always visible.
 USAGE
 -----
     python meta_harness/score_repeats.py RUN_DIR [RUN_DIR ...] --baseline DIR \
-        [--id NAME] [--iteration N] [--record]
+        [--baseline DIR ...] [--id NAME] [--iteration N] [--record]
 
 Every RUN_DIR must be the same candidate. The averaged record carries `n_repeats`, the
 per-run values and the per-task spread, so a reader can always see whether a verdict
@@ -69,8 +69,15 @@ SAME_FAMILY_SD = {
 }
 
 
-def average_records(run_dirs: list[Path], baseline: Path | None) -> dict[str, Any]:
-    """Average per-task humanlikeness across repeats, then apply the contract once."""
+def average_records(run_dirs: list[Path],
+                    baselines: list[Path] | None) -> dict[str, Any]:
+    """Average per-task humanlikeness across repeats, then apply the contract once.
+
+    The baseline may itself be several repeats. It has exactly the same run-to-run noise
+    as the candidate, so comparing an averaged candidate to a single baseline run leaves
+    half the noise in the delta; when repeats of the baseline exist they are averaged too.
+    """
+    baseline = baselines[0] if baselines else None
     recs = [SC.evaluate(d, baseline) for d in run_dirs]
     n = len(recs)
 
@@ -106,9 +113,20 @@ def average_records(run_dirs: list[Path], baseline: Path | None) -> dict[str, An
     out["axes_per_run"] = [r.get("axes") for r in recs]
 
     # Floors, applied ONCE to the averaged deltas.
-    bhl = {}
-    if baseline is not None:
-        bhl = SC.humanlikeness_by_task(baseline, SC.SEARCH_TASKS + SC.HELDOUT_TASKS)
+    bhl: dict[str, float | None] = {}
+    bhl_per_run: list[dict[str, float | None]] = []
+    if baselines:
+        bhl_per_run = [SC.humanlikeness_by_task(b, SC.SEARCH_TASKS + SC.HELDOUT_TASKS)
+                       for b in baselines]
+        for t in {k for d in bhl_per_run for k in d}:
+            vals = [d.get(t) for d in bhl_per_run]
+            good = [v for v in vals if v is not None]
+            bhl[t] = round(st.mean(good), 4) if good else None
+        out["baseline_dirs"] = [str(b) for b in baselines]
+        out["n_baseline_repeats"] = len(baselines)
+        out["baseline_humanlikeness_by_task"] = bhl
+        out["baseline_per_run_humanlikeness"] = {
+            t: [d.get(t) for d in bhl_per_run] for t in sorted(bhl)}
     deltas: dict[str, float | None] = {}
     violations = []
     flagged = []
@@ -140,6 +158,14 @@ def average_records(run_dirs: list[Path], baseline: Path | None) -> dict[str, An
                 src = "the family-wide spread (too few repeats for an own estimate)"
             if sd is not None:
                 se = sd / (n ** 0.5)
+                # The delta carries the baseline's noise as well as the candidate's, so
+                # when the baseline was repeated its own spread enters the standard error.
+                bown = [d.get(t) for d in bhl_per_run]
+                bown = [v for v in bown if v is not None]
+                if len(bown) >= 2:
+                    bse = st.stdev(bown) / (len(bown) ** 0.5)
+                    se = (se ** 2 + bse ** 2) ** 0.5
+                    src += f" plus the baseline's own {len(bown)} repeats"
                 if abs(d + eff) < 2 * se:
                     flagged.append(
                         f"{t}: violation of {d} against -{eff} is within 2 SE "
@@ -163,7 +189,7 @@ def average_records(run_dirs: list[Path], baseline: Path | None) -> dict[str, An
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("run_dirs", nargs="+")
-    ap.add_argument("--baseline", default=None)
+    ap.add_argument("--baseline", nargs="+", default=None)
     ap.add_argument("--id", default=None)
     ap.add_argument("--iteration", type=int, default=0)
     ap.add_argument("--record", action="store_true")
@@ -178,7 +204,12 @@ def main() -> int:
         print("!!! score_repeats needs at least 2 run dirs; use score_candidate.py for 1")
         return 2
 
-    rec = average_records(dirs, Path(args.baseline) if args.baseline else None)
+    bl = [Path(b) for b in (args.baseline or [])]
+    missing_b = [b for b in bl if not b.exists()]
+    if missing_b:
+        print(f"!!! missing baseline dirs: {[str(b) for b in missing_b]}")
+        return 2
+    rec = average_records(dirs, bl or None)
     rec["id"] = args.id or dirs[0].parent.name
     rec["iteration"] = args.iteration
 
@@ -194,6 +225,9 @@ def main() -> int:
                         for x in rec["per_run_humanlikeness"][t])
         print(f"{t:<26}{v:>9.4f}{(f'{d:+.4f}' if d is not None else '-'):>9}"
               f"{(f'{s:.4f}' if s is not None else '-'):>9}  {runs}")
+    if rec.get("n_baseline_repeats", 1) > 1:
+        print(f"\nbaseline averaged over {rec['n_baseline_repeats']} repeats "
+              f"{rec['baseline_per_run_humanlikeness']}")
     print(f"\nmean over search tasks: {rec['mean_humanlikeness_search']}   "
           f"per run {rec['mean_per_run']}")
     print(f"passes_floor {rec['passes_floor']}   passes_guards {rec['passes_guards']}")
