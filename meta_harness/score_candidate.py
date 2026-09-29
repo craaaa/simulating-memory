@@ -192,8 +192,34 @@ NOISE_FLOOR = {
 # all-at-once presentation and variable_mapping's 0.0033 on a 10-question schedule, so both
 # must be re-measured after the next re-baseline. Three repeats also only pin a spread to about
 # a third of itself, so these are estimates, not constants.
+#
+# UPDATED 2026-09-29 from the three arms of `runs/iter12stage2` (job 18781213), which is the
+# current instrument: stage-2 word_recognition, variable_mapping at 20 questions, digit spans at
+# 40 sequences/span. Each entry is the LARGER of the two measurements, because three repeats pin
+# a spread only loosely and the floors should not tighten on a single lucky triple.
+#
+#   task                  iter11postfix   iter12stage2   kept
+#   digit_span_forward       0.0000          0.0000      0.0000
+#   digit_span_reverse       0.0000          0.0000      0.0000
+#   nback                    0.0034          0.0061      0.0061
+#   word_recognition         0.0199          0.0122      0.0199
+#   variable_mapping         0.0033          0.0012      0.0033
+#   narrative_qa             0.0184          0.0140      0.0184
+#   semantic_story_recall    0.0115          0.0077      0.0115
+#   craft_task               0.0357          0.0342      0.0357
+#
+# Two readings worth keeping. word_recognition's spread FELL (0.0199 -> 0.0122) even though the
+# task got much harder, and craft_task reproduced at 0.0342 against 0.0357, which confirms that
+# figure was not an unlucky triple.
+#
+# The digit-span 0.0000 entries are real at a fixed `sequences_per_span` and must not be trusted
+# across a change to it: the estimator makes one pseudo-participant per sequence_index, so the row
+# count sets the sample size and the humanlikeness moves with it. See
+# logs/digit_span_not_comparable.md. craft_task's spread is also QUANTISED rather than Gaussian --
+# per-run 0.8565 / 0.8565 / 0.8223, because the task's whole variability is one question flipping
+# for some fraction of 50 identical pseudo-participants (logs/stimulus_variation_ceiling.md).
 RUN_TO_RUN_SPREAD = {
-    "digit_span_forward": 0.000, "digit_span_reverse": 0.000, "nback": 0.0034,
+    "digit_span_forward": 0.000, "digit_span_reverse": 0.000, "nback": 0.0061,
     "word_recognition": 0.0199, "variable_mapping": 0.0033,
     "narrative_qa": 0.0184, "semantic_story_recall": 0.0115, "craft_task": 0.0357,
 }
