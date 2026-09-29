@@ -1,5 +1,52 @@
 # CONTINUITY — session state, 2026-09-28 / 29
 
+## 2026-09-29T03:30Z [USER] — four metric decisions, all landed
+
+**A. Survival length on both sides** for `word_recognition` and `variable_mapping`
+(`a3d0bc3`, documented in `logs/survival_length_scoring.md`). Neither task has a human
+accuracy: both human protocols stop after a fixed error count, so the error count is pinned
+by the protocol and only the *timing* of the last error varies. Verified —
+`trialsCompleted − correctResponses == 3` for 53 of 53 word-recognition records; exactly one
+error in 152 of 152 variable-mapping records, always the last question.
+
+| task | old scoring, pre-fix → post-fix | survival scoring, pre-fix → post-fix |
+|---|---|---|
+| `word_recognition` | 0.5075 → 0.4918 | **0.5232 → 0.5073** |
+| `variable_mapping` | 0.3539 → 0.6801 | **0.4621 → 0.9564** |
+| mean over 8 | 0.7824 → 0.8137 | **0.7979 → 0.8502** |
+
+The `variable_mapping` jump is the real news: the old model formula banked `relation_count`
+of the last consecutively correct question, which saturates at 10 by question 5, so 43 of 150
+rows collapsed onto 1.0 and every error past question 5 was invisible. Under survival the
+model's first error falls at median question 4 against the humans' median 5 (means 4.84 vs
+4.99), verified by re-grading all 150 rows from `parsed_answers` independently of
+`metrics.first_error_at`. **But 1 − W₁ between two bounded 2–10 distributions with means 0.15
+apart is high almost regardless of mechanism — do not read 0.9564 as shared mechanism.**
+
+**B. Continue with the current pseudo-participant procedure** — temperature 0.0, 50 seeded
+stimulus sets per task. The objection stands in `logs/protocol_mismatch_audit.md` (M14) and is
+not being acted on: model between-participant spread is item difficulty, human spread is
+between-person ability.
+
+**C. A1 retired** (`2a08227`). `axes["A1"]` → `axes["digit_span"]`, carrying `best_span` in
+digits only. A null model with no memory mechanism reproduces the human A1 at slope s≈0.55,
+and slopes 0.25–2.0 all fit the human `best_span` mean and sd while A1 sweeps 0.045→0.183.
+`best_span` is **not** promoted to a guard — as a distance-from-human quantity it is wrongly
+signed (humans 6.88 digits, baseline 18.4, so a collapse to 2.0 reads as improvement).
+`check_predictions._span_axis()` reads either row generation; rows needing `sub_span_leak` now
+report INCONCLUSIVE, which is that file's stated convention.
+
+**D. `sequences_per_span` 10 → 40** on both digit spans (`4894c58`). Matched pseudo-
+participants = `sequences_per_span / 2`, so this moves the matched n from **5 to 20** against
+53 humans. Cost +2280 LLM calls (760 → 3040 across both tasks), modest against post-fix n-back
+(~5100) and stage-2 word_recognition (up to 10,000). **`best_span` is not comparable across
+runs with different `sequences_per_span`** (audit M4).
+
+**Re-measure, all invalidated by A and D:** `run_to_run_floor.json` and
+`score_repeats.SAME_FAMILY_SD` for `word_recognition`, `variable_mapping` and both digit spans.
+`evolution_summary.jsonl` rows written before `a3d0bc3` carry old-scoring numbers for the two
+survival tasks — rescore from run dirs rather than comparing across the boundary.
+
 ## 2026-09-29T02:00Z [USER][CODE] — EXECUTION ORDER, everything blocked on job 18774002
 
 `18774002` (Qwen, 3 baseline repeats, all 8 tasks, `ITER=11postfix` → `runs/iter11postfix/`)
