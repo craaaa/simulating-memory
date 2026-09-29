@@ -149,23 +149,42 @@ def average_records(run_dirs: list[Path],
             # using the family sd of 0.0158, when primacy's OWN three runs read 0.8456,
             # 0.8456 and 0.8410 -- a spread of 0.0046. Its craft cost is one of the most
             # robust effects measured, not a marginal one.
+            fam = SAME_FAMILY_SD.get(t)
             own = [v for v in per_run[t] if v is not None]
             if len(own) >= 3:
                 sd = st.stdev(own)
                 src = f"this candidate's own {len(own)} repeats"
+                # An observed sd of 0 from a handful of repeats does not mean the noise is
+                # zero -- it means these repeats did not resolve it, and a zero SE would
+                # declare every nonzero delta a real effect. Never go below the
+                # family-wide figure.
+                if fam is not None and sd < fam:
+                    sd = fam
+                    src = (f"the family-wide spread, which is larger than this "
+                           f"candidate's own {len(own)} repeats produced")
             else:
-                sd = SAME_FAMILY_SD.get(t)
+                sd = fam
                 src = "the family-wide spread (too few repeats for an own estimate)"
             if sd is not None:
                 se = sd / (n ** 0.5)
-                # The delta carries the baseline's noise as well as the candidate's, so
-                # when the baseline was repeated its own spread enters the standard error.
+                # The delta carries the BASELINE's noise as well as the candidate's, and
+                # that term does not vanish when the baseline was run once: a single draw
+                # has the full family variance, not zero. Treating it as zero understated
+                # every single-baseline standard error in this project.
                 bown = [d.get(t) for d in bhl_per_run]
                 bown = [v for v in bown if v is not None]
-                if len(bown) >= 2:
-                    bse = st.stdev(bown) / (len(bown) ** 0.5)
-                    se = (se ** 2 + bse ** 2) ** 0.5
-                    src += f" plus the baseline's own {len(bown)} repeats"
+                if len(bown) >= 3:
+                    bsd = st.stdev(bown)
+                    if fam is not None and bsd < fam:
+                        bsd = fam
+                    bsrc = f"the baseline's own {len(bown)} repeats"
+                else:
+                    bsd = fam
+                    bsrc = (f"the family-wide spread for the baseline's {len(bown)} "
+                            f"run(s)")
+                if bsd is not None and bown:
+                    se = (se ** 2 + (bsd ** 2) / len(bown)) ** 0.5
+                    src += f" plus {bsrc}"
                 if abs(d + eff) < 2 * se:
                     flagged.append(
                         f"{t}: violation of {d} against -{eff} is within 2 SE "
@@ -200,8 +219,9 @@ def main() -> int:
     if missing:
         print(f"!!! missing run dirs: {[str(d) for d in missing]}")
         return 2
-    if len(dirs) < 2:
-        print("!!! score_repeats needs at least 2 run dirs; use score_candidate.py for 1")
+    if len(dirs) < 2 and len(args.baseline or []) < 2:
+        print("!!! score_repeats needs repeats on at least one side: either 2+ run dirs, "
+              "or 1 run dir against 2+ --baseline dirs")
         return 2
 
     bl = [Path(b) for b in (args.baseline or [])]
