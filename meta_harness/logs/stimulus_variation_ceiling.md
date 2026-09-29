@@ -82,9 +82,10 @@ what it lacks is stimulus breadth, which is why its per-story gaps are so uneven
 **This sharpens the M14 pseudo-participant objection the user chose to continue with.** For five
 tasks, model between-participant spread really is item difficulty over distinct items, which is at
 least a coherent quantity. For `craft_task` and `semantic_story_recall` it is *not even that* — it
-is vLLM batch nondeterminism on one fixed input, compared against between-person ability in
-humans. Continuing with the current procedure is a defensible choice; this is what it costs, stated
-in numbers.
+is vLLM batch nondeterminism on a fixed input, compared against whatever produces the human spread
+— which for craft is 8 distinct values at sd 0.1180 over 54 people, and is *not* fully
+characterised, since the human records carry no task id. Continuing with the current procedure is a
+defensible choice; this is what it costs, stated in numbers.
 
 ## This also settles audit M12, in the opposite direction from the audit's reading
 
@@ -105,6 +106,21 @@ In `baseline` all 50 participants land on 14/15 with **sd exactly 0.0000**, whic
 state the audit flagged as pathological on hermes. The other two repeats escape it only because
 C2003 Q4 flipped for some participants — i.e. the only thing standing between this task and a
 degenerate point mass is serving nondeterminism.
+
+At that same 15-question unit, the human side is a real distribution:
+
+| | n | mean | sd | distinct values |
+|---|---|---|---|---|
+| human | 54 | 0.8395 | **0.1180** | **8** (0.40, 0.60, 0.667, 0.733, 0.80, 0.867, 0.933, 1.00) |
+| model, `baseline` | 50 | 0.9333 | **0.0000** | **1** |
+
+**A correction to something I asserted earlier in this file.** I wrote that human craft variation
+is "between-person ability on fixed material". I cannot verify the "fixed material" half: the human
+records carry no task identifier (`taskId` is absent on all 162 human trials), so which craft tasks
+each person saw is not recoverable from them, and the protocol audit separately found that **5 of
+54 human records used `craft_task_old.json` (v2.0)** rather than the current bank. So the human side
+may carry some stimulus variation of its own, and possibly across two different banks. What is
+verified is the shape: 8 distinct values at sd 0.1180 against the model's 1 at sd 0.0000.
 
 So M12's fix is correct about the granularity mismatch and would make the resulting distribution
 *less* usable, not more. The mismatch is real; pooling is not the remedy. The remedy is more
