@@ -2787,6 +2787,14 @@ def _nback_step_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
         return None
     if not any(r.get("step_log") for r in rows):
         return None
+    # This walks `step_log[1:]` as one turn per letter and counts tool state and reply form
+    # in the same pass. After the encode/answer split (post `exp/compactor-prefix-v1`) a row
+    # has two turns per letter and no instruction turn, so that pass would double every
+    # count and look for a classification in bookkeeping text. Refuse rather than mislead:
+    # splitting these counters by turn kind is real work and every verdict this function
+    # feeds belongs to the pre-fix tag. `meta_harness/nback_steps.py` has the mapping.
+    if any(r.get("answer_step_by_position") or r.get("answer_steps") for r in rows):
+        return None
     out: dict[int, dict[str, Any]] = {}
     for r in rows:
         n = r.get("n_level")
@@ -3093,9 +3101,10 @@ def episodic_reset_v3_checks(run_dir: Path,
         add("P9 reply-form and tool-budget decomposition", INCONCL, None,
             "empty_text_share <= 0.05, tool_call_in_text_share <= 0.05, "
             "contamination <= 2, per level",
-            "absent: wm_nback.jsonl has no `step_log` -- this run predates the "
-            "bench change that persists it, which is a fact about the run's age, "
-            "not a defect", tags=("REPORTED",))
+            "absent: wm_nback.jsonl has no `step_log` (run predates the bench change "
+            "that persists it), or the row is post-`exp/compactor-prefix-v1` and holds "
+            "two turns per letter, which this decomposition cannot read. Either way a "
+            "fact about the run's format, not a defect", tags=("REPORTED",))
     else:
         obs9 = {n: {k: (forms.get(n) or {}).get(k) for k in
                     ("empty_text_share", "tool_call_in_text_share", "contaminated",
@@ -3228,7 +3237,8 @@ def evicting_reset_checks(run_dir: Path,
     if forms is None:
         add("P4 the mechanism is confirmed, not assumed", INCONCL, None,
             "memory_full <= 0.01/turn at every level AND P(answer|budget=0) >= 0.97",
-            "absent: wm_nback.jsonl has no step_log (run predates the bench change)",
+            "absent: wm_nback.jsonl has no step_log (run predates the bench change), or "
+            "the row holds two turns per letter and this decomposition cannot read it",
             tags=("mechanism",))
     else:
         obs4 = {n: {k: (forms.get(n) or {}).get(k) for k in
@@ -3417,6 +3427,10 @@ def _nback_reply_forms(run_dir: Path) -> dict[int, dict[str, Any]] | None:
     """
     rows = _jsonl(Path(run_dir), "wm_nback")
     if not rows or not any(r.get("step_log") for r in rows):
+        return None
+    # Same positional assumption as `_nback_step_forms`, same refusal after the
+    # encode/answer split. See `meta_harness/nback_steps.py`.
+    if any(r.get("answer_step_by_position") or r.get("answer_steps") for r in rows):
         return None
     try:
         from bench.tasks.wm_nback import _parse_classification as _pc

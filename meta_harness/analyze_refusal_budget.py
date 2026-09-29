@@ -20,6 +20,7 @@ import sys
 ROOT = pathlib.Path("/Users/cl5625/simulating-memory/.claude/worktrees/meta-harness-compactor")
 sys.path.insert(0, str(ROOT))
 from bench.tasks.wm_nback import _parse_classification as pc  # noqa: E402
+from meta_harness import nback_steps as NS  # noqa: E402
 
 M = "Qwen_Qwen3-30B-A3B-Instruct-2507"
 p = ROOT / f"meta_harness/runs/iter4/episodic_reset_v3/{M}/tasks/wm_nback.jsonl"
@@ -35,9 +36,15 @@ for level in (1, 2, 3):
         r = json.loads(line)
         if r.get("n_level") != level:
             continue
-        for st in (r.get("step_log") or [])[1:]:
+        # Budget state belongs to the ENCODE turn (the answer turn runs with tools off), the
+        # reply to the ANSWER turn. On pre-fix rows these are the same entry; on post-fix
+        # rows they are not, and `step_log[1:]` would interleave them. See nback_steps.py.
+        enc = NS.encode_turns(r)
+        reply_turns = NS.answer_turns(r)
+        for pos, st in sorted(reply_turns.items()):
             text = str(st.get("text") or "")
-            bz = 1 if st.get("tool_call_budget_after") == 0 else 0
+            e = enc.get(pos, st)
+            bz = 1 if e.get("tool_call_budget_after") == 0 else 0
             tc = 1 if "<tool_call>" in text else 0
             cells[(bz, tc)] += 1
             stripped = re.sub(r"<tool_call>.*?</tool_call>", " ", text, flags=re.S)
@@ -68,7 +75,8 @@ for level in (1, 2, 3):
         r = json.loads(line)
         if r.get("n_level") != level:
             continue
-        for st in (r.get("step_log") or [])[1:]:
+        # Tool results live on the encode turn.
+        for st in NS.encode_turns(r).values():
             turns += 1
             for tc in (st.get("tool_calls") or []):
                 if "memory is full" in str(tc.get("result") or ""):

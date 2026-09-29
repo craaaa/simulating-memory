@@ -246,6 +246,46 @@ def test_variable_mapping_encode_shows_the_store() -> None:
     print("ok  variable_mapping's encode turn shows the store")
 
 
+def test_nback_steps_handles_both_row_generations() -> None:
+    """The step-log mapping helper must read pre-fix and post-fix rows correctly.
+
+    Pre-fix: step 0 is the instruction turn, step i is letter i, one turn per letter.
+    Post-fix: no instruction turn, two turns per letter, mapping carried in the row.
+    Reading a post-fix row with the pre-fix rule doubles every per-turn count.
+    """
+    from meta_harness import nback_steps as NS
+
+    pre = {
+        "n_level": 2,
+        "per_trial": [{"trial": i} for i in range(1, 15)],
+        "step_log": [{"text": "instruction"}] + [{"text": f"t{i}"} for i in range(1, 17)],
+    }
+    assert not NS.is_split(pre)
+    assert NS.counts(pre) == (16, 16), NS.counts(pre)
+    # scored trial 1 is step n+1 = 3 -> "t3"
+    assert NS.scored_answer_turns(pre)[1]["text"] == "t3", NS.scored_answer_turns(pre)[1]
+    assert len(NS.scored_answer_turns(pre)) == 14
+
+    post = {
+        "n_level": 2,
+        "per_trial": [{"trial": i} for i in range(1, 15)],
+        "step_log": [{"text": f"{'e' if i % 2 == 0 else 'a'}{i // 2 + 1}"}
+                     for i in range(32)],
+        "encode_steps": list(range(0, 32, 2)),
+        "answer_steps": list(range(1, 32, 2)),
+        "answer_step_by_position": {str(p): 2 * p - 1 for p in range(1, 17)},
+    }
+    assert NS.is_split(post)
+    assert NS.counts(post) == (16, 16), NS.counts(post)
+    # every answer turn is an "a", every encode turn an "e" -- the kinds never mix
+    assert all(v["text"].startswith("a") for v in NS.answer_turns(post).values())
+    assert all(v["text"].startswith("e") for v in NS.encode_turns(post).values())
+    # scored trial 1 is position n+1 = 3 -> step 5
+    assert NS.scored_answer_turns(post)[1]["text"] == "a3", NS.scored_answer_turns(post)[1]
+    assert len(NS.scored_answer_turns(post)) == 14
+    print("ok  nback_steps maps both row generations, and never mixes turn kinds")
+
+
 if __name__ == "__main__":
     test_second_turn_does_not_see_the_first()
     test_tool_loop_state_survives_within_a_turn()
@@ -254,4 +294,5 @@ if __name__ == "__main__":
     test_nback_encode_answer_split()
     test_trial_accounting_survives_the_split()
     test_variable_mapping_encode_shows_the_store()
+    test_nback_steps_handles_both_row_generations()
     print("\nall turn-boundary tests passed")

@@ -25,9 +25,14 @@ Usage:
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from meta_harness import nback_steps as NS  # noqa: E402
+
 Q = "Qwen_Qwen3-30B-A3B-Instruct-2507"
 
 # "collection fix" here means eb3e96f (empty `tools` list omits the schemas), NOT the later
@@ -53,28 +58,22 @@ def trials(run: Path):
         r = json.loads(line)
         n = int(r.get("n_level") or 1)
         per_trial = r.get("per_trial") or []
-        steps = r.get("step_log") or []
-        # Post-instrument-fix rows hold TWO step entries per letter (encode, answer), so
-        # the old positional rule "scored trial k is step n+k" is only correct for rows
-        # written before `exp/compactor-prefix-v1`. When the explicit mapping is present,
-        # use it.
-        by_pos = r.get("answer_step_by_position") or {}
+        # `nback_steps` handles both row generations: pre-fix rows have one turn per letter,
+        # post-fix rows have an encode turn and an answer turn. Budget state belongs to the
+        # encode turn, since the answer turn runs with tools off.
+        ans = NS.scored_answer_turns(r)
+        enc = NS.encode_turns(r)
         for k, t in enumerate(per_trial, start=1):
-            if by_pos:
-                i = by_pos.get(str(n + k), by_pos.get(n + k))
-                if i is None:
-                    continue
-            else:
-                i = n + k
-            if i >= len(steps):
+            st = ans.get(k)
+            if st is None:
                 continue
-            st = steps[i]
+            budget_src = enc.get(n + k, st)
             lab = t.get("model_label")
             answered = bool(lab) and str(lab).strip() != ""
-            bb = st.get("tool_call_budget_before")
+            bb = budget_src.get("tool_call_budget_before")
             yield (answered,
                    bb is not None and int(bb) <= 0,
-                   bool(st.get("tool_call_cap_hit")),
+                   bool(budget_src.get("tool_call_cap_hit")),
                    n)
 
 

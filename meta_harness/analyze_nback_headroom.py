@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "meta_harness"))
 from bench.tasks.wm_nback import _parse_classification as pc  # noqa: E402
 import nback_levels as NL  # noqa: E402
+import nback_steps as NS  # noqa: E402
 
 H = "NousResearch_Hermes-4-70B"
 Q = "Qwen_Qwen3-30B-A3B-Instruct-2507"
@@ -52,19 +53,24 @@ for name, rel in RUNS.items():
             continue
         t = mf = bz = tc = lost = 0
         for r in sel:
-            log = r.get("step_log") or []
-            for st in log[1:]:
+            # Tool state on the encode turn, reply on the answer turn; for pre-fix rows
+            # these are the same entries. `step_log[1:]` and `step_log[1+lvl:]` assumed one
+            # turn per letter and are wrong after the encode/answer split. See
+            # nback_steps.py.
+            enc = NS.encode_turns(r)
+            ans = NS.answer_turns(r)
+            for pos, st in sorted(enc.items()):
                 t += 1
                 for c in (st.get("tool_calls") or []):
                     if "memory is full" in str(c.get("result") or ""):
                         mf += 1
                 if st.get("tool_call_budget_after") == 0:
                     bz += 1
-                txt = str(st.get("text") or "")
+                txt = str(ans.get(pos, st).get("text") or "")
                 if "<tool_call>" in txt:
                     tc += 1
-            # scored turns only
-            for st in log[1 + lvl:]:
+            # scored trials only -- the lead-in letters are not among the 14
+            for st in NS.scored_answer_turns(r).values():
                 if pc(re.sub(r"<tool_call>.*?</tool_call>", " ",
                              str(st.get("text") or ""), flags=re.S)) is None:
                     lost += 1

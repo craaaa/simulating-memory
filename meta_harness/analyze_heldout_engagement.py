@@ -14,6 +14,7 @@ ROOT = pathlib.Path("/Users/cl5625/simulating-memory/.claude/worktrees/meta-harn
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "meta_harness"))
 import nback_levels as NL  # noqa: E402
+import nback_steps as NS  # noqa: E402
 
 H = "NousResearch_Hermes-4-70B"
 Q = "Qwen_Qwen3-30B-A3B-Instruct-2507"
@@ -43,7 +44,12 @@ for name, rel in RUNS.items():
             continue
         t = mf = dp = tc = 0
         for r in sel:
-            for st in (r.get("step_log") or [])[1:]:
+            # Tool results on the encode turn, the reply on the answer turn. Identical
+            # entries for pre-fix rows; distinct after the encode/answer split, where
+            # `step_log[1:]` would count every letter twice. See nback_steps.py.
+            enc = NS.encode_turns(r)
+            ans = NS.answer_turns(r)
+            for pos, st in sorted(enc.items()):
                 t += 1
                 for c in (st.get("tool_calls") or []):
                     res = str(c.get("result") or "")
@@ -51,7 +57,7 @@ for name, rel in RUNS.items():
                         mf += 1
                     if "displaced" in res:
                         dp += 1
-                if "<tool_call>" in str(st.get("text") or ""):
+                if "<tool_call>" in str(ans.get(pos, st).get("text") or ""):
                     tc += 1
         a = (diag.get(lvl) or {}).get("answered")
         k = (diag.get(lvl) or {}).get("keys_held")

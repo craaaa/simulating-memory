@@ -40,6 +40,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import score as S  # noqa: E402
 
+from meta_harness import nback_steps as NS  # noqa: E402
+
 Q = "Qwen_Qwen3-30B-A3B-Instruct-2507"
 CALL_RE = re.compile(r"<tool_call>")
 
@@ -104,9 +106,7 @@ def nback_scores(run: Path) -> tuple[np.ndarray, np.ndarray, int, int]:
         # correct reply. So scored trial k is step n+k, and anything past n+n_trials is not a
         # scored trial at all.
         bad = 0
-        for i, st in enumerate(r.get("step_log") or []):
-            if i <= n or i > n + n_trials:
-                continue
+        for st in NS.scored_answer_turns(r).values():
             v = st.get("text")
             if isinstance(v, str):
                 total += 1
