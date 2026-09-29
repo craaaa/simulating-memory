@@ -233,17 +233,27 @@ def main() -> int:
     rec["id"] = args.id or dirs[0].parent.name
     rec["iteration"] = args.iteration
 
-    print(f"=== {rec['id']}  averaged over {rec['n_repeats']} repeats")
-    print(f"{'task':<26}{'mean':>9}{'delta':>9}{'spread':>9}  per-run")
+    nb = rec.get("n_baseline_repeats", 1)
+    print(f"=== {rec['id']}  candidate averaged over {rec['n_repeats']} repeats, "
+          f"baseline over {nb}")
+    print("    all three score columns are humanlikeness = 1 - Wasserstein-1 between the "
+          "model's and\n    the humans' per-participant score distributions: range 0-1, "
+          "in units of task\n    proportion-correct. `delta` is candidate minus baseline "
+          "in those same units, so it\n    is the only column that can be negative.")
+    print(f"\n{'task':<26}{'baseline':>10}{'candidate':>11}{'delta':>9}{'spread':>9}"
+          f"  candidate per-run")
+    bhl = rec.get("baseline_humanlikeness_by_task") or {}
     for t in sorted(rec["humanlikeness_by_task"]):
         v = rec["humanlikeness_by_task"][t]
         if v is None:
             continue
+        b = bhl.get(t)
         d = rec["delta_vs_baseline"].get(t)
         s = rec["per_task_spread"].get(t)
         runs = " ".join(f"{x:.4f}" if x is not None else "-"
                         for x in rec["per_run_humanlikeness"][t])
-        print(f"{t:<26}{v:>9.4f}{(f'{d:+.4f}' if d is not None else '-'):>9}"
+        print(f"{t:<26}{(f'{b:.4f}' if b is not None else '-'):>10}{v:>11.4f}"
+              f"{(f'{d:+.4f}' if d is not None else '-'):>9}"
               f"{(f'{s:.4f}' if s is not None else '-'):>9}  {runs}")
     if rec.get("n_baseline_repeats", 1) > 1:
         print(f"\nbaseline averaged over {rec['n_baseline_repeats']} repeats "
