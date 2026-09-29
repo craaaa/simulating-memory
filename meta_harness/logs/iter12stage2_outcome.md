@@ -9,8 +9,9 @@
 > `comparable? yes` verdict for n-back **still holds** — both columns move together, because
 > the change is on the human side, which is shared. Re-derived aggregates: mean over 8 becomes
 > 0.8862 → **0.9167** (+0.0305, was +0.0302); mean over the 6 comparable tasks becomes
-> 0.8703 → **0.9176** (+0.0473, was +0.0470). **The headline result is unaffected**: it rests
-> on `word_recognition`, which this change does not touch.
+> **0.8704 → 0.9176** (+0.0472, was +0.0470 from 0.8657 → 0.9127). All four aggregates were
+> recomputed from the run dirs, not adjusted arithmetically. **The headline result is
+> unaffected**: it rests on `word_recognition`, which this change does not touch.
 
 Three Qwen baseline repeats, `runs/iter12stage2/baseline{,_rep2,_rep3}`, run from
 `/scratch/cl5625/mh-postfix` at commit **a14b59d**. **COMPLETED, exit 0, 1h32m** on one H200.

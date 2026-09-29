@@ -257,8 +257,12 @@ NOISE_FLOOR = {
 #
 #   nback spread   iter11postfix 0.0060   iter12stage2 0.0035   larger 0.0060
 #
-# so 0.0061 stands and nothing is retightened. Note the two run-sets SWAPPED which is the
-# wider one, which is what three repeats pinning a spread only loosely looks like.
+# The new maximum, 0.0060, and the kept 0.0061 are INDISTINGUISHABLE at this precision -- 0.0061
+# does not "bound" 0.0060, it happens to sit 0.0001 above it, and three repeats pin a spread only
+# to about a third of itself. So this is a re-measurement that CONFIRMS the constant rather than a
+# new figure that lost to it, and the entry is left at 0.0061 because there is no reason to move it,
+# not because the new shape is quieter. Note also that the two run-sets SWAPPED which is the wider
+# one (0.0034 -> 0.0060 and 0.0061 -> 0.0035), which is exactly what that looseness looks like.
 RUN_TO_RUN_SPREAD = {
     "digit_span_forward": 0.000, "digit_span_reverse": 0.000, "nback": 0.0061,
     "word_recognition": 0.0199, "variable_mapping": 0.0033,

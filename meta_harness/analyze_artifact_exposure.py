@@ -79,6 +79,14 @@ def _rows(run: Path, task: str) -> list[dict]:
 def nback_scores(run: Path) -> tuple[np.ndarray, np.ndarray, int, int]:
     """(as-scored, collected-only, n_spoken_answer_turns, n_answer_turns).
 
+    NOTE 2026-09-29 [Option D]: this is a MODEL-side reader only; the human side in `main()`
+    comes from `score.human_scores("nback")`, which since 2026-09-29 returns one value per
+    `(participant, n-level)` with the human lead-in dropped. This function already emits one
+    value per row, i.e. per `(participant, level)`, so the two sides are now matched here and
+    the humanlikeness this script prints agrees with the benchmark's. Before that date the human
+    side was pooled and this script inherited the M7 granularity mismatch; its pre-2026-09-29
+    n-back numbers are on the old shape and are not comparable with new ones.
+
     The counterfactual excludes ONLY the trials whose own answer turn contained a spoken tool
     call -- not every unanswered trial. `acc_over_answered` would have been easier to use and
     is wrong here: a model may decline to answer for reasons that have nothing to do with the

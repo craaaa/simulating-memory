@@ -255,11 +255,14 @@ rehearsing.
 
   **AMENDED AGAIN 2026-09-29: every `nback` spread above is on the pre-Option-D scoring shape.**
   Re-measured under the new shape on the same six arms: **0.0060** (`iter11postfix`) and
-  **0.0035** (`iter12stage2`), against the 0.0034 / 0.0061 recorded for the old shape. The kept
-  constant, `score_candidate.RUN_TO_RUN_SPREAD["nback"] = 0.0061`, still bounds both, so nothing
-  was retightened — the repo's rule is to keep the larger of two measurements. Note the two
-  run-sets swapped which is the wider one, which is what three repeats pinning a spread only
-  loosely looks like.
+  **0.0035** (`iter12stage2`), against the 0.0034 / 0.0061 recorded for the old shape. The new
+  maximum (0.0060) and the kept constant
+  `score_candidate.RUN_TO_RUN_SPREAD["nback"] = 0.0061` are **indistinguishable at this
+  precision** — 0.0061 does not *bound* 0.0060, it sits 0.0001 above it, which is a coincidence
+  and not a margin. So this is a re-measurement that **confirms** the constant; it was left alone
+  because there is no reason to move it, not because the new shape is quieter. Note the two
+  run-sets swapped which is the wider one (0.0034 → 0.0060, 0.0061 → 0.0035), which is exactly
+  what three repeats pinning a spread only loosely looks like.
 
 ## What to distrust in my own conclusions
 
