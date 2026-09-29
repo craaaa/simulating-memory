@@ -26,6 +26,7 @@
 set -uo pipefail
 
 : "${CAND:?set CAND=\"baseline <finalist> ...\"}"
+TAG="${TAG:-}"
 
 module purge
 
@@ -133,15 +134,22 @@ RC=0
 # 0.8907. So the same candidate may appear several times in CAND, and each occurrence
 # needs its own output directory or later repeats would overwrite earlier ones. The first
 # occurrence keeps the plain name so existing paths and records stay valid.
+#
+# TAG separates run generations. Without it, a second job's baseline arm OVERWRITES the
+# first's: that is exactly how job 18719683 destroyed the earlier Hermes baseline, and since
+# runs/ is gitignored the comparison recorded against it could not be reproduced. Pass
+# TAG=<name> whenever the code has changed in a way that makes old and new runs
+# incomparable -- for instance the tool-schema collection fix.
+_BASE="meta_harness/runs/heldout${TAG:+/$TAG}"
 declare -A _SEEN=()
 for c in $CAND; do
   echo
   _SEEN[$c]=$(( ${_SEEN[$c]:-0} + 1 ))
   _N=${_SEEN[$c]}
   if [ "$_N" -eq 1 ]; then
-    OUT_DIR="meta_harness/runs/heldout/${c}"
+    OUT_DIR="${_BASE}/${c}"
   else
-    OUT_DIR="meta_harness/runs/heldout/${c}_rep${_N}"
+    OUT_DIR="${_BASE}/${c}_rep${_N}"
   fi
   echo "############ candidate: $c   (occurrence ${_N} -> ${OUT_DIR})"
   "$PY" meta_harness/run_candidate.py \
