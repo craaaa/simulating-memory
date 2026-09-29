@@ -81,6 +81,26 @@ verbatim over-recall at 366 is the outlier, not the norm.
   human). A2 must therefore be scored jointly with trials-attempted, or a
   candidate can move the axis by surviving longer rather than by fixing its
   error asymmetry.
+
+  **AMENDED 2026-09-29 — trials-attempted is no longer a covariate, it is the score.** The
+  human "proportion correct" on this task was always `(trials_attempted − 3)/100`:
+  `trialsCompleted − correctResponses == 3` for **53 of 53** human records, so the human data
+  contains no accuracy at all. Both sides now report **survival length** directly
+  (`logs/survival_length_scoring.md`). The note above was groping toward this — it identified the
+  right quantity and then treated it as a confound to control for rather than as the measurement.
+
+- **n-back, the same conservative/liberal asymmetry, measured 2026-09-29 and pointing the OTHER
+  way.** This belongs beside the A2 note because it is the same statistic on a different task,
+  and the sign is reversed. On `runs/iter11postfix/baseline`: humans miss 0.2533 and false-alarm
+  0.0816, ratio **3.10** (95% CI over (participant, level) cells [2.41, 3.93]); qwen3-30b misses
+  0.3606 and false-alarms 0.0482, ratio **7.48** (CI [5.78, 10.21]). **The CIs are disjoint**, over
+  683/1225 human and 750/1350 model trials.
+  So on word recognition the model was far too *liberal* (ratio 0.39 against 6.09) and on n-back
+  it is too *conservative* (7.48 against 3.10). A single "the model over-false-alarms" story does
+  not cover both, and any candidate framed as fixing response bias has to say which direction it
+  is fixing and on which task. Two things are ruled out as explanations on n-back: position
+  (accuracy by position third matches to within 0.0375) and non-response (0.0029 model against
+  0.0000 human by construction).
 - **A3 story recall, verbatim vs gist.** Humans BLEU 0.002 at 137 words;
   `claude-opus-4-6` BLEU 0.199 at 366 words (verbatim regurgitation, 2.7x too
   long). qwen3-30b BLEU 0.003 at 128 words is already human-like here.

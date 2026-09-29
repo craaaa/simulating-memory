@@ -28,6 +28,18 @@ All numbers here are measured from released data in this repo; see
 >    entire studied list into its recall prompt, so 36 of 50 participants score
 >    ≥ 0.98 by reading it off. A2's value is produced by the ~7 that consult the
 >    store. It is not a clean optimization target.
+>
+>    **SUPERSEDED 2026-09-29 — the leak is closed, and A2's status is now an open measurement.**
+>    `wm_word_recognition.py` presents one word per turn, answers before storing, deletes
+>    `encode()` entirely and stops at the third error, so nothing re-prints the list
+>    (`dc14d0a`). The diagnosis above was right and is kept as the record of why the change was
+>    made. Two confirmations of it, both from the *pre-*fix state: the 3-strike stop never fired
+>    for 38 of 50 participants (mean 1.2 errors in 100 trials, median third-error position 101
+>    censored, against a human median of 32), and the lag curve was flat at 0.957–1.000 across
+>    every bin while humans rise 0.506 → 0.950, i.e. no lag dependence whatsoever.
+>    **Whether A2 becomes a clean target is not yet measured** — it is prediction P3 of job
+>    18781213 (`logs/predictions_iter12stage2.md`): A2's ratio must cross 1.0 from 0.3901, against
+>    a human 6.094. Until that run is read, A2 is neither "badly weakened" nor restored.
 > 4. **The absolute guard bands (A1 in [0.05, 0.12], A3 BLEU < 0.02 @ [100,175]
 >    words) were incoherent** — calibrated on OpenRouter numbers, so the local
 >    baseline failed its own guard. Guards are now *relative*: distance from human
@@ -245,7 +257,51 @@ expose:
 |---|---|---|---|---|
 | A2 word recognition | miss/false-alarm ratio | **6.09** | 0.00 | **0.018** |
 | A3 story recall | BLEU @ recall words | 0.002 @ 137 | 0.199 @ 366 | 0.003 @ 128 (matched) |
-| A1 digit span | sub-span leak, protocol-matched | 0.087 | 0.077 (matched) | 0.105 (near) |
+| ~~A1 digit span~~ | ~~sub-span leak, protocol-matched~~ | ~~0.087~~ | ~~0.077~~ | **RETIRED 2026-09-29** |
+
+**A1 IS RETIRED, 2026-09-29 [USER], and A4's human reference IS VOID.** Superseded rather than
+deleted, per this file's own rule. Both are documented at length below and in
+`logs/protocol_mismatch_audit.md` and `logs/a4_human_reference_invalid.md`; in short:
+
+- **A1** — a null model with no memory mechanism reproduces the human value. Fitting
+  `p(correct|span) = logistic((θ − span)/s)` with `θ ~ N(μ,σ)`, run through the exact human
+  staircase, with μ and σ chosen at each slope so simulated `best_span` matches the human mean
+  *and* sd (6.885 / 2.064 digits): every slope from 0.25 to 2.0 fits those spans to within 0.03
+  digits while A1 sweeps 0.045 → 0.183. The human 0.0866 sits at s ≈ 0.55. A1 read out the
+  within-participant slope, which `best_span` mean+sd does not identify. Replaced by
+  **`best_span` in digits** (humans 6.885 forward / 5.898 reverse), reported only —
+  as a distance-from-human guard it is wrongly signed, since the baseline sits at 18.4 so a
+  collapse to 2.0 would read as an improvement.
+- **A4** — human `variable_mapping` stops at the FIRST error and `relationCount` is
+  non-decreasing, so every human "error trial" is that participant's last question. 152 of 152
+  records hold exactly one error, always their final question, and substituting "last answered"
+  for "error" reproduces the identical 1.3867. A4 keeps only a one-sided, model-internal reading:
+  *this candidate's manufactured errors are independent of interference load, so its gain is
+  unstructured.* The human column is struck, not updated.
+
+### Error-shape measures — REPORT ONLY, none of them gates
+
+Added 2026-09-29, first model-side numbers in `logs/error_shape_first_model_numbers.md`. Each has
+its own unit and its own human reference. **None is humanlikeness**, and `distance` below is
+|human − model| in that unit, a difference rather than a score. **These M-labels are not the
+protocol-audit's M1–M21 items; the two schemes collide.**
+
+| measure | task | statistic | humans | qwen3-30b `iter11postfix` | distance |
+|---|---|---|---|---|---|
+| M1 | variable_mapping | share of errors naming the person's own **stale** city | 0.2303 | 0.0621 | 0.1682 |
+| M2 | digit span fwd | serial position, recency third | 0.7764 | 0.7767 | 0.0003 |
+| M2 | digit span fwd | error typology, substitution share | 0.4125 | 0.0312 | 0.3813 |
+| M3 | nback | miss/FA ratio (CIs **disjoint**) | 3.10 [2.41, 3.93] | 7.48 [5.78, 10.21] | 4.38 |
+| M4 | word_recognition | accuracy on Old trials at lag 1–2 | 0.5059 | 0.9574 | 0.4515 |
+| M5 | narrative_qa | P(two errors pick the same distractor), chance 0.3333 | 0.5172 | 0.9840 | 0.4668 |
+| M5b | craft_task | error rate at question index 3 | 0.2407 | **0.0000** | 0.2407 |
+| M6 | story recall | gist similarity, recomputed both sides | 0.5969 | 0.5626 | 0.0343 |
+
+**Promotion to guard or objective is a separate decision and requires a measured run-to-run
+spread for the measure itself** — which none of these has yet, since the spreads in
+`score_candidate.RUN_TO_RUN_SPREAD` are for humanlikeness, not for these statistics. A1 and A4
+were both promoted on reasoning that later failed; the standing rule is now that a guard must
+survive a null model before it can reject anything.
 
 Measured across all eight models with full baselines, which changes how these
 should be used:
@@ -443,7 +499,12 @@ hours, and the declared capacity/decay parameters.
 - `show <id>` — manifest, scores, per-task vector, axis values, diff vs parent
 - `diff <id_a> <id_b>` — per-task delta with bootstrap CIs
 - `trace <id> --task <t> --participant <n>` — one episode's encode/recall trace
-- `frontier` — the current Pareto frontier over (humanlikeness, A2, A3)
+- `frontier` — the current Pareto frontier over (humanlikeness, A2, A3). **AMENDED 2026-09-29:**
+  this description omitted A4, which was an enforced conditional guard the whole time, and is now
+  doubly out of date — A1 is retired, A4's human reference is void, and eight report-only
+  error-shape measures exist that the frontier does not consider. `HANDOFF.md` also records that
+  `frontier` is better read as a history of what was tried than as a live Pareto set. Nothing
+  reads it to make a decision; treat it as a log until it is rebuilt against the current axes.
 - `regressions <id>` — tasks violating the per-task floor
 
 ## Open Questions and Unknowns

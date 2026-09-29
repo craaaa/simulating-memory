@@ -20,7 +20,30 @@ Group 1 is **done** (commit below). Groups 2 and 3 are pending on work that has 
 | `HANDOFF.md` §"What to distrust" | five overclaims listed | three more added, with the observation that four of the five things that moved a verdict in this project were measurement defects |
 | `logs/bench_collection_fix.md` | oversold a fix that changes no score | amendment at the top withdrawing its "what it invalidates" claims |
 
-## Group 2 — pending the error-shape work (agent running 2026-09-29)
+## Group 2 — DONE 2026-09-29, except one item deliberately left
+
+All items below are applied. Where they are done:
+
+| item | where |
+|---|---|
+| `domain_spec.md` axis table | A1 struck through and marked RETIRED with the null-model reasoning; A4's human column struck; new **"Error-shape measures — REPORT ONLY"** table added with all eight measures, their units and their human references |
+| `domain_spec.md` `frontier` | amended — it omitted A4, and is now also blind to A1's retirement and the eight new measures; recorded as a log rather than a live Pareto set |
+| `domain_spec.md` acceptance | stated in the new table: promotion to guard or objective is a separate decision and needs a measured run-to-run spread **for the measure itself**, which none of them has yet |
+| `NOTES.md` A2 conservative-bias note | amended (trials-attempted is now the score, not a covariate) and the n-back miss/FA analogue added beside it — **the sign is reversed between the two tasks**, which no single response-bias story covers |
+| `HANDOFF.md` A4 table + durable result | "dist from human" column marked WITHDRAWN on every row, the "closest match to human interference structure" sentence retracted in place, model-side columns explicitly kept |
+| `HANDOFF.md` noise floors | amended with the re-measured spreads; craft 0.0357 against the 0.0000–0.0031 recorded there |
+| `WORKLOG.md` | one dated amendment appended (append-only file), covering all four reversals with the affected line numbers listed |
+| `domain_spec.md` A4 row | relabelled one-sided and model-internal; human column struck rather than updated |
+
+**Left undone on purpose: the human n-back denominator** (audit M6, ~0.0088 score units). It is
+a real analysis-side correction — human scores divide by all non-practice trials including the 6
+lead-in, the model's `acc_over_14` does not, and 112 of 318 human lead-in trials carry an
+impossible `target: true`. It moves the human reference 0.8657 → 0.8569 proportion-correct.
+Not applied because it changes the published n-back humanlikeness in the same hours as the
+turn-order fix, and separating the two effects matters more than the 0.0088. Do it against a
+settled baseline, on its own, with the before/after stated.
+
+## ~~Group 2 — pending the error-shape work (agent running 2026-09-29)~~ — original list
 
 | file | line | change needed |
 |---|---|---|
@@ -33,7 +56,21 @@ Group 1 is **done** (commit below). Groups 2 and 3 are pending on work that has 
 | `domain_spec.md` | A4 row | relabel as a one-sided guard on the model's own error distribution; strike the human column rather than updating it |
 | `src/score.py` / analysis | human n-back denominator | human scores divide by all non-practice trials including lead-in, the model's `acc_over_14` does not; and 112 of 318 human lead-in trials carry an impossible `target: true`. Correcting it moves the human reference 0.8657 → 0.8569 proportion-correct. Small, real, analysis-side. |
 
-## Group 3 — pending the `word_recognition` fix (`logs/instrument_fix_stage2_plan.md`)
+## Group 3 — DONE 2026-09-29, the fix landed the same day
+
+| item | where |
+|---|---|
+| `domain_spec.md` premise 3 | marked SUPERSEDED with the date, kept as the record of why the change was made; states explicitly that whether A2 becomes a clean target is **open**, pending job 18781213's prediction P3 |
+| `PROPOSER.md` H2 withdrawal + "highest-value target" | amended: all three leaky tasks are now fixed in `bench`, do not propose any of them. Also corrects two of my own numbers there — the unsourced 0.5199 (the measured value is 0.5075) and the claim that 0.315 is a human accuracy, which it is not |
+| `PROPOSER.md` n-back per-level table | superseded with the post-fix table; n=3 0.360 → 0.7429 and `n_no_answers` 0 at every level, so the "store saturates and the model stops answering" diagnosis described a harness with no way to answer |
+| `HANDOFF.md` noise floors | done under group 2 above |
+| `logs/instrument_fix.md` deferred list | `word_recognition` moved from deferred to DONE, with the two things the plan did not anticipate, and the pre-registered outcome explicitly marked NOT IN YET pending job 18781213 |
+
+Also resolved there: the deferred **empty-content answer turn** item. It disappeared structurally
+as hoped — `n_no_answers` is 0 at every n-level, against 418 of 472 unanswered turns returning
+empty content pre-fix. No separate fix was needed.
+
+## ~~Group 3 — pending the `word_recognition` fix~~ — original list
 
 | file | line | change needed |
 |---|---|---|

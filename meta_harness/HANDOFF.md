@@ -34,19 +34,42 @@ single-task gain measured anywhere in this project. I checked whether A4 could a
 it, since the guard passed on the first repeat only and A4's ceiling depends on a run's own
 error count — the shape of a defect already fixed once here. It can, and it agrees:
 
-    arm                  errors   rc_raw  ceiling  rc_norm  dist from human (0.3728)
-    baseline                 30   1.2221   1.2564   0.8662   0.4934
-    respond_first           845   1.3170   1.8451   0.3751   0.0023
-    respond_first_rep2      835   1.2948   1.8219   0.3587   0.0141
-    respond_first_rep3      852   1.3081   1.8621   0.3574   0.0154
-    evicting_reset         1136   0.9320   2.6742  -0.0406   0.4134
+> **AMENDED 2026-09-29 — the "dist from human" column below is WITHDRAWN.** The
+> `variable_mapping` humanlikeness gain in the paragraph above stands; the A4 agreement claimed
+> here does not. **A4's human reference is void.** Human `variable_mapping` ends at the
+> participant's FIRST error and `relationCount` is non-decreasing within a session, so every
+> human "error trial" is simply their LAST question — necessarily the highest relation count
+> they reached. 152 of 152 human records contain exactly one error, always their final question,
+> and substituting "last answered question" for "error" reproduces the identical **1.3867**.
+> The human 0.3728 measures the task's termination rule, not human interference structure.
+>
+> So the sentence below — "`respond_first` on Hermes is the closest match to human interference
+> structure measured anywhere in this project (0.0023)" — is **retracted**. It compared the
+> model's error distribution against a stopping rule. Nothing about `respond_first` is
+> implicated; the reference was wrong, and the agreement was coincidence.
+>
+> The `errors` / `rc_raw` / `ceiling` / `rc_norm` columns are model-side and remain valid: the
+> model answers every question, so its error trials are not selected by a stopping rule. They
+> still support the weaker, internal claim that `respond_first`'s errors track interference load
+> while `evicting_reset`'s do not. See `logs/a4_human_reference_invalid.md`, and prefer
+> `report_error_shape.M1_variable_mapping_intrusion` for anything about mechanism — the stopping
+> rule fixes *when* a human erred, not *what kind* of error it was, so the error-class shares
+> are real observations.
 
-All well past the 30-error trust threshold. `respond_first` on Hermes is the closest match to
-human interference structure measured anywhere in this project (0.0023), and it gets there
-with 845 errors rather than by having too few to characterise. The baseline sits *exactly* at
-the threshold (30), so its 0.8662 is the least trustworthy figure in that column. Note also
-that `evicting_reset`'s ratio is *below* 1.0 — errors slightly ANTI-correlated with load —
-which is a different failure from the baseline's, not a milder version of it.
+    arm                  errors   rc_raw  ceiling  rc_norm  dist from human (0.3728)
+    baseline                 30   1.2221   1.2564   0.8662   0.4934      <- column WITHDRAWN
+    respond_first           845   1.3170   1.8451   0.3751   0.0023      <- column WITHDRAWN
+    respond_first_rep2      835   1.2948   1.8219   0.3587   0.0141      <- column WITHDRAWN
+    respond_first_rep3      852   1.3081   1.8621   0.3574   0.0154      <- column WITHDRAWN
+    evicting_reset         1136   0.9320   2.6742  -0.0406   0.4134      <- column WITHDRAWN
+
+All well past the 30-error trust threshold. ~~`respond_first` on Hermes is the closest match to
+human interference structure measured anywhere in this project (0.0023)~~ — retracted, see the
+amendment above — and it gets there with 845 errors rather than by having too few to
+characterise. The baseline sits *exactly* at the threshold (30), so its 0.8662 is the least
+trustworthy figure in that column. Note also that `evicting_reset`'s ratio is *below* 1.0 —
+errors slightly ANTI-correlated with load — which is a different failure from the baseline's,
+not a milder version of it. That last observation is model-internal and survives the amendment.
 
 Two measurement notes. `score_repeats.py` now takes several `--baseline` dirs and averages
 them, and its standard error counts the baseline's noise even when the baseline ran once (a
@@ -190,13 +213,27 @@ rehearsing.
   4-grams lifted verbatim) while clearing displacement's move toward human length.
 - **A4's `rc_ratio` has an error-count-dependent ceiling**, so its fixed 1.15 threshold
   could never reject anything — `displacement`'s 1.2575 at 35 errors was its arithmetic
-  maximum. Now normalized against the run's own ceiling; **humans sit at 0.3728**, not near
-  1.0. Its assignment window was also under-counted ~2× (`TURNS_PER_QUESTION`).
+  maximum. Now normalized against the run's own ceiling; ~~**humans sit at 0.3728**, not near
+  1.0~~ — **AMENDED 2026-09-29: strike the human figure. A4 has no valid human reference at
+  all** (see the amendment earlier in this file and `logs/a4_human_reference_invalid.md`). The
+  normalisation fix was real and stands; what it normalises against is a model-side ceiling, and
+  A4 now survives only as an internal check that a candidate's manufactured errors track
+  interference load. Its assignment window was also under-counted ~2× (`TURNS_PER_QUESTION`).
 - **Noise floors were understated and are task-dependent.** Measured twice
   (`run_to_run_floor.json`): craft 0.0000–0.0031, word_recognition 0.0000, story 0.0012,
   nback 0.0023, narrative **0.0065–0.0160**, digit_span_forward 0.0152, 8-task mean 0.0001.
   Generated content varies run to run on every task even where the score does not, so **no
   prediction may demand bit-identity of text**.
+
+  **AMENDED 2026-09-29: these figures were still too narrow, and craft_task's was the worst.**
+  Re-measured over three identical repeats of `runs/iter11postfix/baseline` on the post-
+  instrument-fix harness: craft **0.0357** (0.8907 / 0.8581 / 0.8550), story **0.0115**,
+  narrative 0.0184, nback 0.0034, word_recognition 0.0199, variable_mapping 0.0033, both digit
+  spans 0.0000. craft's true spread is over ten times the 0.0000–0.0031 recorded here and story's
+  nearly ten times its 0.0012. `score_candidate.RUN_TO_RUN_SPREAD` now carries these and a delta
+  must clear both them and the sampling floor. `word_recognition` 0.0000 was flagged in this file
+  as unable to survive a task change, correctly — it is now 0.0199 and will change again once the
+  one-word-per-turn rewrite is re-baselined.
 
 ## What to distrust in my own conclusions
 

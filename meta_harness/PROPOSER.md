@@ -341,6 +341,30 @@ Human records support the better fix: `payload.trials` carries a `level` field w
 
 n=1 and n=2 are effectively solved. At n=3 the store saturates and the model
 **stops answering**, while staying 0.737 accurate on the trials it does answer.
+
+> **SUPERSEDED 2026-09-29 — the n=3 jam was an instrument defect and it is fixed. Do not
+> propose a candidate against the table above.** n-back now runs two turns per letter, answer
+> before encode, with the store injected and the current letter shown
+> (`bench/tasks/wm_nback.py`, `410ec2a`). Measured on `runs/iter11postfix/baseline`, 3 repeats:
+>
+> | n | model now | human | answered/14 | n_no_answers | keys held |
+> |---|---|---|---|---|---|
+> | 1 | 0.9929 | 0.9461 | 13.94 | **0** | 1.04 |
+> | 2 | 0.7786 | 0.8615 | 13.98 | **0** | 3.24 |
+> | 3 | **0.7429** | 0.7799 | 13.96 | **0** | 3.86 |
+>
+> n=3 went 0.360 → 0.7429 against a human 0.7799, and **the response-suppression failure is
+> gone entirely** — `n_no_answers` is 0 at every level, against 6.82 of 14 answered at n=3
+> above. n-back humanlikeness is 0.9344, up from 0.7848. So "at n=3 the store saturates and the
+> model stops answering" described a harness that had no way to answer: the store was
+> write-only (no read tool, and the turn was the bare string "Next letter: X"), so every answer
+> came from the conversation transcript, and the transcript was being cleared.
+>
+> **What is left at n=3 is a 0.037 accuracy gap and a response-bias difference**, not a jam:
+> the model's miss/false-alarm ratio is 7.48 (95% CI [5.78, 10.21]) against a human 3.10
+> ([2.41, 3.93]), disjoint intervals — it declines to call matches where humans over-call.
+> That, not omission, is the remaining n-back target. `logs/nback_turn_order_outcome.md`,
+> `logs/error_shape_first_model_numbers.md`.
 Compare `full_context`: 14.00/14 answered, acc-over-answered only 0.770, **and it
 holds just 1.06 keys** — with capacity 10 000 it holds *fewer* keys than the
 baseline, because never refusing lets it overwrite one rolling key instead of
@@ -360,13 +384,30 @@ store. A2's 0.340 is therefore produced by a handful of participants while most 
 not doing the task at all, and the "A2 headroom" is not what it appeared to be.
 
 So **three of eight tasks bypassed the memory module** — nback, variable_mapping and
-word_recognition. **Updated 2026-09-29: nback and variable_mapping are fixed in
+word_recognition. ~~**Updated 2026-09-29: nback and variable_mapping are fixed in
 bench; only word_recognition remains, and its fix is planned as a bench change, not
-a candidate.** Do not propose it. `word_recognition` still has the largest headroom
-of the eight (humanlikeness 0.5199 against a human mean score of 0.315), and
-`serial_recognition` already showed masked one-at-a-time presentation works (0.8134,
-against its deliberate unmasked ablation `serial_recognition_open` at 0.8631) — which
+a candidate.**~~ `serial_recognition` already showed masked one-at-a-time presentation works
+(0.8134, against its deliberate unmasked ablation `serial_recognition_open` at 0.8631) — which
 is the fourth time a candidate re-derived a benchmark fix.
+
+> **UPDATED AGAIN 2026-09-29, later the same day: all three are now fixed in `bench`.**
+> `word_recognition` presents one word per turn, answers before storing, has no `encode()` call
+> and no re-printed list, and stops at the third error like the human protocol (`dc14d0a`).
+> **Do not propose any of the three.** There is nothing left for a candidate to win by
+> routing around presentation.
+>
+> Two corrections to the numbers above, both mine:
+> - The "largest headroom … humanlikeness 0.5199" figure was unsourced. The pre-fix
+>   3-repeat value is **0.5075** over `iter0` + `iter8repA` + `iter8repB` baselines, and under
+>   the current scorer it is 0.5232.
+> - **"A human mean score of 0.315" is not an accuracy** and neither is the model's. Both sides'
+>   scores on this task were always `(items_survived − 3)/100`, because the human protocol stops
+>   at 3 strikes: `trialsCompleted − correctResponses == 3` for 53 of 53 human records. Both
+>   sides now report survival length directly. `logs/survival_length_scoring.md`.
+>
+> The post-fix re-baseline is job 18781213, with predictions registered in
+> `logs/predictions_iter12stage2.md` before it ran. Until it is read, whether A2 becomes a clean
+> target is **open** — not weakened, not restored.
 
 ## What you may change
 

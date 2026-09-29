@@ -1412,3 +1412,54 @@ of 13.0. My "at most 2 turns" bar was absolute and mis-scaled; it is now a share
 same 5% scale as P9's other legs. Without that fix the verdict would have been
 INCONCLUSIVE-by-instrument-artifact rather than FAIL-on-merit, which are very different
 readings of the same run.
+
+---
+
+## AMENDMENT 2026-09-29 — four things above are now wrong, and they are wrong at the reference, not the measurement
+
+This file is append-only, so nothing above is edited. What follows says which earlier entries no
+longer hold and why. Every A4 figure in this file (lines ~717, 801–808, 986–987, 1130, 1237,
+1282, 1303, 1328, 1379) is affected by the first item.
+
+**1. A4's human reference is void — every "humans 0.3728" comparison in this file is withdrawn.**
+Human `variable_mapping` ends at the participant's FIRST error, and `relationCount` is
+non-decreasing within a session, so every human "error trial" is simply their LAST question and
+necessarily the highest relation count they reached. 152 of 152 human records contain exactly one
+error, always their final question, and substituting "last answered question" for "error"
+reproduces the identical **1.3867**. The statistic cannot tell interference from elapsed time.
+The MODEL-side `rc_ratio` columns stay valid — the model answers every question, so its error
+trials are not selected by a stopping rule — and A4 survives only as an internal check that a
+candidate's manufactured errors track interference load. The entries at 1282, 1303, 1328 and 1379
+where **the guard FIRED** are the ones least affected: they turn on a model-side ratio going below
+1.0 (errors anti-correlated with load), which needs no human reference at all.
+See `logs/a4_human_reference_invalid.md`.
+
+**2. A1 is retired** (user decision). A null model with no memory mechanism reproduces the human
+value: fitting `p(correct|span) = logistic((θ − span)/s)` with `θ ~ N(μ,σ)` through the exact human
+staircase, with μ and σ chosen at each slope to match the human `best_span` mean *and* sd, every
+slope from 0.25 to 2.0 fits the spans to within 0.03 digits while A1 sweeps 0.045 → 0.183. Any
+A1 verdict recorded above was reading out a within-participant slope. `best_span` in digits
+replaces it, report-only.
+
+**3. `word_recognition` and `variable_mapping` humanlikeness are now SURVIVAL LENGTH on both
+sides, so no figure for those two tasks above is comparable to anything after commit `a3d0bc3`.**
+Neither task's human data contains an accuracy: `trialsCompleted − correctResponses == 3` for 53
+of 53 word-recognition records, and exactly one error in 152 of 152 variable-mapping records. The
+`variable_mapping` scale is pinned at 16 (the human maximum), which is *not* the question count —
+Wasserstein-1 scales with the denominator, so letting it follow the schedule would make a longer
+task score better at identical behaviour. `logs/survival_length_scoring.md`.
+
+**4. The noise floors quoted above are too narrow, craft_task's by more than 10×.** Re-measured
+over three identical repeats on the post-instrument-fix harness: craft **0.0357**
+(0.8907 / 0.8581 / 0.8550) against the 0.0000–0.0031 recorded here, story **0.0115** against
+0.0012, narrative 0.0184, nback 0.0034, word_recognition 0.0199, variable_mapping 0.0033, both
+digit spans 0.0000. Any verdict above that rested on a craft_task or story movement below about
+0.036 and 0.012 respectively was reading noise. `score_candidate.RUN_TO_RUN_SPREAD` now carries
+these and a delta must clear them as well as the sampling floor.
+
+**What this amendment does NOT touch.** The `variable_mapping` humanlikeness gain from closing the
+history leak is unaffected and remains the largest single-task effect in the project; under
+survival scoring it reads +0.2816 on the pinned scale. The n-back turn-order defect and its
+correction are recorded in `logs/postfix_baseline_outcome.md` and
+`logs/nback_turn_order_outcome.md` respectively, and the correction holds: n=1 accuracy 0.4786 →
+0.9929, n=3 0.3248 (pre-fix) → 0.7429, with `n_no_answers` 0 at every level.

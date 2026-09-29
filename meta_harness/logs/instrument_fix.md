@@ -100,11 +100,40 @@ turn; vm's encode turn shows the store.
   assistant content — the model wrote memory and emitted no label. n-back's answer turn is now
   `allow_tools=False`, so no tool call can crowd the text out, and this may disappear as a
   structural consequence. If it persists, fix it separately with this run as the comparison.
+
+  **RESOLVED 2026-09-29: it disappeared, structurally, as hoped.** On
+  `runs/iter11postfix/baseline` (3 repeats) `n_no_answers` is **0 at every n-level** and
+  `answered` is 13.94 / 13.98 / 13.96 of 14, against a pre-fix n=3 that answered 6.82.
+  The remaining model unanswered rate is 0.0029 against a human 0.0000-by-construction.
+  No separate fix was needed. `logs/nback_turn_order_outcome.md`.
+
 - **`word_recognition`.** Its defect is not a history leak — `recall()` has no history. Its
   `trials_text` presents all 100 test words at once, and continuous recognition defines "Old"
   as *appeared earlier in this list*, so the answer is derivable from the prompt itself (36 of
-  50 participants score 100/100). That needs a turn-by-turn rewrite of the task. Known-broken,
-  not fixed here.
+  50 participants score 100/100). That needs a turn-by-turn rewrite of the task. ~~Known-broken,
+  not fixed here.~~
+
+  **DONE 2026-09-29, `dc14d0a` + `56eedda`.** Moved out of "deferred". The rewrite landed as
+  planned in `logs/instrument_fix_stage2_plan.md`: one word per turn, answer-then-store,
+  `encode()` deleted, and presentation stops at the third error to match the human protocol.
+
+  Two things the plan did not anticipate, both recorded in that file's outcome sections:
+  - **The prerequisite check returned the opposite of the plan's assumption and it did not
+    matter.** `src/score.py` divides both sides by a fixed 100 — but `score_game` already
+    applied the 3-strike rule analysis-side, so both sides were already measuring words
+    survived (`score == len(per_trial) − 3` for all 12 of 50 rows that reached three errors).
+    Both of the plan's decision options were void; only the loop condition was left to change.
+  - **There is no human accuracy on this task at all.** `trialsCompleted − correctResponses == 3`
+    for 53 of 53 human records, so the human "proportion correct" is algebraically `1 − 3/n`.
+    Scoring is now survival length on both sides (`logs/survival_length_scoring.md`).
+
+  **The measured outcome against the pre-registered expectation is NOT IN YET.** The plan
+  predicted the model's score falls and its humanlikeness rises; that is prediction P1 of job
+  18781213, registered in `logs/predictions_iter12stage2.md` before the run started, with
+  explicit support and rejection bands (mean survival < 60 words and humanlikeness > 0.60 versus
+  survival > 80 or humanlikeness within 0.04 of 0.5364). Pre-fix reference: model survival 84.80
+  words against a human 34.49, and a lag curve flat at 0.957–1.000 where humans rise
+  0.506 → 0.950.
 
 ## Pre-registered predictions for the post-fix baseline
 
