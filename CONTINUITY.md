@@ -35,10 +35,42 @@ left running; it now only answers a Hermes behavioural question under an instrum
 declared broken.
 
 **Deferred on purpose:** migrating the six batch tasks from `recall()` to
-`step(..., allow_tools=False)` (stage 2, instrumentation only); the empty-content answer turn
-(may vanish now that n-back's answer turn is `allow_tools=False`); `word_recognition`, whose
-defect is not a history leak but that all 100 test words are shown at once while "Old" means
-"appeared earlier in this list".
+`step(..., allow_tools=False)` (instrumentation only, no candidate needs it yet); the
+empty-content answer turn (may vanish now that n-back's answer turn is `allow_tools=False`).
+
+## 2026-09-29T00:30Z [USER][CODE] — error-shape work, doc audit, word_recognition planned
+
+**`word_recognition` fix planned, not landed** — `logs/instrument_fix_stage2_plan.md`. Lands
+after `18767306` is measured. One word per turn, answer-then-store (deliberately the opposite
+order from n-back, because the judged word must be visible), `encode()` deleted. Prerequisite:
+confirm `src/score.py` divides the human side by trials *attempted*, since humans stop at 3
+strikes (~20 trials) and the model runs 100. Correction recorded there: my mid-session claim
+that `HANDOFF.md` described this leak wrongly was itself wrong — `word_list_text` and
+`trials_text` are built from the same 100 lines, so the list really is printed twice.
+
+**Error-shape measures for all 8 tasks, report-only** — user decision: compute, gate nothing,
+decide promotion after one run gives a run-to-run spread per measure. A subagent is building
+six measures into `error_structure.py`, `interference.py`, `protocol_match.py`, plus
+`logs/human_error_shape.json`, `report_error_shape.py`, `test_error_shape.py`,
+`logs/error_shape_measures.md`. **Do not edit those files while it runs.** Human per-item data
+supports measures on 7 of 8 tasks; only `semantic_story_recall` lacks item structure.
+
+**Doc audit** — `logs/doc_audit.md`. Group 1 fixed in `aad06c1`: `PROPOSER.md`'s
+"`reset_messages()` is never called by any task" (false since 70befa7, and the reason four
+candidates closed the same leak), `HANDOFF.md`'s route-3 "one thing to do next" (dead: 6 of 965
+unanswered trials), the frontier marked as history, and `logs/bench_collection_fix.md` amended
+to withdraw its claims. Groups 2 and 3 are pending the error-shape work and the
+`word_recognition` fix respectively. `WORKLOG.md` and the 17 candidate manifests are
+deliberately not rewritten — they record what each proposer knew at the time.
+
+**Also fixed today:** `score_repeats.py --baseline` kept only its last occurrence
+(`nargs="+"` without `action="extend"`), so multi-baseline scorings used one baseline.
+`respond_first_v2` re-scored at 3 candidate vs 3 baseline repeats: n-back delta −0.0806, still
+a FLOOR failure against −0.06 and still outside 2 SE (0.0091); recorded as
+`postfix_respond_first_v2_3rep`. And every n-back analysis read the step log positionally,
+which breaks on split rows — `meta_harness/nback_steps.py` now owns that mapping and five
+scripts use it; `check_predictions.py`'s two n-back decompositions refuse a split row rather
+than report a doubled count.
 
 
 Written to survive a compaction. Read this, then `meta_harness/HANDOFF.md` (whose "one thing to
