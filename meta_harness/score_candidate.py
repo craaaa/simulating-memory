@@ -11,11 +11,13 @@ Decision rules, from domain_spec.md:
   floor        no task may regress more than FLOOR below the baseline
   A2 (axis)    word-recognition miss/false-alarm ratio, humans 6.09 -- the only
                axis with real headroom on qwen3-30b
-  A1 (report)  protocol-matched digit-span sub-span leak. DEMOTED 2026-09-29 from
-               guard to report-only: it measures the noise in a declining success
-               curve, not humanlikeness, and it scores an agent that never fails as
-               more human-like than the baseline. `best_span` is reported beside it
-               as a diagnostic but is NOT a guard -- see the note at `enforced`.
+  ~~A1~~       RETIRED 2026-09-29 [USER]. The digit-span sub-span leak was demoted to
+               report-only that morning and removed the same day: a null model with no
+               memory mechanism at all reproduces the human value at slope s ~= 0.55, and
+               every slope from 0.25 to 2.0 fits the human `best_span` mean and sd while
+               A1 sweeps 0.045 -> 0.183. It measured the within-participant slope, not
+               humanlikeness. `digit_span.best_span` in DIGITS replaces it, reported as a
+               diagnostic and NOT a guard -- see the note at `enforced`.
   A3 (guard)   story-recall BLEU < 0.02 and recall length in [100,175] words
   covariate    word-recognition trials attempted, reported so an A2 gain that
                came from surviving longer is visible rather than banked
@@ -88,10 +90,12 @@ LEAKY_TASKS = ["nback", "variable_mapping"]
 # What a guard is actually for: catching a candidate whose error structure drifts
 # FURTHER from humans than the baseline already is. So the rule is relative --
 # |candidate - human| must not exceed |baseline - human| + tolerance.
-HUMAN_A1_LEAK = 0.087
-HUMAN_BEST_SPAN = 6.88            # humans stop here; baseline reaches 18.4
-A1_LEAK_TOLERANCE = 0.03          # UNUSED since A1 was demoted 2026-09-29; kept so
-                                  # the historical verdicts stay readable
+HUMAN_A1_LEAK = 0.087             # RETIRED 2026-09-29; kept only so the historical
+A1_LEAK_TOLERANCE = 0.03          # verdicts in evolution_summary.jsonl stay readable.
+                                  # Do not reintroduce either as a guard: the null model
+                                  # in logs/protocol_mismatch_audit.md rules A1 out.
+                                  # Re-measured human leak is 0.0866 (sd 0.0756), not 0.087.
+HUMAN_BEST_SPAN = 6.88            # digits; humans stop here, baseline reaches 18.4
 A3_BLEU_TOLERANCE = 0.02          # absolute; human BLEU is ~0 so this is a cap
 A3_WORD_TOLERANCE = 40.0          # words, around the human 137.2
 A3_PRECISION_TOLERANCE = 0.02     # on length-free 4-gram precision
@@ -239,23 +243,38 @@ def axes(run_dir: Path) -> dict[str, Any]:
         recs = PM.model_participants(ds)
         if recs:
             summ = PM.summarize("candidate", recs)
-            leak = summ["sub_span_fail"]
-            # Caveat, so a future reader does not mistake a small A1 distance for
-            # reassurance: sub_span_leak is only defined where the staircase
-            # actually fails. `full_context` reached best_span 20.0 on a 19-span
-            # schedule -- it never terminated, so there were no failures to leak
-            # and A1 read 0.032, closer to human than the baseline's 0.130 purely
-            # by being uninformative. best_span is reported alongside for exactly
-            # this reason, and unlike the W_1 delta it is a scalar over all 190
-            # trials rather than 10 pseudo-participants, so it is the sensitive
-            # digit-span regression signal (it caught random_decay at 18.4 -> 2.0).
-            res["A1"] = {
-                "sub_span_leak": round(leak, 4),
+            # A1 (sub-span leak) IS RETIRED. Removed 2026-09-29 [USER]: "get rid of it and
+            # only report best_span".
+            #
+            # A1 was the rate at which a participant failed a span shorter than one they
+            # later passed. It does not survive a null model. Fitting p(correct|span) =
+            # logistic((theta - span)/s) with theta ~ N(mu, sigma), running it through the
+            # exact human staircase (2 trials/span, ascend from 2, stop on double failure),
+            # and choosing mu and sigma at each slope so that simulated `best_span` matches
+            # the human mean AND sd (6.885 / 2.064 digits): every slope from 0.25 to 2.0
+            # fits those spans to within 0.03 digits while A1 sweeps 0.045 -> 0.183. The
+            # human value, 0.0866, sits at s ~= 0.55 and is not distinguishable from the
+            # null. A1 is a read-out of the within-participant slope, which `best_span`
+            # mean+sd does not identify. See logs/protocol_mismatch_audit.md.
+            #
+            # It was also uninformative where it mattered most: `full_context` reached
+            # best_span 20.0 on a 19-span schedule, so the staircase never terminated, there
+            # were no failures to leak, and A1 read 0.032 -- closer to human than the
+            # baseline's 0.130 purely by measuring nothing. A small A1 distance read as
+            # reassurance and could not be one.
+            #
+            # `best_span` in DIGITS is what replaces it, and it is the sensitive digit-span
+            # regression signal: a scalar over all 190 trials rather than 10 pseudo-
+            # participants, and it caught `random_decay` collapsing 18.4 -> 2.0.
+            #
+            # CAVEAT that travels with it (audit M4): this estimator is not invariant to
+            # trials-per-span. The model side administers 1 trial/span and the human side 2,
+            # and the same 190 rows yield 8.70 / 18.40 / 20 digits depending on grouping.
+            # Compare it at 2 trials/span on both sides or not at all.
+            res["digit_span"] = {
                 "best_span": round(summ["best_span"], 2),
-                "human_leak": HUMAN_A1_LEAK,
                 "human_best_span": HUMAN_BEST_SPAN,
                 "best_span_distance": round(abs(summ["best_span"] - HUMAN_BEST_SPAN), 2),
-                "distance": round(abs(leak - HUMAN_A1_LEAK), 4),
                 "at_ceiling": bool(summ["best_span"] >= 19.0),
             }
 
@@ -348,25 +367,28 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
     # so the guards are reported and not enforced.
     guards: list[str] = []
     base_axes = axes(baseline_dir) if baseline_dir is not None else {}
-    # A1's sub-span leak was DEMOTED to report-only on 2026-09-29 (user decision).
-    # It is not a humanlikeness signal. Under a staircase over increasing lengths,
-    # failing a sequence shorter than your own best is ordinary variability in a
-    # declining success curve, so the leak rate mostly reflects that curve's slope
-    # and noise. Two things confirm it rather than merely suggest it: the ceiling
-    # confound already recorded at `res["A1"]` below -- `full_context` never
-    # terminated, had no failures to leak, and so scored CLOSER to human (0.032)
-    # than the baseline (0.130) purely by being uninformative -- and the fact that
-    # the model was run over all 19 spans while the human staircase stops on double
-    # failure, which hands the model far more sub-span opportunities mechanically.
+    # A1's sub-span leak was DEMOTED to report-only on 2026-09-29 and RETIRED the same day
+    # (user decision, both). It is not a humanlikeness signal. Under a staircase over
+    # increasing lengths, failing a sequence shorter than your own best is ordinary
+    # variability in a declining success curve, so the leak rate mostly reflects that
+    # curve's slope and noise. Three things confirm it rather than merely suggest it:
+    #   * a null model with NO memory mechanism, calibrated to the human `best_span` mean
+    #     and sd, reproduces the human A1 at slope s ~= 0.55, and slopes 0.25-2.0 all fit
+    #     the spans to within 0.03 digits while A1 sweeps 0.045 -> 0.183;
+    #   * the ceiling confound -- `full_context` never terminated, had no failures to leak,
+    #     and so scored CLOSER to human (0.032) than the baseline (0.130) purely by being
+    #     uninformative;
+    #   * the model was run over all 19 spans while the human staircase stops on double
+    #     failure, which hands the model far more sub-span opportunities mechanically.
     #
-    # `best_span` is deliberately NOT promoted into its place, even though the
-    # docstring at `res["A1"]` calls it the sensitive digit-span regression signal
-    # (it caught random_decay collapsing 18.4 -> 2.0). As a distance-from-human
-    # guard it would be wrongly signed: the human best span is 6.88 and the
-    # baseline sits at 18.4, so a collapse to 2.0 gives distance 4.88 against the
-    # baseline's 11.52 and would read as an IMPROVEMENT. What actually catches that
-    # collapse is the per-task humanlikeness floor on digit span, which is where
-    # enforcement belongs. `best_span` stays reported as a diagnostic.
+    # `best_span` is deliberately NOT promoted into its place, even though it is the
+    # sensitive digit-span regression signal (it caught random_decay collapsing
+    # 18.4 -> 2.0). As a distance-from-human guard it would be wrongly signed: the human
+    # best span is 6.88 digits and the baseline sits at 18.4, so a collapse to 2.0 gives
+    # distance 4.88 against the baseline's 11.52 and would read as an IMPROVEMENT. What
+    # actually catches that collapse is the per-task humanlikeness floor on digit span,
+    # which is where enforcement belongs. `best_span` stays reported at
+    # `res["digit_span"]` as a diagnostic.
     enforced = [("A3", tol, field) for field, tol in A3_ENFORCED_FIELDS]
     for key, tol, field in enforced:
         cand_ax, base_ax = rec["axes"].get(key), base_axes.get(key)

@@ -649,8 +649,8 @@ def primacy_checks(run_dir: Path, baseline: Path | None) -> list[dict[str, Any]]
     # --- P4 no-change (attribution): digit span untouched ---------------------
     # "abs(sub_span_leak - 0.1298) <= 0.01 and abs(best_span - 18.4) <= 1.0 and
     #  abs(delta_ds_fwd) < 0.140 and abs(delta_ds_rev) < 0.059"
-    a1 = ax.get("A1") or {}
-    b_a1 = bax.get("A1") or {}
+    a1 = _span_axis(ax)
+    b_a1 = _span_axis(bax)
     ref_leak = b_a1.get("sub_span_leak", PRIM_A1_LEAK)
     ref_span = b_a1.get("best_span", PRIM_A1_SPAN)
     obs4 = {"sub_span_leak": a1.get("sub_span_leak"), "best_span": a1.get("best_span"),
@@ -852,6 +852,17 @@ def primacy_checks(run_dir: Path, baseline: Path | None) -> list[dict[str, Any]]
 # ---------------------------------------------------------------------------
 # Every row there carries `verdict_if_missing: INCONCLUSIVE`, which is honoured
 # by construction below: no branch reaches FAIL without the quantity in hand.
+def _span_axis(ax: dict[str, Any]) -> dict[str, Any]:
+    """Digit-span diagnostics, readable on either row generation.
+
+    `best_span` moved from `axes["A1"]["best_span"]` to `axes["digit_span"]["best_span"]`
+    when A1 was retired on 2026-09-29. `sub_span_leak` exists only on pre-retirement rows,
+    so a prediction whose threshold needs it reports INCONCLUSIVE on a new run -- the honest
+    verdict, and the one this file's convention requires, rather than a silent pass.
+    """
+    return {**(ax.get("A1") or {}), **(ax.get("digit_span") or {})}
+
+
 _WR_LINE = re.compile(r"^trial\s+(\d+):\s*(Old|New)\s*$", re.I)
 _WR_HDR_COV = re.compile(r"coverage=([0-9.]+)")
 
@@ -1988,7 +1999,7 @@ def chunk_limit_checks(run_dir: Path, baseline: Path | None) -> list[dict[str, A
             + ("" if ok else " and was not met"), ("NEAR-INERT",))
 
     # --- P11 ANTI-VANDALISM, aggregate level / A1 guard ---------------------
-    a1 = ax.get("A1") or {}
+    a1 = _span_axis(ax)
     obs11 = {"sub_span_leak": a1.get("sub_span_leak"),
              "best_span": a1.get("best_span"),
              "d_fwd": delta.get("digit_span_forward"),
@@ -2016,9 +2027,9 @@ def chunk_limit_checks(run_dir: Path, baseline: Path | None) -> list[dict[str, A
             {"sub_span_leak": obs11["sub_span_leak"],
              "best_span": obs11["best_span"], "d_fwd": obs11["d_fwd"],
              "d_rev": obs11["d_rev"]},
-            ({"sub_span_leak": (bax.get("A1") or {}).get("sub_span_leak"),
-              "best_span": (bax.get("A1") or {}).get("best_span"),
-              "d_fwd": 0.0, "d_rev": 0.0} if bax.get("A1") else None), same)
+            ({"sub_span_leak": _span_axis(bax).get("sub_span_leak"),
+              "best_span": _span_axis(bax).get("best_span"),
+              "d_fwd": 0.0, "d_rev": 0.0} if _span_axis(bax) else None), same)
         add("P11 digit span: a bound, not vandalism", PASS if ok else FAIL, obs11,
             thr11, fn_note or note or (
                 "the SHAPE of the effect is what is asserted: random information "
@@ -2473,7 +2484,7 @@ def primacy_v2_checks(run_dir: Path,
             "[0.687, 0.787] (primacy 14.0/4.0/0.76)")
 
     # --- P6 A1 digit span, no-change ----------------------------------------
-    a1 = ax.get("A1") or {}
+    a1 = _span_axis(ax)
     obs6 = {"sub_span_leak": a1.get("sub_span_leak"),
             "best_span": a1.get("best_span"),
             "d_fwd": None if hl.get("digit_span_forward") is None
@@ -2738,7 +2749,7 @@ def episodic_primacy_checks(run_dir: Path,
             "model is already better than humans, so a capability gain is a cost")
 
     # --- C5 no-change control -----------------------------------------------
-    a1 = ax.get("A1") or {}
+    a1 = _span_axis(ax)
     obs5 = {"d_fwd": None if hl.get("digit_span_forward") is None
                      or bhl.get("digit_span_forward") is None
                      else round(hl["digit_span_forward"] - bhl["digit_span_forward"], 4),
