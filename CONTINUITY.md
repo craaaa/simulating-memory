@@ -1,5 +1,53 @@
 # CONTINUITY — session state, 2026-09-28 / 29
 
+## 2026-09-29T06:00Z [TOOL] — STAGE 2 LANDED. Job 18781213 COMPLETED, all instrument work done.
+
+**Everything that was blocked is finished.** `logs/iter12stage2_outcome.md` is the record.
+
+Job 18781213, exit 0, 1h32m, three repeats, 6810 rows, `runs/iter12stage2/`, from `a14b59d`.
+**8 SUPPORTS / 1 INCONCL / 0 REJECTS** against predictions registered — with their evaluator —
+before the run produced output. Precondition held on all four untouched tasks.
+
+| task | iter11postfix | **iter12stage2** | delta | comparable? |
+|---|---|---|---|---|
+| word_recognition | 0.5364 | **0.8278** | **+0.2914** | yes |
+| variable_mapping | 0.9643 | 0.9662 | +0.0019 | yes |
+| nback | 0.9344 | 0.9340 | −0.0004 | yes |
+| narrative_qa | 0.9444 | 0.9522 | +0.0078 | yes |
+| semantic_story_recall | 0.9470 | 0.9510 | +0.0040 | yes |
+| craft_task | 0.8679 | 0.8451 | −0.0228 | yes, inside its 0.0342 spread |
+| digit_span_forward | 0.9012 | 0.8712 | −0.0300 | **NO** |
+| digit_span_reverse | 0.9666 | 0.9568 | −0.0098 | **NO** |
+| **mean over the 6 comparable** | 0.8657 | **0.9127** | **+0.0470** | |
+
+Recorded as `gen4_stage2_baseline_iter12stage2`. **Quote the six-task mean**, not the mean over 8:
+the digit-span columns are not differenceable (`logs/digit_span_not_comparable.md` — `score.py`
+makes one pseudo-participant per `sequence_index`, so 10→40 sequences moved the sample 10→40 and
+the drop is the estimator ceasing to flatter the model, not a behaviour change).
+
+**word_recognition overshot.** Survival 80.82 → 18.72 words against a human 34.49; all 50 rows now
+reach 3 errors where 12 did. The model went from far too good to somewhat too bad, which with
+`MAX_KEYS = 4` over 100 words is the expected shape.
+
+### Four things now open, three needing a decision from the user
+
+1. **A2 is broken as a statistic.** Zero false alarms in 487 new-word trials, so miss/FA is
+   *undefined*, not small. The axis `domain_spec.md` calls "the axis" has no value on its own
+   substrate and needs a bounded replacement (miss − FA, or d′). Substantively it moved from
+   0.3901 *past* the human 6.094 to absolutely conservative.
+2. **The n-back denominator decision** (`logs/nback_denominator_decision.md`) — would erase the
+   remaining n=3 deficit (0.7799 → 0.7421 human reference against a model 0.7429). Not taken.
+3. **M4's grouping decision** for `best_span`, which has four incompatible values on the same
+   model: 8.70 / 9.47 / 18.40 / 20.0 digits. The 18.40 in `score_candidate.py`'s guard commentary
+   is from a grouping the scorer does not use, and at 9.47 the "wrongly signed" argument I wrote
+   there **fails** — so `best_span` may be promotable after all.
+4. **craft_task carries 1/8 of the objective with one bit of resolution**
+   (`logs/stimulus_variation_ceiling.md`). Four options recorded, none taken.
+
+Also unexplained and worth a look: **the human word-recognition lag curve rises** (0.506 → 0.950)
+where the model now falls. Survivorship is a named, testable candidate — both sides stop at 3
+errors and human n per bin falls 53/51/44/40/27.
+
 ## 2026-09-29T04:15Z [TOOL] — STATUS: job 18781213 pending, everything else done
 
 **Job 18774002 COMPLETED** (1h06m) and was read. **The decisive n-back check passed:** n=1
