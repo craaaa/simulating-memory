@@ -66,7 +66,7 @@ task_config:
     n_repeats_per_participant: 1
     stimuli_seed: 123
     temperature: 0
-  wm_word_recognition:            # carries axis A2
+  wm_word_recognition:            # carries A2: miss - fa, report-only since 2026-09-29
     words_json_path: data/words.json
     n_repeat: 50                  # 50 rows, as released
     max_trials_per_game: 100

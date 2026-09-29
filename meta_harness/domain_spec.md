@@ -40,6 +40,14 @@ All numbers here are measured from released data in this repo; see
 >    **Whether A2 becomes a clean target is not yet measured** — it is prediction P3 of job
 >    18781213 (`logs/predictions_iter12stage2.md`): A2's ratio must cross 1.0 from 0.3901, against
 >    a human 6.094. Until that run is read, A2 is neither "badly weakened" nor restored.
+>
+>    **SUPERSEDED AGAIN 2026-09-29 [USER] — that run was read, and the question it was
+>    supposed to settle was the wrong question.** P3 came back INCONCLUSIVE because the
+>    ratio was *undefined*: zero false alarms in the whole arm. The ratio is not a
+>    per-participant statistic (0 of 50 model participants and 22 of 53 humans have one),
+>    so no run could ever have restored it. A2's statistic is now `miss − fa`, a proportion
+>    in [−1,+1], and A2 is **report-only, not an axis**. See "A2'S STATISTIC CHANGED" under
+>    the error-structure axes table below for the numbers and the rejected alternative.
 > 4. **The absolute guard bands (A1 in [0.05, 0.12], A3 BLEU < 0.02 @ [100,175]
 >    words) were incoherent** — calibrated on OpenRouter numbers, so the local
 >    baseline failed its own guard. Guards are now *relative*: distance from human
@@ -137,7 +145,8 @@ config. They disagree:
 |---|---|---|
 | paired score mean | 71.58 | 86.38 |
 | miss / false-alarm | 0.056 / 0.185 | 0.001 / 0.064 |
-| A2 miss/fa ratio | 0.302 | 0.018 |
+| A2 miss/fa ratio (LEGACY; superseded 2026-09-29, see the axes section) | 0.302 | 0.018 |
+| A2 miss − false-alarm, pooled (proportion) | −0.129 | −0.063 |
 | trials attempted | 72.9 | 87.5 |
 
 `W_1 = 0.149` against a 0.075 noise floor for this task, i.e. twice the level at
@@ -218,7 +227,12 @@ than silently dropped.
    distribution. **This is the adversary, not a contender.** It exists to test
    whether the error-structure axes have teeth, with an explicit pass
    condition: the control must reach mean humanlikeness **>= baseline + 0.05**
-   while its A2 distance stays **>= 2x the baseline's**. If it cannot match the
+   while its A2 distance stays **>= 2x the baseline's**. **AMENDED 2026-09-29 [USER]:**
+   "A2 distance" here means the legacy ratio distance |ratio − 6.094|, which is
+   dimensionless, unbounded and NaN whenever FA = 0 — so a "2x" bar on it is not a
+   well-defined pass condition. If this adversary is run, state it on
+   `axes.A2.diff_distance`, |miss − fa − 0.2273| in proportion units, and pick the
+   multiplier against a measured run-to-run spread for that quantity. If it cannot match the
    distribution, it is a weak adversary and the axes are untested rather than
    validated; if it matches the distribution *and* the axes, the axes do not
    discriminate and the search is invalid. This is one candidate evaluation
@@ -255,9 +269,54 @@ expose:
 
 | axis | statistic | humans | opus-4-6 | **qwen3-30b (search substrate)** |
 |---|---|---|---|---|
-| A2 word recognition | miss/false-alarm ratio | **6.09** | 0.00 | **0.018** |
+| A2 word recognition | **miss − false-alarm, a proportion in [−1,+1]** | **+0.2273** | −0.5037 | **−0.0520** |
+| ~~A2 word recognition~~ | ~~miss/false-alarm ratio~~ | ~~**6.09**~~ | ~~0.00~~ | ~~**0.018**~~ |
 | A3 story recall | BLEU @ recall words | 0.002 @ 137 | 0.199 @ 366 | 0.003 @ 128 (matched) |
 | ~~A1 digit span~~ | ~~sub-span leak, protocol-matched~~ | ~~0.087~~ | ~~0.077~~ | **RETIRED 2026-09-29** |
+
+**A2'S STATISTIC CHANGED, 2026-09-29 [USER], AND A2 IS NOT A PARETO AXIS — IT IS REPORT-ONLY.**
+The struck row above is kept per this file's supersession rule. Three things, in order of how
+badly they bite.
+
+1. **The ratio was not a per-participant statistic at all.** Per-participant false-alarm rate is
+   exactly 0 for **31 of 53 humans (58%)** and for **50 of 50** model participants in
+   `runs/iter12stage2/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507`, so miss/FA is computable for
+   22 of 53 humans and 0 of 50 of those models. [TOOL, `error_structure.a2_human`/`a2_model`]
+2. **So the published human 6.09 is a ratio of two aggregates that no individual human
+   exhibits.** Human miss rate averages 0.2719 and FA rate 0.0446, and 0.2719/0.0446 = 6.094; the
+   mean of the **per-participant** ratios, over the 22 where one exists, is **1.513**. Wherever
+   this file, `NOTES.md`, `PROPOSER.md` or `WORKLOG.md` quotes 6.09 as *the human value*, read it
+   as "the ratio of the human population means", not as a typical participant. [TOOL]
+3. **A pooled scalar cannot be scored the way this file's own objective asks.** The objective is
+   "comparing the resulting score distribution to the human distribution"; one number has no
+   distribution, so "A2's headroom" was never a distance a candidate could be scored on closing.
+   The claim below that A2 is "the axis" with "real headroom" is withdrawn on that ground, not
+   because the measurement was noisy.
+
+**What replaces it.** `diff = miss_rate − fa_rate`, a proportion difference bounded in [−1,+1],
+defined for **every** participant on both sides, so it yields a distribution. Humans: mean
+**+0.2273**, population sd 0.2658 (ddof=0), n=53. Random responding drives it to 0, as it drove
+the ratio to 1. Reported with a paired participant bootstrap 95% CI (`error_structure.a2_diff_ci`)
+and with the raw miss rate and FA rate beside it, each carrying its own distance from human.
+Scored as `1 − W_1` over the per-participant values against the human distribution, in proportion
+units and NOT humanlikeness: `iter11postfix/baseline` **0.7286**, `iter12stage2/baseline`
+**0.8425** (project `src/score.wasserstein_1d`; `scipy.stats.wasserstein_distance` on the same
+values gives 0.7150 / 0.8333, because the project's grid-based approximation clips its outer
+edges — the two implementations are not interchangeable and this is the project's own).
+
+**d′ was evaluated as the replacement and REJECTED.** With a log-linear correction it is
+unbounded, so there is no [0,1] distance; it reads −0.6205 as a `1 − W_1` on
+`iter11postfix/baseline`; and where FA = 0 — most of the sample — it is driven by the correction
+constant rather than by the data.
+
+**A2 is NOT promoted.** It is now *eligible* to enter the objective as a distribution, which the
+ratio never was, but it remains REPORT ONLY: not a guard, not a floor, not in
+`mean_humanlikeness_search`. **Only A3 is enforced.** Promotion is a separate user decision and
+needs a measured run-to-run spread for `diff` itself, on the model of
+`logs/run_to_run_floor.json` — without that, a `diff` movement cannot be told from serving noise.
+The legacy ratio fields (`ratio`, `ratio_ci`, `human_ratio`, `distance`) stay in
+`score_candidate.axes()` under their original names with their `n_defined` counts, so the
+historical rows in `logs/evolution_summary.jsonl` remain readable; no historical row was rewritten.
 
 **A1 IS RETIRED, 2026-09-29 [USER], and A4's human reference IS VOID.** Superseded rather than
 deleted, per this file's own rule. Both are documented at length below and in
@@ -313,6 +372,14 @@ when unsure; the compactor says "old". This is a systematic property of the
 harness on recognition, not a quirk of one model, which is what makes it a sound
 optimization target.
 
+> **AMENDED 2026-09-29 [USER].** The *direction* survives: every model is more liberal
+> than humans, and in the bounded statistic that is miss − fa of −0.5037 (opus) to
+> +0.0918 (qwen3-8b) against humans' **+0.2273**. What does NOT survive is "is the axis"
+> and "a sound optimization target": 6.09 is a ratio of the human population means that
+> no individual human exhibits, the ratio is undefined for 58% of humans and for whole
+> model arms, and a pooled scalar has no distribution to score against. A2 is
+> **report-only** and was NOT promoted. See "A2'S STATISTIC CHANGED" above.
+
 **A3 and A1 are guards, not targets, on this substrate.** Only opus (BLEU
 0.199) and mildly gpt-5.4 (0.017) regurgitate verbatim; qwen3-30b is already at
 human BLEU and near human recall length, as are llama-3.3-70b, llama-3-8b and
@@ -330,6 +397,15 @@ with a *fully inverted* error structure — humans are conservative, opus
 false-alarms on half of all new words and never misses an old one. A3 shows
 opus regurgitating verbatim at 2.7x human recall length.
 
+> **AMENDED 2026-09-29 [USER].** This existence proof stands, and it is the clearest
+> illustration of why the ratio had to go: opus's miss 0.000 / FA 0.533 gives ratio
+> **0.00**, a saturation at the opposite bound from `iter12stage2`'s FA = 0, where the
+> ratio saturates as division by zero. The two extreme failures collapse onto the ratio's
+> two degenerate endpoints and become mutually incomparable. `miss − fa` handles both:
+> **−0.5037** for opus (mean of per-participant differences; −0.5334 as a difference of
+> the pooled rates, and the two are not the same number), **+0.3752** for `iter12stage2`,
+> both inside the bounded [−1,+1] scale that also holds the human **+0.2273**.
+
 **A2's denominator is itself a search target.** Word recognition terminates at
 3 strikes, so a participant contributes only the trials they attempted — mean
 34.5 for humans, 40.2 for opus, and **87.5 for qwen3-30b**, which survives 2.5x
@@ -340,6 +416,15 @@ change that shifts `first_error_at` changes the denominator and so moves A2
 without fixing the asymmetry.** So A2 is scored jointly with trials-attempted,
 which is recorded as a covariate on every candidate, and the proposer cannot
 bank an A2 gain that came from surviving longer.
+
+> **AMENDED 2026-09-29 [USER].** Still true, and the trials covariate is still reported
+> (`axes.A2.trials_attempted`), but note two corrections. "A2 is scored" overstates its
+> status: A2 is report-only and nothing is scored on it. And the bootstrap quoted here,
+> humans [3.79, 11.39] vs opus [0.00, 0.00], is a bootstrap of the *ratio of population
+> means* — the opus interval is [0.00, 0.00] because opus's miss rate is identically 0,
+> which is degeneracy, not precision. The CI now reported for A2 is
+> `error_structure.a2_diff_ci`, a paired participant bootstrap of mean miss − fa: humans
+> [+0.160, +0.301], opus [−0.624, −0.381].
 
 **A1 is resolved, and it changed shape — it is a guard, not a target.**
 `meta_harness/protocol_match.py` recovers the human schedule from the released
@@ -501,7 +586,9 @@ hours, and the declared capacity/decay parameters.
 - `trace <id> --task <t> --participant <n>` — one episode's encode/recall trace
 - `frontier` — the current Pareto frontier over (humanlikeness, A2, A3). **AMENDED 2026-09-29:**
   this description omitted A4, which was an enforced conditional guard the whole time, and is now
-  doubly out of date — A1 is retired, A4's human reference is void, and eight report-only
+  doubly out of date — A1 is retired, A2 is report-only and its statistic changed (the
+  `A2ratio_d` column `history.py` sorts on is the LEGACY ratio distance, kept so historical
+  rows still render), A4's human reference is void, and eight report-only
   error-shape measures exist that the frontier does not consider. `HANDOFF.md` also records that
   `frontier` is better read as a history of what was tried than as a live Pareto set. Nothing
   reads it to make a decision; treat it as a log until it is rebuilt against the current axes.

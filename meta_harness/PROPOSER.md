@@ -227,7 +227,8 @@ ignore them.
 
 | | human | baseline (qwen3-30b, local) | role |
 |---|---|---|---|
-| **A2** word-recognition miss/false-alarm ratio | **6.09** | 0.340 | **the axis** |
+| **A2** word-recognition **miss − false-alarm** (proportion, [−1,+1]) | **+0.2273** | −0.0577 (`iter11postfix/baseline`) | **report only — NOT a guard, NOT an axis** |
+| ~~**A2** word-recognition miss/false-alarm ratio~~ | ~~**6.09**~~ | ~~0.340~~ | ~~**the axis**~~ (superseded 2026-09-29, see below) |
 | A1 digit-span sub-span leak (protocol-matched) | 0.087 | 0.130 | guard |
 | A1b digit-span **best span** | **6.88** | **18.4** | guard, and see below |
 | A3 story-recall BLEU @ recall words | 0.002 @ 137 | 0.003 @ 121 | guard |
@@ -272,6 +273,29 @@ A2 has a trap: word recognition stops after 3 strikes, so trials-attempted
 varies (34.5 for humans, 82.9 for the local baseline). You can move the ratio by
 surviving longer rather than by fixing the asymmetry. Trials-attempted is
 recorded as a covariate and an A2 gain that came from it will not be credited.
+
+> **AMENDED 2026-09-29 [USER] — A2's statistic changed and A2 is report-only.** The suspicion
+> recorded above was warranted but understated: the problem is not only the leak, it is the
+> statistic. The miss/false-alarm **ratio** is not computable per participant wherever FA = 0,
+> which is **31 of 53 humans (58%)** and **50 of 50** model participants in
+> `runs/iter12stage2/baseline`. So the human **6.09** is the quotient of the two population
+> means (0.2719 / 0.0446) and no individual human exhibits it; the mean of the 22 defined
+> per-participant ratios is **1.513**. A pooled scalar also has no distribution, so "A2's
+> headroom" was never a distance you could be scored on closing.
+>
+> **What to quote now.** `axes.A2.diff` = miss_rate − fa_rate, a **proportion** difference in
+> [−1,+1] (0 is random responding), with `diff_ci` (paired participant bootstrap),
+> `diff_distance` from the human **+0.2273**, `diff_one_minus_w1` (1 − W_1 over per-participant
+> values, in proportion units and NOT humanlikeness), and `miss_rate` / `fa_rate` with their own
+> distances. `ratio`, `ratio_ci`, `human_ratio` and `distance` are still emitted but are LEGACY:
+> they exist so the historical rows in `logs/evolution_summary.jsonl` stay readable. Do not
+> register a prediction against them.
+>
+> **A2 is NOT a target and NOT a guard.** Only A3 is enforced. A2 is now *eligible* to be scored
+> as a distribution, which the ratio was not, but promotion is a user decision that needs a
+> measured run-to-run spread for `diff` itself — so do not write a manifest that claims an A2
+> gain. The trials-attempted trap above still applies to `diff` and the covariate is still
+> reported.
 
 A3 is already near-human on this substrate, so it offers no gradient and exists to
 catch regressions — which it does: it is what caught `full_context` regurgitating
@@ -408,6 +432,12 @@ is the fourth time a candidate re-derived a benchmark fix.
 > The post-fix re-baseline is job 18781213, with predictions registered in
 > `logs/predictions_iter12stage2.md` before it ran. Until it is read, whether A2 becomes a clean
 > target is **open** — not weakened, not restored.
+>
+> **RESOLVED 2026-09-29 [USER], and not in the way this sentence anticipated.** The run was read.
+> Its prediction P3 ("A2's ratio crosses 1.0") came back INCONCLUSIVE because the ratio was
+> *undefined* — zero false alarms in the entire arm. A2 is not a clean target and no run could
+> have made it one, because the ratio was never a per-participant statistic. A2's scalar is now
+> `miss − false-alarm` and A2 is **report-only**. See the amendment under the axis table above.
 
 ## What you may change
 

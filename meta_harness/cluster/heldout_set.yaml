@@ -52,9 +52,11 @@ task_config:
     n_repeats_per_participant: 1
     stimuli_seed: 123
     temperature: 0
-  wm_word_recognition:            # carries axis A2
+  wm_word_recognition:            # carries A2 (report-only since 2026-09-29)
     words_json_path: data/words.json
-    n_repeat: 150                 # 3x the search size; A2 is the reported axis
+    n_repeat: 150                 # 3x the search size; A2 is reported, never enforced.
+                                  # Its scalar is miss - fa (a proportion), not the
+                                  # miss/false-alarm ratio -- see domain_spec.md.
     max_trials_per_game: 100
     stimuli_seed: 42
     temperature: 0.0

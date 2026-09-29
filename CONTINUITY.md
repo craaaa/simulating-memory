@@ -1,5 +1,42 @@
 # CONTINUITY — session state, 2026-09-28 / 29
 
+## 2026-09-29T00:00Z [USER] — OPEN ITEM 1 DECIDED: A2 becomes `miss − false-alarm`, report-only
+
+Decision 1 of `logs/open_decisions_brief.md` is taken: **option A + option C**. A2's scalar is
+`miss_rate − fa_rate`, a **proportion** difference in [−1,+1], and the raw miss rate and
+false-alarm rate are reported separately beside it, each with its own distance from human. The
+miss/false-alarm **ratio** is superseded.
+
+- **Why the ratio had to go, beyond FA = 0 at `iter12stage2`.** [TOOL, `error_structure.a2_human`
+  / `a2_model`] Per-participant FA rate is exactly 0 for **31 of 53 humans (58%)** and for
+  **50 of 50** model participants at `runs/iter12stage2/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507`,
+  so the ratio was computable for 22 of 53 humans and 0 of 50 of those models. The model hitting
+  100% is the pre-existing defect saturating, not a new defect.
+- **The human 6.094 must not be quoted as a human value.** It is 0.2719 / 0.0446, a quotient of
+  two population **means**. The mean of the per-participant ratios, over the 22 where one is
+  defined, is **1.513**. [TOOL]
+- **Numbers, in proportion units.** Humans mean **+0.2273**, population sd 0.2658 (ddof=0), n=53,
+  paired participant bootstrap 95% CI [+0.160, +0.301]. `iter11postfix/baseline` **−0.0577**;
+  `iter12stage2/baseline` **+0.3752** (sd 0.1716). As `1 − W_1` over per-participant values —
+  proportion units, **not** humanlikeness — 0.7286 and 0.8425 with the project's
+  `src/score.wasserstein_1d`; `scipy.stats.wasserstein_distance` gives 0.7150 / 0.8333 on the same
+  values and the two are not interchangeable. [TOOL]
+- **d′ rejected.** Log-linear corrected d′ is unbounded (no [0,1] distance), reads −0.6205 as a
+  `1 − W_1` on `iter11postfix/baseline`, and at FA = 0 is driven by the correction constant. [TOOL]
+- **A2 is NOT promoted.** It is now *eligible* to enter the objective because `diff` yields a
+  distribution, but it stays **report-only**; only A3 is enforced. Promotion needs a measured
+  run-to-run spread for `diff` itself and is a separate user decision. [USER]
+- **Legacy kept, nothing rewritten.** `ratio`, `ratio_ci`, `human_ratio` and `distance` remain in
+  `score_candidate.axes()` under their original names with `legacy_ratio_n_defined`, so historical
+  rows in `logs/evolution_summary.jsonl` and `history.py`'s (now relabelled) `A2ratio_d` column
+  still render. Every pre-registered A2 threshold in `check_predictions.py` still points at the
+  legacy fields on purpose: |ratio − 6.094| is unbounded while |diff − 0.2273| is in [0,2], so
+  re-pointing P6's "> 4.0" bar would make it vacuously true. [CODE]
+- Docs amended: `domain_spec.md`, `NOTES.md`, `PROPOSER.md`, `wave_prompt.md`, `WORKLOG.md`
+  (appended), `logs/open_decisions_brief.md`, `logs/survival_length_scoring.md`, this file.
+  `logs/iter12stage2_outcome.md` and `logs/predictions_iter12stage2.md` are frozen records of what
+  was predicted and observed at the time and were left as they stand.
+
 ## 2026-09-29T06:00Z [TOOL] — STAGE 2 LANDED. Job 18781213 COMPLETED, all instrument work done.
 
 **Everything that was blocked is finished.** `logs/iter12stage2_outcome.md` is the record.
@@ -31,7 +68,10 @@ reach 3 errors where 12 did. The model went from far too good to somewhat too ba
 
 ### Four things now open, three needing a decision from the user
 
-1. **A2 is broken as a statistic.** Zero false alarms in 487 new-word trials, so miss/FA is
+1. ~~**A2 is broken as a statistic.**~~ **DECIDED 2026-09-29 [USER] — see the entry at the top of
+   this file.** Replaced by miss − FA (report-only, not promoted); d′ was rejected. The original
+   note follows, and it understated the problem: the ratio was undefined for 58% of *humans* too,
+   not only for this arm. Zero false alarms in 487 new-word trials, so miss/FA is
    *undefined*, not small. The axis `domain_spec.md` calls "the axis" has no value on its own
    substrate and needs a bounded replacement (miss − FA, or d′). Substantively it moved from
    0.3901 *past* the human 6.094 to absolutely conservative.
@@ -211,8 +251,9 @@ reader needs:
   side and wrong about the model side. `word_recognition` humanlikeness compares two
   *survival-length* distributions rescaled by 100; closing the presentation defect makes the
   model's survival length reflect memory rather than prompt-reading, and does not turn the
-  score into an accuracy. Quote **A2** (miss/FA, human 6.094) and `M4_word_recognition_lag`
-  as this task's real measures.
+  score into an accuracy. Quote **A2** (~~miss/FA, human 6.094~~ **AMENDED 2026-09-29 [USER]:
+  miss − FA, human +0.2273, a proportion; the ratio is superseded**) and
+  `M4_word_recognition_lag` as this task's real measures.
 - **Pre-stage-2 anchor: 0.5075 humanlikeness**, over the named triple `iter0/baseline` +
   `iter8repA/baseline` + `iter8repB/baseline`. The 0.5199 in the plan body was unsourced and is
   corrected. Stage 1 did *not* touch this task — one `encode()` call so the reset fires on an

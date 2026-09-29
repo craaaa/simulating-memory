@@ -7,6 +7,9 @@
 #
 # Released reference (runs/compactor/qwen_qwen3-30b-a3b-instruct-2507):
 #   wm_word_recognition  n=50   miss/fa ratio 0.018   mean trials 87.5
+#   AMENDED 2026-09-29 [USER]: A2's scalar is now miss - fa, a proportion in [-1,+1];
+#   that released run reads -0.0520 (mean of per-participant differences) against a
+#   human +0.2273. The ratio above is legacy, kept because it is the released figure.
 #
 # Model/run settings below are copied verbatim from that run's
 # config_snapshot.json, except base_url and name, which point at local vLLM.

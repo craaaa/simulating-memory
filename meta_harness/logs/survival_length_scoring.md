@@ -174,8 +174,10 @@ record reports `trialsCompleted: 102` and is clipped to 100.
   for these two tasks. **Never compare across the boundary** without rescoring; `score_repeats`
   reads from run dirs, so rescoring is cheap and needs no model run.
 - A4 was already retracted; nothing here revives it.
-- `word_recognition`'s A2 (miss/FA ratio, human 6.094) and `M4_word_recognition_lag` are
-  unaffected — they read `per_trial`, not the score.
+- `word_recognition`'s A2 (~~miss/FA ratio, human 6.094~~ — **AMENDED 2026-09-29 [USER]: A2's
+  scalar is now miss − FA, a proportion, human **+0.2273**; the ratio is superseded and kept only
+  as a legacy field) and `M4_word_recognition_lag` are
+  unaffected by the survival-length change — they read `per_trial`, not the score.
 - `bench`'s own `metrics.score` for `variable_mapping` is now **vestigial**. It is
   `relation_count` of the last consecutively correct question and saturates by question 5.
   Left in place so old rows stay readable; nothing new should be built on it.

@@ -64,8 +64,14 @@ Do not run anything on the GPU yourself and do not edit anything under `bench/`,
 - The released `runs/compactor/*` numbers came from OpenRouter and do **not**
   reproduce under local bf16 serving, so compare only against the locally
   measured baseline in the history.
-- A2 (word-recognition miss/false-alarm asymmetry) is the only axis with real
-  headroom on this model. A1 and A3 are already near-human and act as guards.
+- ~~A2 (word-recognition miss/false-alarm asymmetry) is the only axis with real
+  headroom on this model. A1 and A3 are already near-human and act as guards.~~
+  **AMENDED 2026-09-29 [USER].** A1 is RETIRED. A2 is **report-only, not an axis and not a
+  guard** — only A3 is enforced. A2's statistic is no longer the miss/false-alarm ratio (that
+  ratio is undefined for 31 of 53 humans and for whole model arms, and its human "6.09" is a
+  quotient of population means no human exhibits) but `miss − false-alarm`, a proportion in
+  [−1,+1], humans **+0.2273**. Do not propose a candidate whose case rests on an A2 gain; see
+  `PROPOSER.md` and `domain_spec.md`.
 - A single-task delta under ~0.05 is inside the human noise floor. `diff` marks
   these. Do not build a story on one.
 - N-Back is the one task where the model is *worse* than humans, so it opposes

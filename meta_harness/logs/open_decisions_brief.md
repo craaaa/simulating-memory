@@ -33,6 +33,10 @@ above 1 means the participant errs *conservatively* (fails to claim recognition)
 Humans sit at **6.094** — strongly conservative. `domain_spec.md` calls A2 "the axis" because
 every model tested was on the wrong side of it, so it was the one axis with real headroom.
 
+> **AMENDED 2026-09-29 [USER]:** both sentences in this paragraph are now qualified. 6.094 is the
+> ratio of the human population means, not a per-participant average (see the RESOLVED section
+> below), and "the axis" framing is withdrawn in `domain_spec.md` — A2 is report-only.
+
 ## What happened
 
 | | miss rate | false-alarm rate | A2 ratio |
@@ -84,6 +88,47 @@ which side moved. Skip d′ until there is a reason to model sensitivity and bia
 correction term would be doing the work in exactly the regime that matters.
 
 **Cost:** an hour of analysis-side work, no re-run. The numbers already exist in `per_trial`.
+
+## RESOLVED 2026-09-29 [USER] — Option A + Option C, implemented, A2 stays report-only
+
+Taken as recommended. `score_candidate.axes()["A2"]` now leads with `diff` = miss_rate − fa_rate,
+a **proportion** in [−1,+1], with `diff_ci` (paired participant bootstrap, `a2_diff_ci`),
+`diff_sd`, `diff_distance` from human, `diff_one_minus_w1`, and `miss_rate` / `fa_rate` each with
+their own `*_distance`. The ratio survives only as labelled legacy fields.
+
+Four corrections to the analysis above, all measured through the project's own `a2_human()` /
+`a2_model()`:
+
+1. **The ratio was not merely undefined post-stage-2 — it was undefined for most humans all
+   along.** Per-participant FA rate is exactly 0 for **31 of 53 humans (58%)**, so the human ratio
+   existed for 22 of 53. "Computed per participant then averaged", in the description above, is
+   not what the reported 6.094 ever was.
+2. **6.094 is a ratio of two population means** (0.2719 / 0.0446). The mean of the 22 defined
+   per-participant ratios is **1.513**. The worked example above is still a correct account of
+   what a per-participant ratio *would* mean; it is not an account of 6.094.
+3. **This, not the degeneracy, is the decisive argument.** The project's objective is distribution
+   matching, and a pooled scalar has no distribution. `diff` is defined for every participant on
+   both sides, so A2 is now *eligible* for the objective — and was deliberately **not** promoted.
+   It stays report-only; only A3 is enforced. Promotion needs a measured run-to-run spread for
+   `diff` itself.
+4. **The Option A figures above are POOLED differences; the implementation reports the mean of
+   per-participant differences, and they differ.** Humans agree at **+0.2273** (sd 0.2658, ddof=0,
+   n=53). Pre-stage-2 `iter11postfix/baseline` is **−0.0577** as a mean of per-participant
+   differences, not the −0.099 quoted above (0.044 − 0.143), because 3 of its 50 participants have
+   no old-word trials and drop out. Opus is **−0.5037**, not −0.533, for the same reason (4 of 50).
+   Post-stage-2 `iter12stage2/baseline` is **+0.3752**, which matches, since no participant there
+   drops out.
+
+Option B (d′) was evaluated and rejected on measurement, not on taste: with the log-linear
+correction it gives −0.6205 as a `1 − W_1` against the human distribution on
+`iter11postfix/baseline` — a negative "humanlikeness", because d′ is unbounded so its W_1 has no
+[0,1] range — and at FA = 0 the correction constant sets the value.
+
+As `1 − W_1` over per-participant `diff`, in proportion units and **not** humanlikeness:
+`iter11postfix/baseline` **0.7286**, `iter12stage2/baseline` **0.8425**, using the project's
+`src/score.wasserstein_1d`. `scipy.stats.wasserstein_distance` gives 0.7150 / 0.8333 on the same
+values — the project's grid approximation clips its outer edges, so it reads slightly closer. The
+project's own function is used, for comparability with every other `1 − W_1` in the repo.
 
 ---
 

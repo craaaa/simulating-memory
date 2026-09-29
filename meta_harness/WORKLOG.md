@@ -1463,3 +1463,57 @@ survival scoring it reads +0.2816 on the pinned scale. The n-back turn-order def
 correction are recorded in `logs/postfix_baseline_outcome.md` and
 `logs/nback_turn_order_outcome.md` respectively, and the correction holds: n=1 accuracy 0.4786 →
 0.9929, n=3 0.3248 (pre-fix) → 0.7429, with `n_no_answers` 0 at every level.
+
+## AMENDMENT 2026-09-29 [USER] — A2's statistic is replaced, and every "6.09" above is a ratio of aggregates
+
+Appended, not edited: this file is append-only. **A2's scalar is now `miss_rate − fa_rate`, a
+proportion difference in [−1,+1]. The miss/false-alarm ratio is superseded.** Decision recorded in
+`logs/open_decisions_brief.md` (Decision 1, option A + option C); implementation in
+`error_structure.py` and `score_candidate.py`.
+
+**Which claims above are now wrong, and how.**
+
+- **"A2 is the real axis, and it is universal"** (§ Iteration-0 baselines) — the *universality*
+  holds: every baselined model errs more liberally than humans. "The real axis" does not. A2 is
+  **report-only**: not a guard, not a floor, not in `mean_humanlikeness_search`. Only A3 is
+  enforced. A2 is now *eligible* to enter the objective, because the new scalar yields a
+  distribution, and was deliberately **not** promoted — promotion needs a measured run-to-run
+  spread for `miss − fa` itself, on the model of the § 4 noise-floor amendment above.
+- **"on qwen3-30b only A2 has headroom"** — withdrawn. A pooled scalar has no distribution, and
+  the project's objective is distribution matching, so the "headroom" was never a distance a
+  candidate could be credited with closing.
+- **Every `6.09` / `6.094` above** — it is `0.2719 / 0.0446`, the quotient of the human population
+  **means**, not a per-participant average and not a value any human exhibits. Per-participant FA
+  rate is exactly 0 for **31 of 53 humans (58%)**, so a per-participant ratio exists for 22 of 53,
+  and the mean of those 22 is **1.513**. [TOOL, `error_structure.a2_human`]
+- **`A2 dist` and `A2 distance` columns above** (the iteration tables, and `word_recognition`
+  "distance 5.754 from the human miss/FA ratio of 6.09") — those are the legacy ratio distance
+  `|ratio − 6.094|`, dimensionless and unbounded, and NaN wherever FA = 0. They remain correct as
+  records of what was computed. They are **not** comparable to the new `diff_distance`, which is
+  `|diff − 0.2273|` in proportion units and bounded in [0,2]. `history.py`'s column is relabelled
+  `A2ratio_d` and still reads the legacy field so historical rows render; `A2_diff` is a second
+  column, `n/a` on every row scored before today. No historical row was rewritten.
+- **The random-decay adversary's pass condition, "A2 distance ≥ 2× the baseline's"** — not
+  well-defined on an unbounded ratio distance that can be NaN. If that control is ever run, state
+  the bar on `diff_distance` against a measured spread.
+- **"A2 refuted that outright" / "A2 moved *away* from the human conservative bias"** (Iteration-2
+  displacement, P12) — the direction of those findings stands and is unaffected: they rest on the
+  raw miss and fa rates, which are still reported, each now with its own distance from human.
+
+**The numbers, all in proportion units except where stated.** Humans mean `miss − fa` **+0.2273**,
+population sd 0.2658 (ddof=0), n=53, paired participant bootstrap 95% CI [+0.160, +0.301].
+`iter11postfix/baseline` **−0.0577**; `iter12stage2/baseline` **+0.3752** (sd 0.1716);
+`claude-opus-4-6` **−0.5037**. As `1 − W_1` over per-participant values — proportion units, **not**
+humanlikeness — `iter11postfix/baseline` **0.7286** and `iter12stage2/baseline` **0.8425** with the
+project's `src/score.wasserstein_1d` (`scipy.stats.wasserstein_distance` gives 0.7150 / 0.8333 on
+the same values; the project's grid approximation clips its outer edges and so reads closer).
+
+**Why not d′.** Evaluated and rejected on measurement: log-linear-corrected d′ is unbounded, so its
+W_1 has no [0,1] range — it reads **−0.6205** as a `1 − W_1` on `iter11postfix/baseline` — and at
+FA = 0, which is where most of the sample sits, the correction constant sets the value.
+
+**What this amendment does NOT touch.** M3 (n-back) keeps its own `miss_rate` / `fa_rate` / `ratio`
+with the ≥30-false-alarm withholding rule; that ratio is a different measure on a different task
+and is unchanged. The pre-registered A2 thresholds in `check_predictions.py` (P3–P6, C1, P10, R1)
+still read the legacy ratio fields on purpose, so the registered checks keep the meaning they were
+registered with.

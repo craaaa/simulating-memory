@@ -52,7 +52,7 @@ Measured across all eight models with full baselines (`error_structure.txt`),
 the three axes are not equally useful, and which is useful depends on the
 substrate:
 
-| model | A2 miss/fa | A3 BLEU @ words |
+| model | ~~A2 miss/fa~~ (LEGACY, see amendment) | A3 BLEU @ words |
 |---|---|---|
 | **humans** | **6.09** | **0.002 @ 137** |
 | claude-opus-4-6 | 0.000 | 0.199 @ 366 |
@@ -64,7 +64,20 @@ substrate:
 | qwen3-30b-thinking | 0.481 | 0.000 @ 82 |
 | qwen3-8b | 1.329 | 0.003 @ 117 |
 
-A2 separates every model from humans by a wide margin, so it is the real axis.
+**AMENDED 2026-09-29 [USER]: the A2 column above is the SUPERSEDED statistic.** A2's scalar is
+now `miss − false-alarm`, a proportion difference in [−1,+1]; humans **+0.2273** (population sd
+0.2658, n=53), opus **−0.5037**, qwen3-30b-a3b **−0.0520**, qwen3-8b **+0.0918** (means of
+per-participant differences, from `error_structure.py`'s A2 table). The ratio column is kept
+because it is what the five earlier runs were recorded against, not because it is readable: the
+ratio is undefined per participant wherever FA = 0, which is 31 of 53 humans, and 6.09 is the
+ratio of the two human population means (0.2719/0.0446), not a value any human exhibits — the
+mean of the 22 defined per-participant ratios is **1.513**. Full reasoning in `domain_spec.md`
+under "A2'S STATISTIC CHANGED".
+
+~~A2 separates every model from humans by a wide margin, so it is the real axis.~~
+**A2 separates every model from humans by a wide margin in the same direction (every model is
+more liberal), but it is NOT "the real axis" and it is not an axis at all: it is report-only,
+was not promoted, and only A3 is enforced.** [USER, 2026-09-29]
 A3 only catches opus (and mildly gpt-5.4); on qwen3-30b -- the search substrate
 -- A3 is already at human values and offers no gradient, so it degrades to a
 guard. Note also that most models *under*-recall (82-97 words vs 137); opus's
@@ -89,14 +102,36 @@ verbatim over-recall at 366 is the outlier, not the norm.
   (`logs/survival_length_scoring.md`). The note above was groping toward this — it identified the
   right quantity and then treated it as a confound to control for rather than as the measurement.
 
+  **AMENDED AGAIN 2026-09-29 [USER] — the ratio is replaced by `miss − false-alarm`, and the
+  opus case above is the reason.** Both numbers quoted in this bullet are saturations at
+  *opposite bounds* of the ratio, and the ratio cannot represent either one:
+  - opus, miss 0.000 / FA 0.533 → ratio **0.00** and CI [0.00, 0.00]. That interval is not
+    precision; the numerator is identically zero.
+  - `iter12stage2/baseline`, miss 0.3752 / FA 0.000 → ratio **undefined**, division by zero,
+    for **all 50** participants.
+
+  In the bounded statistic the same two cases read **−0.5037** (opus) and **+0.3752**
+  (`iter12stage2`) against humans' **+0.2273**, all on one [−1,+1] scale, and every participant
+  on both sides has a value — so A2 now yields a distribution rather than a pooled scalar.
+  Humans: miss 0.2719, FA 0.0446, diff **+0.2273**, sd 0.2658 (ddof=0), n=53, paired bootstrap
+  95% CI [+0.160, +0.301]. The ratio's human 6.09 is the quotient of the two population means and
+  the mean of the 22 per-participant ratios that exist is 1.513. A2 is REPORT ONLY; it is now
+  *eligible* for the objective but was deliberately NOT promoted, which needs a measured
+  run-to-run spread for `diff` itself. d′ with a log-linear correction was considered and
+  rejected: unbounded, and at FA = 0 it is driven by the correction constant.
+
 - **n-back, the same conservative/liberal asymmetry, measured 2026-09-29 and pointing the OTHER
   way.** This belongs beside the A2 note because it is the same statistic on a different task,
   and the sign is reversed. On `runs/iter11postfix/baseline`: humans miss 0.2533 and false-alarm
   0.0816, ratio **3.10** (95% CI over (participant, level) cells [2.41, 3.93]); qwen3-30b misses
   0.3606 and false-alarms 0.0482, ratio **7.48** (CI [5.78, 10.21]). **The CIs are disjoint**, over
   683/1225 human and 750/1350 model trials.
-  So on word recognition the model was far too *liberal* (ratio 0.39 against 6.09) and on n-back
-  it is too *conservative* (7.48 against 3.10). A single "the model over-false-alarms" story does
+  So on word recognition the model was far too *liberal* (ratio 0.39 against 6.09; in the
+  post-2026-09-29 statistic, miss − fa −0.0577 against humans' +0.2273 on that same
+  `iter11postfix/baseline` run) and on n-back it is too *conservative* (7.48 against 3.10). The
+  n-back ratio here is M3's own statistic and is NOT affected by the A2 change; M3 keeps reporting
+  a ratio, with the ≥30-false-alarm withholding rule that makes it readable.
+  A single "the model over-false-alarms" story does
   not cover both, and any candidate framed as fixing response bias has to say which direction it
   is fixing and on which task. Two things are ruled out as explanations on n-back: position
   (accuracy by position third matches to within 0.0375) and non-response (0.0029 model against
