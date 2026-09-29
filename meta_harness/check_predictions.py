@@ -862,6 +862,13 @@ def _wr_summary(run_dir: Path | None) -> dict[str, Any] | None:
     `compute` strings from the pending file, implemented literally:
       ceiling_group  sum(1 for s in wr_scores if s >= 0.98)
       mean_score     mean(wr_scores)            [metrics.score / 100]
+
+    `ceiling_group` IS A DEAD GUARD ON POST-2026-09-29 ROWS and must not be read as a pass.
+    It was built for the defective presentation, where the whole 100-word stream was visible
+    at judgement time and 36 of 50 participants scored >= 0.98. Under one-word-per-turn with
+    the third-error stop, the score is words survived: a participant matching the human mean
+    of 34.49 trials scores 0.31, so nothing reaches 0.98 whether the fix worked or the run
+    collapsed into garbage. `coverage` is the guard that still discriminates there.
       coverage       parseable Old/New judgements / 100, per row then averaged
       old_rate       parsed judgements equal to 'old' / 100, per row then averaged
     The old-rate denominator is 100 rather than the number parsed, per the literal
@@ -1121,7 +1128,8 @@ def serial_recognition_checks(run_dir: Path,
     # --- P10 / P11 ANTI-GARBAGE ---------------------------------------------
     if wr is None or wr.get("coverage") is None:
         add("P10 response coverage >= 0.95", INCONCL, None, ">= 0.95",
-            "absent: tasks/wm_word_recognition.jsonl recall_raw")
+            "absent: tasks/wm_word_recognition.jsonl, or no readable judgements in it "
+            "(per_trial.model_response on a post-2026-09-29 row, recall_raw before that)")
     else:
         cov = wr["coverage"]
         add("P10 response coverage >= 0.95", PASS if cov >= 0.95 else FAIL, cov,
@@ -1134,7 +1142,8 @@ def serial_recognition_checks(run_dir: Path,
                 if cov < 0.90 else "short of the stated bar"))
     if wr is None or wr.get("old_rate") is None:
         add("P11 old-rate within [0.15, 0.95]", INCONCL, None, "[0.15, 0.95]",
-            "absent: tasks/wm_word_recognition.jsonl recall_raw")
+            "absent: tasks/wm_word_recognition.jsonl, or no readable judgements in it "
+            "(per_trial.model_response on a post-2026-09-29 row, recall_raw before that)")
     else:
         orate = wr["old_rate"]
         add("P11 old-rate within [0.15, 0.95]",

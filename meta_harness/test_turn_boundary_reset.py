@@ -460,6 +460,49 @@ def test_word_recognition_stops_at_the_third_error() -> None:
     print("ok  word_recognition stops at the third error, and score_game agrees")
 
 
+def test_word_recognition_stop_agrees_with_score_game_on_spaced_errors() -> None:
+    """The loop stops presenting, `score_game` still walks the FULL trial list. They agree.
+
+    Not obvious, and the three-consecutive-errors test above cannot show it: there the stop
+    index and `score_game`'s own break coincide trivially. They agree in general because both
+    apply the same rule -- an unparsed reply is `correct: None`, counts toward neither the
+    score nor the error total -- so `score_game` reaches its third error at exactly the trial
+    the loop stopped on. If they ever diverged, rows would carry a tail of
+    `model_response: None` trials past the stop, and `error_structure.a2_model` would read
+    every one of them on an Old trial as a MISS, inflating the miss/FA ratio that is this
+    task's headline shape measure.
+    """
+    from bench.tasks.word_recognition import score_game
+    from bench.tasks.wm_word_recognition import run_recognition_stream
+
+    n = 20
+    trials = _wr_trials([f"W{i + 1}" for i in range(n)], [False] * n)
+    wrong, unreadable = {1, 5, 9}, {3, 7}
+    replies: list[Any] = []
+    for i in range(1, n + 1):
+        if i in wrong:
+            replies.append(_reply("old"))          # every word is New, so this is an error
+        elif i in unreadable:
+            replies.append(_reply("I cannot tell"))  # neither an error nor a stop
+        else:
+            replies.append(_reply("new"))
+        replies.append(_reply("nothing to store"))
+
+    res = run_recognition_stream(llm=RecordingLLM(replies), trials=trials, cond_id="C2",
+                                 temperature=0.0, debug=False)
+    assert res["stopped_at_third_error"] == 9, res["stopped_at_third_error"]
+    assert res["trials_presented"] == 9, res["trials_presented"]
+    assert len(res["resp_map"]) == 7, res["resp_map"]
+
+    scored = score_game(trials, res["resp_map"])
+    assert len(scored["per_trial"]) == res["trials_presented"], scored["per_trial"]
+    # 9 presented, 3 wrong, 2 unreadable -> 4 correct
+    assert scored["score"] == 4, scored
+    # and no tail of unanswered trials past the stop: only the 2 genuinely unreadable ones
+    assert sum(1 for t in scored["per_trial"] if t["model_response"] is None) == 2, scored
+    print("ok  word_recognition: the loop's stop and score_game's break land on the same trial")
+
+
 def test_word_recognition_unparsed_reply_is_not_an_error() -> None:
     """An unreadable reply must not count toward the three strikes.
 
@@ -510,6 +553,7 @@ if __name__ == "__main__":
     test_nback_steps_handles_both_row_generations()
     test_word_recognition_one_word_per_turn()
     test_word_recognition_stops_at_the_third_error()
+    test_word_recognition_stop_agrees_with_score_game_on_spaced_errors()
     test_word_recognition_unparsed_reply_is_not_an_error()
     test_word_recognition_parser_refuses_ambiguous_replies()
     print("\nall turn-boundary tests passed")
