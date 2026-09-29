@@ -68,11 +68,44 @@ bench, which also means `respond_first_v2` would first have to be checked agains
 turn structure (candidates carry their own `step()` copies, so the bench fix does not reach
 them).
 
-**9. Only then, iteration 10.** The candidate idea on the table is keeping tool schemas
-visible while stating the store's purpose in prose, to separate "needs the interface
-description" from "needs to see tools it cannot use". But reconsider whether to search at
-all first: `analyze_live_dimensions.py` showed the objective had two live dimensions and both
-were the leaky tasks, and the instrument has changed under all twelve candidate verdicts.
+**9. DECISION 2026-09-29 [USER]: the candidate search is not the work right now.** "Candidates
+don't matter now that we have changed the instrument itself. Most of the candidates have just
+been folded into the instruments." Correct, and the twelve split into two groups with different
+futures — keep them distinct.
+
+**Group A, folded into the instrument.** Five mechanisms across seven candidates, all now
+baseline behaviour, all no-ops as candidates:
+
+| mechanism | candidates | where it lives now |
+|---|---|---|
+| clear conversation history each turn | `episodic_reset`, `_v2`, `_v3`, `evicting_reset`, `respond_first`, `_v2`, `respond_only` | `step()` |
+| let the model read its own store | (n-back had no read channel at all) | both turn-based tasks inject `to_recall_text()` |
+| **answer before writing** | `respond_first` — its defining move | n-back answer-then-encode, 410ec2a |
+| no tool schemas when calls are forbidden | `respond_first_v2` — its only change | eb3e96f |
+| present test items one at a time | `serial_recognition` | planned, `logs/instrument_fix_stage2_plan.md` |
+
+Note what this means about `respond_first`, the project's best candidate: its gain was the
+benchmark being wrong in a way it happened to route around, and the corrected instrument was
+first built doing the *opposite* until measurement forced the flip.
+
+**Group B, never actually tested — NOT refuted.** `random_decay`, `full_context`,
+`displacement`, `primacy`, `primacy_v2`, `chunk_limit`, `episodic_primacy` are genuine
+psychological hypotheses (decay, chunking, primacy weighting, capacity), not instrument fixes.
+Their near-zero verdicts are worthless because the tasks that would show their effects were
+inert: `digit_span_reverse` exactly **+0.0000** for every candidate, six of eight tasks
+contributing nothing outside 2 SE. `primacy` was judged without anyone measuring a
+serial-position curve — the thing it predicts — which only got built 2026-09-29. Some become
+testable for the first time once the instrument is right. `evicting_reset`'s eviction policy is
+the borderline case: a store that evicts rather than refusing when full is arguably a design
+choice, and it sits in `working_memory.py`, which no instrument fix has touched.
+
+**Before any search resumes, settle whether the objective measures what the project claims** —
+the temperature-0 / seeded-stimulus-set pseudo-participant problem in item 7. Resuming now
+would repeat today's mistake one level up: optimising an artifact of the measurement instead of
+a property of the harness. Then: instrument finished (n-back confirmed, word recognition
+fixed), participant question settled, run-to-run noise measured so floors mean something, and
+only then ask whether a Group B hypothesis is worth a GPU hour — starting with the ones whose
+predicted signature the new error-shape measures can actually see.
 
 **Commits today:** 70befa7 (instrument fix), 050afa1 (sbatch REPO), 38a89a6 (lead-in prompt),
 71ea97f (nback_steps + five analyses), 574298c (--baseline bug), aad06c1 + d55ee04 (doc
