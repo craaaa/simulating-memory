@@ -9,10 +9,28 @@
 # Note also that `run.repeat` is inert: cli.py:179 only writes the CLI --repeat
 # into run_cfg and never reads it back.
 #
-# Digit span is cut from the released 1900 rows to ~190 each. Forward and reverse
-# together are 85% of all LLM turns in a full evaluation (16,975 of 19,940) for
-# 0.307 + 0.106 of headroom, so this is a ~4x speedup for little lost signal.
-# Full repeats are restored for final scoring of the finalists.
+# Digit span is cut from the released 1900 rows to 760 each. Forward and reverse
+# together were 85% of all LLM turns in a full evaluation (16,975 of 19,940) for
+# 0.307 + 0.106 of headroom, which is why they are cut at all. Full repeats are
+# restored for final scoring of the finalists.
+#
+# RAISED 2026-09-29 [USER] from 10 sequences/span to 40. `sequences_per_span` sets the
+# matched-comparison n directly: `protocol_match.model_participants` pairs ADJACENT
+# sequence_index values to build the 2-trials-per-span blocks the human staircase
+# administers, so matched pseudo-participants = sequences_per_span / 2. At 10 that was
+# **5**, against 53 humans -- too few to compare a `best_span` distribution against, and
+# `best_span` is now the only digit-span diagnostic reported (A1 was retired the same day).
+# 40 gives **20**.
+#
+# Cost, stated in LLM calls so it can be weighed: 19 spans x 40 = 760 rows per task, both
+# tasks 1520, at 1 encode turn + 1 recall each = 3040 calls, up from 760. The +2280 is
+# modest against what the instrument fixes already added -- post-fix n-back is ~5100 calls
+# (150 blocks x ~17 letters x 2 turns) and stage-2 word_recognition is up to 10,000
+# (50 participants x 100 words x 2 turns, cut back by the third-error stop).
+#
+# Do NOT read `best_span` across runs with different `sequences_per_span`: the estimator is
+# not invariant to trials-per-span (audit M4 -- the same 190 rows give 8.70 / 18.40 / 20
+# digits depending on grouping), so a change here breaks comparability with every earlier run.
 model:
   backend: openai
   name: Qwen/Qwen3-30B-A3B-Instruct-2507
@@ -29,17 +47,18 @@ run:
 
 task_config:
   # --- working memory ------------------------------------------------------
-  # 19 spans (2..20) x 10 sequences = 190 rows, down from 1900.
+  # 19 spans (2..20) x 40 sequences = 760 rows each, down from 1900 and up from 190.
+  # 40 sequences -> 20 matched pseudo-participants; see the note at the top of this file.
   wm_digit_span_forward:
     min_span: 2
     max_span: 20
-    sequences_per_span: 10
+    sequences_per_span: 40
     stimuli_seed: 42
     temperature: 0.0
   wm_digit_span_reverse:
     min_span: 2
     max_span: 20
-    sequences_per_span: 10
+    sequences_per_span: 40
     stimuli_seed: 42
     temperature: 0.0
   wm_nback:
