@@ -74,3 +74,64 @@ as the number the new run will print.
 Note also that both quantities move the same way for the frontier's ordering: `respond_first`
 stays ahead of `respond_only` and `evicting_reset` on both columns. The artifact inflates the
 size of the gains, not their rank.
+
+---
+
+# OUTCOME, same day: the load-bearing prediction failed and the artifact account is dead
+
+Jobs 18757710 and 18757711 (Qwen, post-fix, `iter9postA` / `iter9postB`, each running
+`respond_first_v2` and `baseline` against one server). Two repeats per arm; 18757713 still
+running.
+
+| prediction | predicted | measured | verdict |
+|---|---|---|---|
+| 1. baseline's own n-back score rises | 0.7848 → ~0.87 | **0.7838** (0.7857, 0.7820) | **FAILED** |
+| 3. variable_mapping delta mostly survives | ~+0.31 | **+0.3394** | held |
+| 4. mean-over-8 advantage | ~+0.035 | +0.0285 | roughly held, wrong reason |
+| 2. n-back delta halves to ~+0.09 | +0.09 | **−0.0784** for v2 | failed, worse than predicted |
+
+Prediction 1 was the one I said would decide the account, and it is unambiguous: the baseline
+did not move. The mean over the 8 search tasks is **0.7861 post-fix, identical to 0.7861
+pre-fix.**
+
+**Why it failed, and it is not subtle.** The fix worked mechanically — spoken tool calls on
+n-back answer turns went from 553 of 2100 to **0 of 2100** — but `mean_answered` went from
+**10.86 of 14 to 10.85 of 14.** The spoken calls were never the unanswered trials. The model
+was typing a tool call *alongside* an answer that the parser found anyway, so nothing was ever
+being lost. My whole "an uncollected trial looks like humanlikeness" account rested on assuming
+those two sets coincided, and they do not.
+
+**What the run did reveal, which is more interesting.** `respond_first_v2` differs from its
+parent in one respect — the answer act no longer shows the model tool schemas — and its n-back
+collapses:
+
+| arm | n-back humanlikeness | n-back model mean accuracy | trials answered |
+|---|---|---|---|
+| baseline (post-fix) | 0.7838 | 0.694 | 10.85 of 14 |
+| respond_first (pre-fix parent) | 0.9603 | ~0.86 | 14 of 14 |
+| **respond_first_v2 (post-fix)** | **0.7054** | **0.588** | **14 of 14** |
+
+Human mean accuracy is 0.8657, so the parent lands almost exactly on the human distribution and
+v2 undershoots it badly. v2 answers *every* trial and gets far more of them wrong. So the
+parent's +0.1755 n-back gain is **real, not an artifact — and it depends on the tool schemas
+being visible during the answer act.** The plausible mechanism: the schemas are where the model
+learns what its key-value store is for, so removing them mid-episode leaves the store contents
+in the prompt without the interface that explains them.
+
+`respond_first_v2` therefore **fails**: n-back −0.0784 against a −0.06 floor, outside 2 SE
+(0.0112), plus craft −0.0303 against −0.03 which is inside the noise. Its variable_mapping gain
+of +0.3394 is intact, which is consistent with variable_mapping never having had spoken calls in
+the baseline at all.
+
+**Consequences.**
+- The `bench/` collection fix (eb3e96f) is still correct as a measurement — an answer should not
+  contain a typed-out tool call — but it changes no score, and I oversold it.
+- Withdraw the claim that the top candidates' gains are "roughly twice too optimistic". They are
+  not inflated by uncollected trials. The pre-fix Qwen numbers stand as measured.
+- The Hermes job 18757709 is still worth running, for a different reason than it was queued: it
+  now asks whether removing the schemas stops Hermes emitting `"no response"` — a question about
+  Hermes' behaviour, not about a scoring artifact.
+- Open question worth its own candidate: if visible-but-forbidden schemas are load-bearing for
+  the parent's n-back accuracy, what exactly does the model take from them? A candidate that
+  keeps the schemas visible and states the store's purpose in the prompt text would separate
+  "the model needs the interface description" from "the model needs to see tools it cannot use".
