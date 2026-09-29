@@ -108,6 +108,11 @@ SIZES: dict[str, dict[str, Any]] = {
                           n_participants=4, n_tasks=3, stimuli_seed=42),
 }
 
+# The three tasks that never call encode() -- the ones v1 and v2 were no-ops on. They run
+# two step() calls per item: an answer turn with tools OFF, then an encode turn with tools
+# ON. The other five call encode() once, which is one tool-enabled step().
+TURN_BASED = ("nback", "word_recognition", "variable_mapping")
+
 ARMS = {
     "baseline": "meta_harness/candidates/baseline/harness.py",
     "random_decay_v3": "meta_harness/candidates/random_decay_v3/harness.py",
@@ -345,6 +350,26 @@ def _check(v3: dict[str, Any], base: dict[str, Any]) -> list[str]:
         if t["decay_rolls"] != t["step_calls_tools_on"]:
             fails.append(f"{task}: {t['decay_rolls']} rolls over "
                          f"{t['step_calls_tools_on']} tool-enabled steps -- not per-step")
+        # The equality above is bookkeeping: both sides are counted on the same wrapper,
+        # so it cannot tell "rolled on every tool-enabled turn" from "rolled on every
+        # turn the wrapper saw". The step-shape ratio is what discriminates, and it is
+        # what Defect 1 was actually about -- WHICH method the task drives.
+        if task in TURN_BASED:
+            if t["step_calls"] != 2 * t["step_calls_tools_on"]:
+                fails.append(
+                    f"{task}: {t['step_calls']} steps of which "
+                    f"{t['step_calls_tools_on']} tool-enabled -- expected exactly 2:1 "
+                    f"(answer turn with tools off, then encode turn with tools on), so "
+                    f"the roll is not landing on encode turns only")
+            if t["encode_calls"]:
+                fails.append(f"{task}: {t['encode_calls']} encode() calls on a "
+                             f"turn-based task -- the task shape changed")
+        else:
+            if not (t["step_calls"] == t["step_calls_tools_on"] == t["encode_calls"]):
+                fails.append(
+                    f"{task}: steps {t['step_calls']}, tool-enabled "
+                    f"{t['step_calls_tools_on']}, encode {t['encode_calls']} -- a batch "
+                    f"task must be exactly one tool-enabled step per encode()")
     for task, t in base["tasks"].items():
         if t["decay_rolls"] or t["keys_dropped"]:
             fails.append(f"baseline/{task}: {t['decay_rolls']} rolls, "
@@ -396,9 +421,11 @@ def main() -> int:
         for f in fails:
             print(f"  !!! {f}")
         return 1
-    print("HYPOTHESIS SUPPORTED: every task shows >= 1 roll, >= 1 key dropped, "
-          "one rate per scored unit,\nand exactly one roll per tool-enabled step; the "
-          "baseline arm shows 0 rolls throughout.")
+    print("HYPOTHESIS SUPPORTED: every task shows >= 1 roll, >= 1 key dropped and one "
+          "rate per scored unit;\nthe three turn-based tasks run exactly 2 steps per item "
+          "with the roll on the tool-enabled one,\nthe five batch tasks exactly one "
+          "tool-enabled step per encode(); the baseline arm shows 0\nrolls throughout, so "
+          "the counts are attributable to the candidate.")
     return 0
 
 
