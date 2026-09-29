@@ -131,16 +131,20 @@ for c in $CAND; do
       ;;
   esac
 
+  # --if-exists new: the writer allocates the next free ${c}_rep<N> rather than landing on
+  # an earlier run. Before this, nothing but a distinct ITER kept a repeat off its
+  # predecessor, and run_candidate.py wrote with exist_ok=True regardless.
   OUT_DIR="meta_harness/runs/iter${ITER}/${c}"
   "$PY" meta_harness/run_candidate.py \
     --candidate "meta_harness/candidates/${SRC}/harness.py" \
     --config meta_harness/cluster/search_set.yaml \
     --out-dir "$OUT_DIR" \
+    --if-exists new \
     "${ARM_TASKS[@]}"
   rc=$?
   echo "=== $c run_candidate exit: $rc"
   [ "$rc" -ne 0 ] && RC="$rc"
-  find "$OUT_DIR" -name '*.jsonl' 2>/dev/null | while read -r f; do
+  find "meta_harness/runs/iter${ITER}" -path "*${c}*" -name '*.jsonl' 2>/dev/null | while read -r f; do
     echo "  $(wc -l < "$f") $f"
   done
 done

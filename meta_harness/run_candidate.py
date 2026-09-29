@@ -25,6 +25,66 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
+def _holds_a_run(out: Path) -> bool:
+    """Does this directory already hold run output?"""
+    if not out.exists():
+        return False
+    if (out / "manifest.json").exists():
+        return True
+    return any(out.rglob("tasks/*.jsonl"))
+
+
+def _resolve_out_dir(out: Path, policy: str) -> Path:
+    """Decide where to write, so a repeat can never land on top of an earlier run.
+
+    The acceptance rule is three repeats per candidate, and until now the only thing
+    stopping repeat 2 from overwriting repeat 1 was the caller remembering to vary the
+    path -- an ITER value in one sbatch script, an occurrence counter in another, a TAG in
+    a third. That discipline failed once already: job 18719683's baseline arm overwrote the
+    earlier Hermes baseline, and because runs/ is gitignored the comparison recorded against
+    it can no longer be reproduced. The writer is the only place that can enforce this, so
+    it enforces it here.
+
+    fail      (default) refuse to touch a directory that already holds a run
+    new       write to the next free NAME_rep<N> beside it
+    overwrite proceed anyway, for a deliberate re-run
+    """
+    if policy == "overwrite" or not _holds_a_run(out):
+        return out
+    if policy == "fail":
+        raise SystemExit(
+            f"!!! {out} already holds a run.\n"
+            f"    Pass --if-exists new to write the next free repeat directory, or\n"
+            f"    --if-exists overwrite to replace it deliberately.")
+    n = 2
+    while True:
+        cand = out.parent / f"{out.name}_rep{n}"
+        if not _holds_a_run(cand):
+            print(f"=== {out} already holds a run; writing repeat {n} -> {cand}")
+            return cand
+        n += 1
+
+
+def _git_provenance() -> dict[str, str | bool]:
+    """The commit that produced a run, so two generations of runs stay distinguishable.
+
+    Without this, a pre-fix and a post-fix run are told apart only by their directory name,
+    which is exactly the thing that has already gone wrong once.
+    """
+    import subprocess
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(ROOT),
+                              capture_output=True, text=True, timeout=10)
+        dirty = subprocess.run(["git", "status", "--porcelain", "-uno"], cwd=str(ROOT),
+                               capture_output=True, text=True, timeout=10)
+        if head.returncode != 0:
+            return {"git_head": "unknown"}
+        return {"git_head": head.stdout.strip(),
+                "git_dirty": bool(dirty.stdout.strip())}
+    except (OSError, subprocess.SubprocessError):
+        return {"git_head": "unknown"}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--candidate", required=True, help="path to the candidate harness.py")
@@ -40,6 +100,9 @@ def main() -> int:
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--skip-verify", action="store_true",
                     help="skip the offline interface check (not recommended)")
+    ap.add_argument("--if-exists", choices=("fail", "new", "overwrite"), default="fail",
+                    help="what to do when --out-dir already holds a run: fail (default), "
+                         "write the next free NAME_rep<N> (new), or replace it (overwrite)")
     args = ap.parse_args()
 
     # An empty task list makes bench run ALL 31 registered tasks, including the
@@ -52,6 +115,11 @@ def main() -> int:
               "Name the tasks explicitly, or pass --all-tasks if that is really "
               "what you want.")
         return 2
+
+    # Settle the output directory BEFORE loading bench or a 70B server's worth of work:
+    # a refusal here should cost a second, not a job.
+    out = _resolve_out_dir(Path(args.out_dir), args.if_exists)
+    args.out_dir = str(out)
 
     # bench.cli first, so every task-module binding exists before injection.
     import bench.cli  # noqa: PLC0415
@@ -94,7 +162,6 @@ def main() -> int:
     print("=== injection report")
     print(describe(report))
 
-    out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     manifest = dict(getattr(cand, "MANIFEST", {}))
     manifest.update({
@@ -103,6 +170,7 @@ def main() -> int:
         "config": str(Path(args.config).resolve()),
         "tasks": args.task,
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        **_git_provenance(),
     })
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     (out / "compliance.json").write_text(json.dumps(

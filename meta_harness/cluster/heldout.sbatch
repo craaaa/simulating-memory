@@ -131,9 +131,8 @@ RC=0
 # Repeats are required for acceptance, because single-run per-task verdicts cannot decide
 # candidates on this benchmark: craft_task's delta across ten episodic-family runs has sd
 # 0.0158 against a 0.030 floor, and two runs of IDENTICAL code gave craft 0.8534 and
-# 0.8907. So the same candidate may appear several times in CAND, and each occurrence
-# needs its own output directory or later repeats would overwrite earlier ones. The first
-# occurrence keeps the plain name so existing paths and records stay valid.
+# 0.8907. So the same candidate may appear several times in CAND, and each occurrence needs
+# its own output directory. The writer allocates those directories now -- see --if-exists.
 #
 # TAG separates run generations. Without it, a second job's baseline arm OVERWRITES the
 # first's: that is exactly how job 18719683 destroyed the earlier Hermes baseline, and since
@@ -141,26 +140,26 @@ RC=0
 # TAG=<name> whenever the code has changed in a way that makes old and new runs
 # incomparable -- for instance the tool-schema collection fix.
 _BASE="meta_harness/runs/heldout${TAG:+/$TAG}"
-declare -A _SEEN=()
+# No occurrence counter here any more. Naming repeats was duplicated in three places -- an
+# ITER value in candidate.sbatch, a counter here, a TAG on top -- and the writer wrote with
+# exist_ok=True regardless, so the only thing preventing repeat 2 from landing on repeat 1
+# was the caller getting the path right. run_candidate.py --if-exists new now allocates the
+# next free NAME_rep<N> itself and refuses to touch an existing run by default.
 for c in $CAND; do
   echo
-  _SEEN[$c]=$(( ${_SEEN[$c]:-0} + 1 ))
-  _N=${_SEEN[$c]}
-  if [ "$_N" -eq 1 ]; then
-    OUT_DIR="${_BASE}/${c}"
-  else
-    OUT_DIR="${_BASE}/${c}_rep${_N}"
-  fi
-  echo "############ candidate: $c   (occurrence ${_N} -> ${OUT_DIR})"
+  OUT_DIR="${_BASE}/${c}"
+  echo "############ candidate: $c   (base ${OUT_DIR}; repeats get _rep<N>)"
   "$PY" meta_harness/run_candidate.py \
     --candidate "meta_harness/candidates/${c}/harness.py" \
     --config meta_harness/cluster/heldout_set.yaml \
     --out-dir "$OUT_DIR" \
+    --if-exists new \
     "${TASK_ARGS[@]}"
   rc=$?
   echo "=== $c run_candidate exit: $rc"
   [ "$rc" -ne 0 ] && RC="$rc"
-  find "$OUT_DIR" -name '*.jsonl' 2>/dev/null | while read -r f; do
+  # The writer may have redirected this arm to OUT_DIR_rep<N>, so look at the whole family.
+  find "${_BASE}" -path "*${c}*" -name '*.jsonl' 2>/dev/null | while read -r f; do
     echo "  $(wc -l < "$f") $f"
   done
 done
