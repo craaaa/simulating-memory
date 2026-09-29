@@ -63,6 +63,10 @@ SAME_FAMILY_SD = {
     "word_recognition": 0.0180,
     "digit_span_forward": 0.0152,
     "semantic_story_recall": 0.0038,
+    # Measured on the pre-2026-09-29 n-back shape (pooled human, lead-in included). Under
+    # the Option D shape the three-arm spread is 0.0060 (iter11postfix) / 0.0035
+    # (iter12stage2), so this figure is not an underestimate and is left alone; see
+    # score_candidate.RUN_TO_RUN_SPREAD.
     "nback": 0.0056,
     "variable_mapping": 0.0016,
     "digit_span_reverse": 0.0000,

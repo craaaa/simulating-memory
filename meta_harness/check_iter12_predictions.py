@@ -52,6 +52,8 @@ REF = {
     "a2_ratio": 0.3901,             # word_recognition miss/false-alarm ratio
     "vm_survival_median": 4.0,      # questions
     "vm_humanlikeness": 0.9643,
+    # nback's 0.9344 is on the PRE-2026-09-29 scoring shape (pooled human, lead-in
+    # included). Left as registered; see the note at the P6 loop.
     "nback": 0.9344, "narrative_qa": 0.9444,
     "semantic_story_recall": 0.9470, "craft_task": 0.8679,
 }
@@ -188,8 +190,17 @@ def main(runs: list[Path]) -> int:
         add("P5 digit span matched n", INCONCL, f"error: {type(e).__name__}: {e}", "n_model == 20")
 
     # ---------------- P6: precondition on the four untouched tasks ---------
+    # nback is evaluated against the LEGACY human vector on purpose. REF["nback"] = 0.9344
+    # and P6_BAND["nback"] = 0.0068 were registered before this run against the
+    # pre-2026-09-29 scoring shape (pooled human, lead-in included). The Option D fix moves
+    # the same runs to ~0.963, which would blow a 0.0068 band and report a REJECT about the
+    # scoring change rather than about the run. Re-fitting the band after seeing the new
+    # reference would void the pre-registration, so the check is run on the shape it was
+    # registered on. `score.nback_human_scores_legacy_pooled` exists for exactly this.
     for task, band in P6_BAND.items():
-        vals = [S.humanlikeness(S.human_scores(task), S.llm_scores(task, r, "compactor"))
+        human = (S.nback_human_scores_legacy_pooled() if task == "nback"
+                 else S.human_scores(task))
+        vals = [S.humanlikeness(human, S.llm_scores(task, r, "compactor"))
                 for r in runs]
         vals = [v for v in vals if v == v]
         if not vals:

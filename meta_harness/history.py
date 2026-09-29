@@ -33,6 +33,13 @@ LOGS = ROOT / "meta_harness/logs"
 SUMMARY = LOGS / "evolution_summary.jsonl"
 FRONTIER = LOGS / "frontier.json"
 
+# CAVEAT 2026-09-29: `nback`'s 0.025 predates the Option D scoring fix (n-back is now
+# scored per (participant, level) on both sides with the human lead-in dropped -- see
+# src/score.nback_human_by_level), so it is calibrated on a superseded shape, as is the
+# `score_candidate.NOISE_FLOOR` entry this table is a stale copy of. Deliberately not
+# retightened here. This table also affects rows in logs/evolution_summary.jsonl written
+# BEFORE the fix, whose nback values are on the old shape; n-back deltas are comparable
+# within a shape but not across it.
 NOISE_FLOOR = {
     "digit_span_forward": 0.036, "digit_span_reverse": 0.026, "nback": 0.025,
     "word_recognition": 0.075, "variable_mapping": 0.041, "factual_qa": 0.061,

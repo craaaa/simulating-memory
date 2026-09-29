@@ -2300,6 +2300,15 @@ def episodic_reset_v2_checks(run_dir: Path,
             "works")
 
     # --- P3 nback clears its floor -------------------------------------------
+    # FROZEN PRE-REGISTRATION, NOT RE-FITTED. The 0.7309 bar is an ABSOLUTE n-back
+    # humanlikeness registered against the pre-2026-09-29 scoring shape (pooled human,
+    # lead-in included), where the baseline read 0.7909. Since the Option D fix
+    # (per-(participant, level) on both sides, human lead-in dropped -- see
+    # src/score.nback_human_by_level) n-back scores ~0.96 on the same runs, so any run
+    # scored after that date clears this bar trivially and a PASS here carries no
+    # information. The bar is deliberately left as registered: re-fitting a threshold
+    # after seeing the new reference voids the pre-registration. Read the `delta` against
+    # the baseline instead, which is shape-invariant because both sides move together.
     v, why = _get(rec, "humanlikeness_by_task.nback")
     if v is MISSING or v is None:
         add("P3 nback clears its floor", INCONCL, None, ">= 0.7309", why or "absent")
@@ -2309,7 +2318,9 @@ def episodic_reset_v2_checks(run_dir: Path,
         add("P3 nback clears its floor", PASS if ok else FAIL,
             {"nback": v, "delta": None if d is None else round(d, 4)},
             ">= 0.7309 (baseline 0.7909 minus the 0.060 floor); "
-            "episodic_reset read 0.4970",
+            "episodic_reset read 0.4970; BAR REGISTERED ON THE PRE-2026-09-29 SCORING "
+            "SHAPE and not re-fitted -- uninformative for runs scored after Option D, "
+            "read the delta instead",
             "" if ok else "still violates the nback floor")
 
     # --- P4 A4 at scale ------------------------------------------------------

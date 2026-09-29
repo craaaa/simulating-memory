@@ -39,12 +39,19 @@ The output table has one row per (task, condition) and columns
 ``mean_score`` (per-participant normalized score averaged over the model)
 and ``humanlikeness`` (= 1 - W_1 between the model's score distribution
 and the human distribution loaded from ``runs/human/``).
+
+One exception to "per participant": since 2026-09-29 the ``nback`` unit is the
+(participant, n-level) cell on BOTH sides, with the human lead-in trials dropped. See
+the block comment above ``nback_human_by_level``. n-back humanlikeness computed before
+that date is NOT comparable with these figures; ``nback_human_scores_legacy_pooled``
+reproduces the old shape for reading historical records.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable
@@ -211,6 +218,13 @@ def _score_human_record(task: str, rec: dict[str, Any]) -> float | None:
         return None if best is None else float(best) / denom
 
     if task == "nback":
+        # LEGACY SHAPE, SUPERSEDED 2026-09-29 [USER, "Option D"]. This is the pooled,
+        # lead-in-included human n-back score: one value per participant, averaged over
+        # all three n-levels, counting the n lead-in trials of each block. `human_scores`
+        # no longer calls it -- see `nback_human_by_level` and the block comment there for
+        # the two defects (M6, M7) it embodies. It is kept, unchanged, only so the n-back
+        # figures already recorded in meta_harness/logs/evolution_summary.jsonl remain
+        # reproducible; reach it through `nback_human_scores_legacy_pooled()`.
         trials = payload.get("trials") or []
         scored = [t for t in trials if t.get("phase") != "practice"]
         if scored:
@@ -253,7 +267,157 @@ def _score_human_record(task: str, rec: dict[str, Any]) -> float | None:
     return None
 
 
-def human_scores(task: str) -> np.ndarray:
+# ---------------------------------------------------------------------------
+# N-Back: per (participant, n-level), human lead-in trials dropped
+# ---------------------------------------------------------------------------
+# DECISION 2026-09-29 [USER], "Option D": fix BOTH denominator and granularity at once.
+# Before this, the two sides of the n-back comparison were unmatched in two ways.
+#
+#   M6  UNMATCHED DENOMINATORS. A human block holds exactly 14 non-practice trials
+#       INCLUDING the n lead-in trials, `trial` indexed from 1 -- verified for 49 of 49
+#       records that carry a `level` field, at each of n=1,2,3. The model is presented its
+#       n lead-in letters separately (`buffer_letters`, responses in
+#       `model_parsed_buffer`) and they are excluded from `acc_over_14`. So the human was
+#       scored over 14 trials, 3 of them lead-in at n=3, and the model over 14 genuine
+#       trials.
+#
+#       The human lead-in trials are not measurements. Over the 318 of them (53 records x
+#       (1+2+3)) accuracy is flat at 0.9182 at every level while real accuracy falls
+#       0.9492 -> 0.8553 -> 0.7496, and 112 of the 318 are logged `target: true`, which
+#       cannot happen when no letter n back exists. Worked case, the first record's n=3
+#       block, letters X W M X V D Z G X Z D X W D: trial 3 (letter M) is logged
+#       `target: true`, the participant answered "target", and it is scored
+#       `correct: true` -- but the block starts at trial 1, so there is no letter three
+#       back. Those trials are dropped here, on the side that has them.
+#
+#   M7  UNMATCHED GRANULARITY. The model is one observation per (participant, n_level) --
+#       150 rows -- while the human was one pooled observation over all three of that
+#       participant's levels. The model's distribution therefore spanned the whole level
+#       effect while the human's averaged it away, and W_1 between them was inflated by
+#       that alone. Both sides are now scored per (participant, level).
+#
+# THE MODEL SIDE NEEDS NO CHANGE. `llm_scores("nback", ...)` already emits one value per
+# (participant, level) from `acc_over_14`, which already excludes the lead-in. Option D is
+# entirely a human-side fix.
+#
+# Measured effect on the three `meta_harness/runs/iter12stage2` arms, humanlikeness
+# (= 1 - W_1, in [0,1]), mean over arms, with `wasserstein_1d` below:
+#
+#   legacy shape (pooled human, lead-in included)   0.9340
+#   M6 only  (pooled human, lead-in excluded)       0.9419
+#   M7 only  (per-level both sides, lead-in in)     0.9627
+#   M6 + M7  (this code)                            0.9633
+#
+# M7 dominates: +0.0287 on its own. M6's increment on top of it is +0.0006, which is
+# smaller than the measured run-to-run spread for n-back (0.0061, score_candidate.
+# RUN_TO_RUN_SPREAD) and whose SIGN is not identified across specifications -- it is
+# -0.0020 if the human pool is restricted to the 49 level-carrying records. M6 is a
+# correctness fix, not a scoring gain, and must not be reported as one.
+#
+# AND M6 MAKES THE n=3 DISTRIBUTION MATCH SLIGHTLY WORSE while closing the mean gap:
+# dropping the lead-in widens the human n=3 spread (sd 0.1492 -> 0.1657 at the 49-record
+# pool) while the model sits at sd 0.0970, so closing the mean gap widens the dispersion
+# gap. Any statement of the n=3 mean gap has to carry that caveat.
+NBACK_LEVELS = (1, 2, 3)
+_NBACK_PRACTICE_BLOCK_PREFIX = "training"
+
+
+def _nback_level(trial: dict[str, Any]) -> int | None:
+    """The n-level of one human trial, or None if it is not a scored 1/2/3-back trial.
+
+    Reads `level` when present and falls back to the leading integer of `block`
+    ("2-back" -> 2). The fallback is not cosmetic: 4 of the 57 human records carry
+    `level: null` on all 42 of their scored trials, and those same 4 also carry
+    `phase: null` rather than `phase: "scored"`. Their blocks are named 1-back / 2-back /
+    3-back with exactly 14 trials indexed 1..14 each, structurally identical to the other
+    49, so the level is recoverable and they belong in the sample. This is the same field
+    source `meta_harness/error_structure.nback_human_trials` already uses for the M3
+    measure, and it is why both agree on 318 lead-in trials and 112 bogus `target: true`.
+
+    FILTER ON `phase != "practice"`, NEVER ON `phase == "scored"`: the latter silently
+    drops those 4 records and lands the human n at 49 instead of 53 -- a number that looks
+    plausible and matches the pre-decision measurements, so nothing would flag it.
+    """
+    block = str(trial.get("block") or "")
+    if trial.get("phase") == "practice" or block.startswith(_NBACK_PRACTICE_BLOCK_PREFIX):
+        return None
+    lvl = trial.get("level")
+    if isinstance(lvl, int) and lvl in NBACK_LEVELS:
+        return lvl
+    m = re.match(r"(\d+)", block)
+    if m and int(m.group(1)) in NBACK_LEVELS:
+        return int(m.group(1))
+    return None
+
+
+def _nback_is_leadin(trial: dict[str, Any], level: int) -> bool:
+    """True for the first `level` trials of a block, where no letter n back exists.
+
+    `trial` is 1-based, so trials 1..n are lead-in. A record with no `trial` index is
+    treated as non-lead-in rather than guessed at; none of the 53 usable records is in
+    that state (all have `trial` 1..14 at every level).
+    """
+    idx = trial.get("trial")
+    return idx is not None and int(idx) <= level
+
+
+def nback_human_by_level(*, exclude_leadin: bool = True) -> dict[int, list[float]]:
+    """Per-participant n-back accuracy at each n-level, in reading order of the records.
+
+    One list per level, each entry the proportion of that participant's scored trials at
+    that level answered correctly. Practice trials are always dropped; the n lead-in
+    trials of each block are dropped when ``exclude_leadin`` (the default, and the
+    Option D shape). Returns 53 values per level on the released human data -- the 4
+    remaining records of the 57 carry an empty `payload` AND an empty `summary`, so they
+    have no trials and no accuracy to score on any shape, legacy included.
+    """
+    folder = HUMAN_ROOT / HUMAN_TASK_DIR["nback"]
+    acc: dict[int, list[float]] = {n: [] for n in NBACK_LEVELS}
+    if not folder.is_dir():
+        return acc
+    for path in sorted(folder.glob("*.json")):
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                rec = json.load(f)
+        except json.JSONDecodeError:
+            continue
+        by_level: dict[int, list[bool]] = defaultdict(list)
+        for t in (rec.get("payload") or {}).get("trials") or []:
+            lvl = _nback_level(t)
+            if lvl is None:
+                continue
+            if exclude_leadin and _nback_is_leadin(t, lvl):
+                continue
+            by_level[lvl].append(bool(t.get("correct")))
+        for lvl, vals in by_level.items():
+            if vals:
+                acc[lvl].append(sum(vals) / len(vals))
+    return acc
+
+
+def nback_human_scores(*, exclude_leadin: bool = True) -> np.ndarray:
+    """The n-back human distribution `human_scores("nback")` returns: one value per
+    (participant, level), levels concatenated in order 1, 2, 3."""
+    by_level = nback_human_by_level(exclude_leadin=exclude_leadin)
+    out: list[float] = []
+    for n in NBACK_LEVELS:
+        out.extend(by_level[n])
+    return np.asarray(out, dtype=np.float64)
+
+
+def nback_human_scores_legacy_pooled() -> np.ndarray:
+    """SUPERSEDED 2026-09-29. The pre-Option-D human n-back distribution: one value per
+    participant, pooled over levels, lead-in trials INCLUDED.
+
+    Only for reading historical records. Every n-back humanlikeness in
+    meta_harness/logs/evolution_summary.jsonl written before 2026-09-29 was computed
+    against this, so it must keep producing the same numbers; do not "fix" it.
+    """
+    return _human_scores_from_records("nback")
+
+
+def _human_scores_from_records(task: str) -> np.ndarray:
+    """`_score_human_record` over every record in a task's human folder."""
     folder = HUMAN_ROOT / HUMAN_TASK_DIR[task]
     out: list[float] = []
     if not folder.is_dir():
@@ -268,6 +432,18 @@ def human_scores(task: str) -> np.ndarray:
         if s is not None:
             out.append(float(s))
     return np.asarray(out, dtype=np.float64)
+
+
+def human_scores(task: str) -> np.ndarray:
+    """The human per-participant score distribution humanlikeness is measured against.
+
+    n-back is the one task whose unit is NOT the participant: it is the
+    (participant, n-level) cell, matching the granularity the model rows already have.
+    See the `nback_human_by_level` block comment (decision 2026-09-29, "Option D").
+    """
+    if task == "nback":
+        return nback_human_scores(exclude_leadin=True)
+    return _human_scores_from_records(task)
 
 
 def _score_llm_row(task: str, row: dict[str, Any]) -> float | None:

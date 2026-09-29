@@ -1,5 +1,29 @@
 """N-Back, compared at matched granularity per n-level.
 
+RESOLVED 2026-09-29 [USER], "Option D". Everything below describes the defect this module
+was written to MEASURE; `src/score.py` now implements the fix, so the module is a
+per-level diagnostic rather than an alternative scoring. Two things changed:
+
+  M7 (granularity)  `score.human_scores("nback")` now returns one value per
+                    (participant, n-level), matching the model rows, instead of one pooled
+                    value per participant. Measured effect on the three
+                    `runs/iter12stage2` arms: humanlikeness 0.9340 -> 0.9627, mean over
+                    arms, in [0,1].
+  M6 (denominator)  the n lead-in trials of each human block -- where no letter n back
+                    exists, and where 112 of 318 are nonetheless logged `target: true` --
+                    are now dropped, matching the model's `acc_over_14`, which never
+                    contained them. Effect on top of M7: +0.0006, smaller than n-back's
+                    measured run-to-run spread of 0.0061, and its sign is not identified
+                    across specifications. M6 is a correctness fix, not a scoring gain.
+
+The human side is now 53 participants x 3 levels, not 49 x 3: the 4 records with
+`level: null` have their level recovered from the block name. The remaining 4 of the 57
+have an empty payload and an empty summary and are unscorable on any shape.
+
+`human_by_level` here delegates to `score.nback_human_by_level` so the two cannot drift.
+The paragraphs below are kept as the record of what was measured, at the granularity and
+pooling of the time; the numbers in them are the PRE-FIX baseline figures.
+
 The problem this fixes. `score.py` scores the model as one observation per
 `(participant, n_level)` row — 150 points — while a human is one pooled
 observation over all three of that participant's levels — 53 points. The model's
@@ -51,22 +75,23 @@ HUMAN_DIR = ROOT / "runs/human/working-memory-nback"
 LEVELS = (1, 2, 3)
 
 
-def human_by_level() -> dict[int, np.ndarray]:
-    """Per-participant accuracy at each n-level, practice trials excluded."""
-    acc: dict[int, list[float]] = {n: [] for n in LEVELS}
-    for f in sorted(glob.glob(str(HUMAN_DIR / "*.json"))):
-        trials = (json.load(open(f)).get("payload") or {}).get("trials") or []
-        by: dict[int, list[bool]] = defaultdict(list)
-        for t in trials:
-            if t.get("phase") == "practice":
-                continue
-            lvl = t.get("level")
-            if lvl in LEVELS:
-                by[lvl].append(bool(t.get("correct")))
-        for n, vals in by.items():
-            if vals:
-                acc[n].append(sum(vals) / len(vals))
-    return {n: np.asarray(v, float) for n, v in acc.items()}
+def human_by_level(*, exclude_leadin: bool = True) -> dict[int, np.ndarray]:
+    """Per-participant accuracy at each n-level, practice trials excluded.
+
+    Delegates to `score.nback_human_by_level` rather than reimplementing the trial
+    filters, so this module and the humanlikeness the benchmark reports cannot drift
+    apart -- they were separate implementations until 2026-09-29 and that is exactly how
+    the lead-in defect survived here while `error_structure.py` already handled it.
+
+    `exclude_leadin=True` (the default, and what `score.human_scores("nback")` uses) drops
+    the first n trials of each block, where no letter n back exists. `False` reproduces
+    the pre-2026-09-29 figures.
+
+    n is 53 participants per level, not 49: 4 records carry `level: null` and their level
+    is recovered from the block name. See `score._nback_level`.
+    """
+    acc = S.nback_human_by_level(exclude_leadin=exclude_leadin)
+    return {n: np.asarray(acc[n], float) for n in LEVELS}
 
 
 def model_by_level(run_dir: Path) -> dict[int, np.ndarray]:
@@ -156,6 +181,7 @@ def diagnostics(run_dir: Path) -> dict[int, dict[str, float]]:
 
 def report(run_dir: Path) -> dict[str, Any]:
     h, m = human_by_level(), model_by_level(run_dir)
+    h_legacy = human_by_level(exclude_leadin=False)
     per_level = {}
     for n in LEVELS:
         if h[n].size and m[n].size:
@@ -164,6 +190,17 @@ def report(run_dir: Path) -> dict[str, Any]:
                 "model_mean": round(float(m[n].mean()), 4),
                 "humanlikeness": round(float(S.humanlikeness(h[n], m[n])), 4),
                 "n_human": int(h[n].size), "n_model": int(m[n].size),
+                # The human sd is reported beside the mean because at n=3 dropping the
+                # lead-in trials WIDENS it (0.1492 -> 0.1657 at the 49-record pool) while
+                # the model sits near 0.097. So M6 closes the mean gap and opens the
+                # dispersion gap, and the per-level humanlikeness can fall while the means
+                # converge. Neither number is readable without the other.
+                "human_sd": round(float(h[n].std()), 4),
+                "model_sd": round(float(m[n].std()), 4),
+                "human_mean_leadin_included": round(float(h_legacy[n].mean()), 4),
+                "human_sd_leadin_included": round(float(h_legacy[n].std()), 4),
+                "humanlikeness_leadin_included": round(
+                    float(S.humanlikeness(h_legacy[n], m[n])), 4),
             }
 
     # Pooled to the granularity score.py uses for humans, for comparison with the
@@ -183,9 +220,27 @@ def report(run_dir: Path) -> dict[str, Any]:
 
     flat = np.concatenate([rows[n] for n in LEVELS if rows[n].size]) if any(
         rows[n].size for n in LEVELS) else np.asarray([], float)
-    hp = S.human_scores("nback")
+    # `hp` is the LEGACY pooled, lead-in-included human vector, deliberately NOT
+    # `S.human_scores("nback")`: since 2026-09-29 that returns the per-(participant, level)
+    # shape, and the two fields below are recorded under names whose meaning in
+    # logs/evolution_summary.jsonl is the OLD comparison. Pointing them at the new human
+    # vector would silently redefine every historical row. The new shape gets its own
+    # field name, `matched_humanlikeness`.
+    hp = S.nback_human_scores_legacy_pooled()
+    h_flat = S.nback_human_scores(exclude_leadin=True)
+    h_flat_incl = S.nback_human_scores(exclude_leadin=False)
     return {
         "per_level": per_level,
+        # CURRENT: what score.py's n-back humanlikeness is, per (participant, level) on
+        # both sides with the human lead-in dropped (M6 + M7 together, "Option D").
+        "matched_humanlikeness": (round(float(S.humanlikeness(h_flat, flat)), 4)
+                                  if flat.size else None),
+        "matched_humanlikeness_leadin_included": (
+            round(float(S.humanlikeness(h_flat_incl, flat)), 4) if flat.size else None),
+        "matched_human_sd": round(float(h_flat.std()), 4),
+        # LEGACY, SUPERSEDED 2026-09-29. Both compare against the pooled, lead-in-included
+        # human vector: `per_row_humanlikeness` is the shape score.py used to report,
+        # `pooled_humanlikeness` the pooled-both-sides alternative that was never adopted.
         "per_row_humanlikeness": (round(float(S.humanlikeness(hp, flat)), 4)
                                   if flat.size else None),
         "pooled_humanlikeness": (round(float(S.humanlikeness(hp, pooled)), 4)
@@ -193,6 +248,10 @@ def report(run_dir: Path) -> dict[str, Any]:
         "per_row_sd": round(float(flat.std()), 4) if flat.size else None,
         "pooled_sd": round(float(pooled.std()), 4) if pooled.size else None,
         "human_sd": round(float(hp.std()), 4),
+        "legacy_note": ("per_row_humanlikeness, pooled_humanlikeness, per_row_sd, "
+                        "pooled_sd and human_sd are all against the pre-2026-09-29 "
+                        "pooled, lead-in-INCLUDED human vector (n=53 participants). "
+                        "The figure score.py now reports is matched_humanlikeness."),
         "diagnostics": diagnostics(run_dir),
     }
 

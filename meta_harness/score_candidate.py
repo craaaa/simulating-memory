@@ -186,6 +186,13 @@ def _pending_instrument_reason(cand_id: str) -> str | None:
 # The mean is much better conditioned than any single task -- sqrt(sum of squares)/8
 # gives SE(mean delta) = 0.013, so a mean delta of ~0.026 is credible. That is why
 # the primary objective stays the mean and no re-run was needed to fix precision.
+#
+# CAVEAT 2026-09-29 [USER, "Option D"]: `nback`'s 0.060 was bootstrapped on the
+# pre-Option-D scoring shape (pooled human, lead-in included). The n-back unit is now the
+# (participant, level) cell on both sides, which changes both the human sample size
+# (53 -> 159 values) and the model's, so this entry is calibrated on a superseded shape.
+# Deliberately NOT retightened: the repo's rule is to keep the larger of two measurements,
+# and re-measuring it is a user decision, not a side effect of this fix.
 NOISE_FLOOR = {
     "digit_span_forward": 0.140, "digit_span_reverse": 0.059, "nback": 0.060,
     "word_recognition": 0.121, "variable_mapping": 0.017,
@@ -241,6 +248,17 @@ NOISE_FLOOR = {
 # logs/digit_span_not_comparable.md. craft_task's spread is also QUANTISED rather than Gaussian --
 # per-run 0.8565 / 0.8565 / 0.8223, because the task's whole variability is one question flipping
 # for some fraction of 50 identical pseudo-participants (logs/stimulus_variation_ceiling.md).
+#
+# RE-MEASURED 2026-09-29 under the Option D n-back shape (per (participant, level) on both
+# sides, human lead-in dropped), on the same six arms. The table above was measured on the
+# pre-Option-D shape, and that shape's figures reproduce exactly from
+# `score.nback_human_scores_legacy_pooled` -- iter11postfix 0.0034, iter12stage2 0.0061 --
+# which is the check that the legacy path still works. Under the new shape:
+#
+#   nback spread   iter11postfix 0.0060   iter12stage2 0.0035   larger 0.0060
+#
+# so 0.0061 stands and nothing is retightened. Note the two run-sets SWAPPED which is the
+# wider one, which is what three repeats pinning a spread only loosely looks like.
 RUN_TO_RUN_SPREAD = {
     "digit_span_forward": 0.000, "digit_span_reverse": 0.000, "nback": 0.0061,
     "word_recognition": 0.0199, "variable_mapping": 0.0033,
@@ -465,11 +483,14 @@ def axes(run_dir: Path) -> dict[str, Any]:
                 res["A3"]["precision_distance"] = round(abs(med - HUMAN_A3_PRECISION), 4)
                 res["A3"]["n_precision"] = len(prec)
 
-    # N-Back per level, at matched granularity on both sides. Not an axis -- a
-    # diagnostic, because the per-row humanlikeness this record reports elsewhere is
-    # inflated by a scoring-granularity mismatch (see nback_levels.py). The level
-    # breakdown is where the deficit actually is, and `answered` vs
-    # `acc_over_answered` separates omission from error.
+    # N-Back per level. AMENDED 2026-09-29 [USER, "Option D"]: the mismatch this used to
+    # exist to expose is now FIXED in src/score.py, so `humanlikeness_by_task["nback"]`
+    # above is already the matched, per-(participant, level), lead-in-excluded figure and is
+    # no longer inflated. This block stays as the per-level breakdown -- which is where the
+    # deficit actually is, and where `answered` vs `acc_over_answered` separates omission
+    # from error -- and its `per_row_humanlikeness` / `pooled_humanlikeness` fields are now
+    # LABELLED LEGACY, against the old pooled human vector, so historical rows in
+    # logs/evolution_summary.jsonl stay readable. See nback_levels.report.
     if (run_dir / "tasks/wm_nback.jsonl").exists():
         res["nback_levels"] = NL.report(run_dir)
 

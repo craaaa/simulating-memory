@@ -350,6 +350,63 @@ def test_m6_story_text_identical_on_both_sides() -> None:
         check(f"{s.story_name} ({len(s.text)} chars) identical", mine == s.text, True)
 
 
+def test_nback_scoring_shape() -> None:
+    """Drift guard on the Option D n-back scoring shape (decision 2026-09-29 [USER]).
+
+    NOTE ON LABELS: the audit calls the two n-back defects M6 (unmatched denominators --
+    the human's n lead-in trials) and M7 (unmatched granularity). Those are NOT the M1-M6
+    error-shape measures this file otherwise tests; `test_m6_gist` is the story-gist
+    measure and is unrelated. The collision is in the project's labels, not here.
+
+    What this pins:
+      1. 53 human participants per level, not 49. 4 of the 57 records carry `level: null`
+         and their level is recovered from the block name; they also carry `phase: null`,
+         so a filter on `phase == "scored"` instead of `phase != "practice"` would silently
+         drop them and land on 49 -- a plausible-looking number that matches every
+         pre-decision measurement, so nothing else would flag it.
+      2. The lead-in predicate agrees with `error_structure.nback_human_trials`, which
+         already dropped lead-in for M3: 318 lead-in trials, and the per-level trial counts
+         must come out at 14 - n.
+      3. The legacy pooled path still produces the pre-fix distribution (53 participants),
+         because every n-back figure in logs/evolution_summary.jsonl written before
+         2026-09-29 was computed against it.
+    """
+    print("drift guard: n-back scoring shape (Option D)")
+    sys.path.insert(0, str(ROOT / "src"))
+    import score as S
+
+    excl = S.nback_human_by_level(exclude_leadin=True)
+    incl = S.nback_human_by_level(exclude_leadin=False)
+    for n in S.NBACK_LEVELS:
+        check(f"n={n}: 53 human participants", len(excl[n]), 53)
+        check(f"n={n}: 53 human participants, lead-in included", len(incl[n]), 53)
+    check("per-(participant, level) vector is 53 x 3",
+          S.nback_human_scores().size, 159)
+    check("legacy pooled vector is one value per participant",
+          S.nback_human_scores_legacy_pooled().size, 53)
+
+    # The lead-in trials this drops must be exactly the ones M3 already drops.
+    n_leadin = 0
+    per_level_trials: dict[int, set[int]] = collections.defaultdict(set)
+    for path in sorted((ROOT / "runs/human/working-memory-nback").glob("*.json")):
+        rec = json.loads(path.read_text())
+        kept: dict[int, int] = collections.Counter()
+        for t in (rec.get("payload") or {}).get("trials") or []:
+            lvl = S._nback_level(t)
+            if lvl is None:
+                continue
+            if S._nback_is_leadin(t, lvl):
+                n_leadin += 1
+            else:
+                kept[lvl] += 1
+        for lvl, c in kept.items():
+            per_level_trials[lvl].add(c)
+    check("318 lead-in trials dropped, as error_structure.py documents", n_leadin, 318)
+    for n in S.NBACK_LEVELS:
+        check(f"n={n}: every participant keeps 14 - n = {14 - n} trials",
+              sorted(per_level_trials[n]), [14 - n])
+
+
 def main() -> int:
     fast = "--fast" in sys.argv
     test_m1_intrusion_classes()
@@ -361,6 +418,7 @@ def main() -> int:
     test_m5b_error_index()
     test_m6_gist()
     test_m6_story_text_identical_on_both_sides()
+    test_nback_scoring_shape()
     test_a1_unchanged_by_refactor()
     test_mcq_reparse_reproduces_stored_metrics()
     test_cached_human_reference_matches_recomputation(fast)
