@@ -49,8 +49,8 @@ size; **COSMETIC** = real difference, no measured effect on a reported number.
 
 | # | task | mismatch | severity | proposed fix |
 |---|---|---|---|---|
-| M1 | word_recognition | human score is a correct-**count over a fixed 100** while the human stops at 3 strikes after a median of 32 trials; model runs 100 so its score *is* a proportion | **INVALIDATING** | (b) analysis-side: divide each side by its own trials attempted |
-| M2 | variable_mapping | human score is a correct-**count over a fixed 10** while the human terminates at the first error after a mean of 4.99 questions; model answers all 10 | **INVALIDATING** | (b) analysis-side: proportion over questions asked |
+| M1 | word_recognition | human score is a correct-**count over a fixed 100** while the human stops at 3 strikes after a median of 32 trials; model runs 100 so its score *is* a proportion. **And the human's proportion-correct is identically 1 − 3/n**, so no denominator fix makes it an accuracy | **INVALIDATING** | (b) analysis-side: report trials-to-3rd-error on both sides; the denominator fix is only the arithmetic floor |
+| M2 | variable_mapping | human score is a correct-**count over a fixed 10** while the human terminates at the first error after a mean of 4.99 questions; model answers all 10. **And the human's proportion-correct is identically 1 − 1/n** | **INVALIDATING** | (b) analysis-side: report questions-to-1st-error on both sides; the denominator fix is only the arithmetic floor |
 | M3 | variable_mapping | axis **A4** human reference is the stopping rule, not load-dependence | **INVALIDATING** (already retracted) | (c) documented; strike the human column |
 | M4 | digit span (fwd + rev) | `best_span` is estimated from **1 trial/span** on the model side and **2 trials/span** on the human side; the estimator is strongly sensitive to this | **INVALIDATING** | (b) analysis-side: 2 trials/span on both, and re-baseline the digit-span humanlikeness figures |
 | M5 | digit span (fwd + rev) | human staircase terminates on double failure; model administers all 19 spans (2–20) | BIASING (subsumed by M4 once the estimator is matched) | (b) analysis-side, as `protocol_match._administer` already does |
@@ -65,6 +65,7 @@ size; **COSMETIC** = real difference, no measured effect on a reported number.
 | M14 | **all tasks** | "a participant" means a person on the human side and a seeded stimulus set on the model side; model between-participant variance is item difficulty, human is between-person | **INVALIDATING** for the interpretation of W₁ | (c) document — this is a design property, not a bug |
 | M15 | all tasks | the model's system prompt states a 4-slot Cowan (2001) limit and instructs it to be "imperfect"; humans got only the task instructions | BIASING, unquantifiable here | (c) document |
 | M16 | n-back, word_recognition, variable_mapping | humans were under real time pressure (measured); the model is untimed and turn-based | COSMETIC for scores, load-bearing for interpretation | (c) document |
+| M21 | n-back | the human side has a **0% non-response rate by construction** (2618 of 2618 trials carry a response); the model's `acc_over_14` scores non-response as error, on 59 of 150 rows | BIASING, 0.157 proportion-correct on qwenA | (b) analysis-side: report `acc_over_answered` beside `acc_over_14` as a harness-health metric |
 | M17 | semantic_story_recall | the human story mix is unequal (Eyespy 18, Pieman 15, Baseball 13, Oregon Trail 7); the model's is 50 each | BIASING | (b) analysis-side: reweight, or compare per story |
 | M18 | semantic_story_recall | both sides report `summary.embeddingSimilarity` but only the model side's embedding model is verifiable from this repo | **UNVERIFIED** | (c) document as unverified |
 | M19 | variable_mapping | 154 human records come from 54 distinct people (42 contributed 3 each); `src/score.py` treats each record as an independent participant | BIASING of the *n*, not the mean | (c) document |
@@ -133,14 +134,30 @@ different units and W₁ between them is meaningless. The reported word_recognit
 proportion-correct. Note the *direction*: the mismatch made the model look far *less* human than it
 is on this task.
 
+**And the denominator fix is not sufficient.** Because every human stopped on exactly the 3rd
+strike, `trialsCompleted − correctResponses == 3` for **53 of 53** records, so the human
+proportion-correct is **identically 1 − 3/n**, a monotone rescaling of how long the participant
+survived. It carries no information about accuracy beyond trial count. This is the A4 defect class
+(`meta_harness/logs/a4_human_reference_invalid.md`) applied to the *score* rather than to an axis:
+the quantity being compared is the stopping rule.
+
 **Severity: INVALIDATING.**
 
-**Proposed fix: (b), analysis-side.** In `src/score.py`, the human branch must divide
-`correctResponses` by `summary["trialsCompleted"]`, and the model branch by
-`metrics["n_trials"]`. Option (a) — putting a 3-strike rule into `bench/` — does **not** fix this
-and is the wrong lever: emulating the strike rule on the model's own `per_trial` records stops it
-after a mean of **82.92** trials (median 100, range 3–100), because the model errs too rarely to
-accumulate 3 strikes. The denominator, not the stopping rule, is what breaks the comparison.
+**Proposed fix: (b), analysis-side, in two parts.**
+
+1. *Floor.* In `src/score.py`, divide the human branch by `summary["trialsCompleted"]` and the
+   model branch by `metrics["n_trials"]`. This gives humanlikeness 0.8659 / 0.7411 above. Report
+   it as the **arithmetic floor** on the error, not as a like-for-like comparison.
+2. *The matched statistic is survival length.* Under a stop-on-*k*-errors rule, accuracy and
+   duration are the same statistic, so the comparable quantity is **trials to the 3rd error** on
+   both sides — already measured, no new computation: human **34.49** mean / **32** median /
+   range 4–102 trials; model, emulating the strike rule on its own `per_trial` records,
+   **82.92** mean / **100** median / range 3–100 trials.
+
+Option (a) — putting a 3-strike rule into `bench/` — does not fix the score and the model errs too
+rarely for it to bite (median 100 trials before a 3rd strike). The denominator, not the stopping
+rule, is what breaks the arithmetic; the stopping rule is what makes even the fixed version not an
+accuracy comparison.
 
 ### M13 — the model reads the test stream instead of remembering it
 
@@ -221,11 +238,27 @@ makes the model compute `sum(correct)/10`. Measured: it moves the model from {1.
 and the human's 10 is not the number of questions they were asked. This must not be read as
 closing M2.
 
+**And, as in M1, the denominator fix is not sufficient.** Every human record has exactly one error
+and it is the last question asked, so the human proportion-correct is **identically 1 − 1/n**.
+Confirmed arithmetically against the question-count distribution above: mean(1 − 1/n) = **0.7409**,
+equal to the measured proportion-correct to four decimal places. The human "accuracy" on
+variable_mapping is a monotone rescaling of how many questions they survived and nothing else.
+
 **Severity: INVALIDATING.**
 
-**Proposed fix: (b), analysis-side.** Divide each side by questions asked. Option (a) — making the
-model stop at its first error — is measurably nearly irrelevant (+0.0033) and would cost a
-re-baseline for nothing.
+**Proposed fix: (b), analysis-side, in two parts.**
+
+1. *Floor.* Divide each side by questions asked → humanlikeness 0.7653 / 0.7765 above. Report as
+   the arithmetic floor.
+2. *The matched statistic is survival length:* **questions to the 1st error**. Human mean
+   **4.99**, range 2–16. Model: censored at 10 for 143 of 150 rows
+   (`first_error_at` = {3: 2, 8: 3, 9: 2, 10: 5, None: 138}), so the model's survival length is
+   right-censored by the schedule and a proper comparison needs the schedule extended past 10
+   questions — which *is* an (a)-class change, digit-span-style, and the one place option (a) has
+   a real argument on this task.
+
+Option (a) in the form "make the model stop at its first error" is measurably nearly irrelevant to
+the score (+0.0033 humanlikeness) and would cost a re-baseline for nothing.
 
 ### M3 — axis A4's human reference is the stopping rule
 
@@ -283,9 +316,18 @@ and applies the same "highest span with ≥1 correct, stop at the first all-fail
 | grouping of the same 190 model rows | trials per span | n units | `best_span` mean, digits | /20 |
 |---|---|---|---|---|
 | `src/score.py` unit (1 sequence = 1 participant) | 1 | 10 | **8.70** (sd 3.02) | 0.4350 |
-| `protocol_match` pairing (adjacent sequences) | 2 | 5 | **18.40** | 0.9200 |
+| `protocol_match` pairing (adjacent sequences) | 2 | **5** | **18.40** — ceiling-censored, see below | 0.9200 |
 | all 10 sequences pooled | 10 | 1 | **20** (the schedule maximum) | 1.0000 |
+| hermes, `protocol_match` pairing (better powered) | 2 | **50** | **10.08** | 0.5040 |
 | — human, for reference | 2 | 52 | **6.885** | 0.3442 |
+
+**Caveat on the 18.40.** It rests on **5** pseudo-participants (qwenA carries only 10
+`sequence_index` values, so pairing yields 5) on a schedule whose maximum is 20 digits, so it is
+censored at the ceiling — the same confound this audit criticises in the A1 section. Hermes, which
+carries 50 pseudo-participants, gives the better-powered matched figure: `best_span` **10.08**
+digits against the human **6.885**. The INVALIDATING call does not depend on the 18.40: 8.70 vs
+18.40 vs 20 digits from *the same 190 rows* is the argument, and hermes's 10.08 vs `src/score.py`'s
+own 0.2925 × 20 = 5.85 digits shows the same non-invariance at n=50.
 
 Reverse span: 1 trial/span → 6.30 digits (0.3150); 2 trials/span → 8.00 (0.4000); 10 pooled →
 19; human 5.898 (0.2949).
@@ -353,8 +395,11 @@ within-participant slope of the success curve, and `best_span`'s mean and sd do 
 slope. The user's objection is correct: failing a short sequence after passing a longer one is
 ordinary variability in a declining curve, and A1 measures how steep that curve is, not anything
 specifically human. The per-participant spread makes this worse, not better: at ~13.8 administered
-trials, a third of human participants have A1 exactly 0 and the human sd (0.0756) is
-indistinguishable from the null's at every slope in the table.
+trials, a third of human participants have A1 exactly 0. Taking mean and sd jointly does narrow
+the fit — the human pair (0.0866, 0.0756) is consistent with s ≈ 0.4–0.6 and not with s = 2.0
+(null sd 0.1105) — but that is precisely the point: **A1 is a read-out of the within-participant
+slope of the success curve**, which is a property of the declining curve, not a human signature,
+and which `best_span` mean and sd cannot pin down.
 
 **Independent confirmation from the model side.** qwenA's A1 is **0.1360** and qwenB's **0.1298**
 while their `best_span` is **18.40** digits against the human 6.885 — an 11.5-digit ceiling error
@@ -457,22 +502,24 @@ human's practice advantage is concentrated at n=1 (where both sides are near cei
 the human at n=1 and collapses at n=3 — is not explained by either. **Severity: COSMETIC.
 Fix: (c).**
 
-### M16 — timing
+### M16 — timing, and M21 — the non-response asymmetry
 
 `bench/tasks/nback.py:33-36` defines `STIMULUS_MS = 500`, `ISI_MS = 2000` as "Match the HTML
 constants". They are inert for the model, which is turn-based and untimed. But the human data does
 **not** support reading 2000 ms as a response deadline: over 2618 human trials with `rtMs`, the
 median is **1393 ms** and **23.6%** exceed 2000 ms, 15.9% exceed 2500 ms, 4.3% exceed 5000 ms,
-max **32859 ms**. And the `response` field is `target` or `nontarget` on every one of 2618
-trials — **there are no missing human responses at all**. So the human protocol accepted late
-responses and required one on every trial.
+max **32859 ms**. So the human protocol accepted late responses. **M16's severity is COSMETIC for
+the scores** — no human trial is scored as missed because of the clock — and load-bearing only for
+interpretation.
 
-The model's `acc_over_14` counts an unanswered trial as **wrong**. Measured on qwenA: `answered`
+**M21 is the separate, larger item.** The `response` field is `target` or `nontarget` on every one
+of 2618 human trials — **there are no missing human responses at all**, so the human non-response
+rate is 0% by construction. The model's `acc_over_14` counts an unanswered trial as **wrong**. Measured on qwenA: `answered`
 is 14 of 14 in only **91 of 150** rows; the rest range down to 2 (distribution: 2:9, 3:8, 4:16,
 6:4, 7:5, 8:2, 9:1, 10:3, 12:8, 13:3, 14:91). `acc_over_14` mean 0.6867 against
-`acc_over_answered` mean 0.8440 over rows with any answer. **This is a third n-back asymmetry,
-distinct from M6 and M8: the human side has a 0% non-response rate by construction, so
-`acc_over_14`'s non-response penalty has no human counterpart.** It interacts directly with the
+`acc_over_answered` mean 0.8440 over rows with any answer. **So `acc_over_14`'s non-response
+penalty has no human counterpart at all — a fourth n-back asymmetry, distinct from M6, M8 and
+M9.** It interacts directly with the
 "arms answer 5.2–6.8 of 14" family in `HANDOFF.md` — those numbers are a harness-engagement
 failure being scored as a memory failure. **Severity: BIASING, large (0.157 proportion-correct on
 qwenA). Fix: (b)** — report `acc_over_answered` beside `acc_over_14` and treat the gap as a
@@ -743,13 +790,14 @@ the memory module needs an arm with the Cowan sentence and the chunking prescrip
 5. **M14** "participant" means a person on one side and a stimulus set on the other.
 6. **M3** A4's human reference is the stopping rule (already retracted).
 
-**Biasing (same quantity, measured distortion):** M16 n-back non-response penalty with no human
+**Biasing (same quantity, measured distortion):** **M21** n-back non-response penalty with no human
 counterpart (0.157 proportion-correct on qwenA); M7 n-back granularity (0.065 humanlikeness);
 M6 n-back lead-in denominator (0.0088 score units); M12 craft/map granularity (±0.02
 humanlikeness, sign not constant); M15 the Cowan framing; M17 story mix; M10 narrative_qa two
 banks; M11 craft two banks; M5, M8, M9, M19.
 
-**Cosmetic:** M20 practice asymmetry.
+**Cosmetic:** M16 timing (no human trial is scored as missed because of the clock); M20 practice
+asymmetry.
 
 **Unverified:** M18 — the human `embeddingSimilarity` provenance.
 
@@ -760,11 +808,17 @@ answer before store, no re-print). Optionally **M4**'s companion (raise
 `sequences_per_span` so the matched 2-trial/span pairing yields a usable n) — a schedule change,
 digit span only.
 
-**Correct analysis-side:** M1, M2, M4, M5, M6, M7, M12, M16, M17 — all of them computable from
+**Correct analysis-side:** M1, M2, M4, M5, M6, M7, M12, M17, M21 — all of them computable from
 fields already on disk, no model re-run. M1, M2, M4, M7 and M12 change published humanlikeness
 numbers and require a re-baseline of the *table*, not of the runs.
 
-**Leave and document:** M3, M8, M9, M10, M11, M14, M15, M18, M19, M20.
+**Leave and document:** M3, M8, M9, M10, M11, M14, M15, M16, M18, M19, M20.
+
+**Caveat carried forward on M1 and M2:** the analysis-side fix removes the arithmetic error but
+does **not** produce a like-for-like accuracy comparison, because on both tasks the human's
+proportion-correct is algebraically 1 − k/n. The comparable quantity is survival length, and on
+variable_mapping the model's survival length is right-censored by the 10-question schedule, so a
+complete fix there needs the schedule lengthened — an (a)-class change.
 
 ## What contradicts the framing this audit was given
 
@@ -777,13 +831,19 @@ numbers and require a re-baseline of the *table*, not of the runs.
    of the identical config ranges from 0.995 (digit span forward) to 0.055 (story recall).
    M14's structural point survives, but it has to be argued from the measured sds, not from the
    yaml.
-3. **word_recognition's problem is the denominator, not the 3-strike rule.** Emulating the strike
-   rule on the model's own trials stops it after a median of 100 trials, because it errs too
-   rarely to accumulate 3 strikes. Matching the stopping rule alone would change essentially
-   nothing; matching the denominator changes humanlikeness by 0.371.
-4. **Same for variable_mapping.** Applying the human stop rule to the model adds +0.0033
-   humanlikeness on top of the denominator fix. The stopping rule is the *cause* of the
-   denominator problem but not itself the thing to fix.
+3. **Neither word_recognition nor variable_mapping has a human accuracy to compare against,
+   fixed denominator or not.** Because both human tasks stop on a fixed error count, the human
+   proportion-correct is algebraically 1 − k/n: word_recognition
+   `trialsCompleted − correctResponses == 3` for 53 of 53 records, and variable_mapping's
+   mean(1 − 1/n) = 0.7409 reproduces the measured 0.7409. Two of the eight search tasks therefore
+   score humans on persistence, not accuracy. This is the A4 defect class applied to the score
+   itself, and it means the +0.371 / +0.410 humanlikeness corrections are the *arithmetic* value
+   of a still-incommensurable comparison. It was not in the brief.
+4. **Matching the stopping rule is not the lever on either task.** Emulating the 3-strike rule on
+   the model's own word_recognition trials stops it after a median of 100 trials (it errs too
+   rarely to accumulate 3 strikes); applying the human stop rule to variable_mapping adds +0.0033
+   humanlikeness on top of the denominator fix. The stopping rule is the *cause* of the problem
+   and not itself the thing to change in `bench/`.
 5. **The human digit-span best span is 6.885 digits forward, not "≈6.88" as a loose figure** —
    and the reverse figure, 5.898, was not in the brief. Both need M4's estimator matching before
    they can be compared to anything.
