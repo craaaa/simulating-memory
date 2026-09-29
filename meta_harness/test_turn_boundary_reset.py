@@ -12,10 +12,17 @@ Pins the instrument fix. Three claims:
    `recall()` never reads `_messages`, so the reset cannot reach them. This test asserts the
    actual request sequence rather than the argument.
 
-3. `wm_nback` now runs two turns per letter, matching `wm_variable_mapping`: encode (store +
-   letter, tools ON), then answer (store + restated instructions, tools OFF, no letter). The
-   store is injected on both, which is the only way the agent can read it -- `TOOLS` has no
-   read tool.
+3. `wm_nback` runs two turns per letter: answer (store + restated instructions + the current
+   letter, tools OFF), then encode (store + letter, tools ON). The store is injected on both,
+   which is the only way the agent can read it -- `TOOLS` has no read tool. The order is
+   answer-first because encoding first overwrote the comparison target at n=1;
+   `wm_variable_mapping` keeps the opposite order because its question asks about stored
+   content rather than the stimulus just presented.
+
+4. `wm_word_recognition` runs the same answer-then-encode pair per word, with no `encode()`
+   call and no re-printed list, and stops presenting at the third error as the human protocol
+   does. Its reason for answering first is its own: a tool call must not be able to crowd out
+   the reply.
 
 Run: python meta_harness/test_turn_boundary_reset.py
 """
@@ -345,6 +352,152 @@ def test_nback_steps_handles_both_row_generations() -> None:
     print("ok  nback_steps maps both row generations, and never mixes turn kinds")
 
 
+# ---------------------------------------------------------------------------
+# 4. word_recognition's one word per turn
+# ---------------------------------------------------------------------------
+
+def _wr_trials(words: list[str], old_flags: list[bool]) -> list[dict[str, Any]]:
+    return [{"trial_index": i + 1, "word": w, "is_old": o}
+            for i, (w, o) in enumerate(zip(words, old_flags))]
+
+
+def test_word_recognition_one_word_per_turn() -> None:
+    """The stream is presented one word at a time, and never re-printed.
+
+    Before this, `encode()` received all 100 trial lines and the recall prompt received the
+    same 100 lines again, so Old/New was decidable from the prompt text without the store.
+    """
+    from bench.tasks.wm_word_recognition import run_recognition_stream
+
+    words = ["ANCHOR", "BRIDGE", "ANCHOR", "CANDLE"]
+    trials = _wr_trials(words, [False, False, True, False])
+    # Per word: the ANSWER turn replies (one request, tools off), then the ENCODE turn
+    # writes one key (two requests: the tool call, then the follow-up).
+    replies: list[Any] = []
+    for i, t in enumerate(trials):
+        replies.append(_reply("old" if t["is_old"] else "new"))
+        replies.append(LLMToolResponse(
+            tool_calls=[_call("write_memory", f"seen_{i + 1}", "v")],
+            content=None, finish_reason="tool_calls"))
+        replies.append(_reply("stored"))
+    llm = RecordingLLM(replies)
+
+    res = run_recognition_stream(llm=llm, trials=trials, cond_id="C2",
+                                 temperature=0.0, debug=False)
+
+    assert res["trials_presented"] == 4, res["trials_presented"]
+    assert res["stopped_at_third_error"] is None, res
+    assert res["resp_map"] == {1: "New", 2: "New", 3: "Old", 4: "New"}, res["resp_map"]
+
+    # ANSWER precedes ENCODE for every word. Unlike n-back the reason is not a destroyed
+    # comparison target -- it is that a tool call must not be able to crowd out the reply.
+    for a, e in zip(res["answer_steps"], res["encode_steps"]):
+        assert a < e, (a, e)
+
+    log = res["step_log"]
+    ans = log[res["answer_step_by_position"][3]]["user_message"]
+    enc = log[res["encode_steps"][2]]["user_message"]
+
+    # answer turn: store + restated instructions + the count + THE CURRENT WORD, which is
+    # the stimulus. Hiding it would test writing, not recognition.
+    assert "Your working memory currently contains:" in ans, ans
+    assert "Original task instructions:" in ans, ans
+    assert "including this one: 3." in ans, ans
+    assert "trial 3: ANCHOR" in ans, ans
+    # encode turn: store + the word
+    assert "Your working memory currently contains:" in enc, enc
+    assert "New word (trial 3):" in enc, enc
+
+    # NO turn may show a word the participant has not reached yet. This is the defect.
+    for pos, idx in res["answer_step_by_position"].items():
+        msg = log[idx]["user_message"]
+        for later in words[pos:]:
+            if later not in words[:pos]:
+                assert later not in msg, (pos, later, msg)
+
+    # the answer turn must carry no tool schemas
+    ans_requests = [r for r in llm.requests if r["kind"] == "tools"
+                    and "Original task instructions:" in r["messages"][1]["content"]]
+    assert len(ans_requests) == 4, len(ans_requests)
+    for r in ans_requests:
+        assert r["tools"] == [], r["tools"]
+
+    # and `encode()` is not used at all -- there is no study phase to encode
+    assert not any("material to remember" in str(r.get("messages") or r.get("prompt"))
+                   for r in llm.requests), llm.requests
+    print("ok  word_recognition presents one word per turn, answer first, list never re-shown")
+
+
+def test_word_recognition_stops_at_the_third_error() -> None:
+    """Presentation ends on the third error, as the human protocol does.
+
+    `trialsCompleted - correctResponses == 3` for 53 of 53 human records, so the human score
+    is words survived. `score_game` already applies the rule analysis-side; stopping the loop
+    means the trials a human would never have seen are also never presented.
+    """
+    from bench.tasks.word_recognition import score_game
+    from bench.tasks.wm_word_recognition import run_recognition_stream
+
+    words = ["ANCHOR", "BRIDGE", "CANDLE", "DAMSON", "ELIXIR", "FATHOM"]
+    trials = _wr_trials(words, [False] * 6)
+    replies: list[Any] = []
+    for i in range(len(trials)):
+        # every word is New; answering "old" is always wrong
+        replies.append(_reply("old"))
+        replies.append(_reply("nothing to store"))
+    llm = RecordingLLM(replies)
+
+    res = run_recognition_stream(llm=llm, trials=trials, cond_id="C2",
+                                 temperature=0.0, debug=False)
+
+    assert res["stopped_at_third_error"] == 3, res["stopped_at_third_error"]
+    assert res["trials_presented"] == 3, res["trials_presented"]
+    assert len(res["resp_map"]) == 3, res["resp_map"]
+
+    scored = score_game(trials, res["resp_map"])
+    assert scored["score"] == 0, scored
+    assert len(scored["per_trial"]) == 3, scored["per_trial"]
+    print("ok  word_recognition stops at the third error, and score_game agrees")
+
+
+def test_word_recognition_unparsed_reply_is_not_an_error() -> None:
+    """An unreadable reply must not count toward the three strikes.
+
+    `score_game` records it as `correct: None` and neither counts it nor stops on it; the
+    loop has to agree, or a garbage run would post a flattered score by stopping early.
+    """
+    from bench.tasks.wm_word_recognition import run_recognition_stream
+
+    trials = _wr_trials(["ANCHOR", "BRIDGE", "CANDLE"], [False] * 3)
+    replies: list[Any] = []
+    for _ in range(3):
+        replies.append(_reply("I am not sure about this one."))
+        replies.append(_reply("nothing to store"))
+    llm = RecordingLLM(replies)
+
+    res = run_recognition_stream(llm=llm, trials=trials, cond_id="C2",
+                                 temperature=0.0, debug=False)
+    assert res["stopped_at_third_error"] is None, res
+    assert res["trials_presented"] == 3, res["trials_presented"]
+    assert res["resp_map"] == {}, res["resp_map"]
+    print("ok  word_recognition: an unparsed reply is neither an error nor a stop")
+
+
+def test_word_recognition_parser_refuses_ambiguous_replies() -> None:
+    from bench.tasks.wm_word_recognition import _parse_old_new
+
+    assert _parse_old_new("old") == "Old"
+    assert _parse_old_new("New") == "New"
+    assert _parse_old_new("  new\n") == "New"
+    # a negated form names both words; guessing the first one reads this as Old
+    assert _parse_old_new("not old, it is new") is None
+    assert _parse_old_new("I cannot tell") is None
+    assert _parse_old_new("") is None
+    # substrings must not match
+    assert _parse_old_new("the word is golden") is None
+    print("ok  word_recognition parser refuses ambiguous and negated replies")
+
+
 if __name__ == "__main__":
     test_second_turn_does_not_see_the_first()
     test_tool_loop_state_survives_within_a_turn()
@@ -355,4 +508,8 @@ if __name__ == "__main__":
     test_trial_accounting_survives_the_split()
     test_variable_mapping_encode_shows_the_store()
     test_nback_steps_handles_both_row_generations()
+    test_word_recognition_one_word_per_turn()
+    test_word_recognition_stops_at_the_third_error()
+    test_word_recognition_unparsed_reply_is_not_an_error()
+    test_word_recognition_parser_refuses_ambiguous_replies()
     print("\nall turn-boundary tests passed")

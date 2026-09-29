@@ -867,6 +867,15 @@ def _wr_summary(run_dir: Path | None) -> dict[str, Any] | None:
     The old-rate denominator is 100 rather than the number parsed, per the literal
     "over all 100 trials". The two readings agree on any run with full coverage
     and diverge only on a collapsed one, which is the case the row is guarding.
+
+    TWO ROW GENERATIONS. Rows written before 2026-09-29 answered all 100 trials in one
+    reply, held in `recall_raw`, and 100 was both the denominator and the number of trials
+    presented. Rows written after the one-word-per-turn rewrite have no `recall_raw`: the
+    judgements live in `per_trial.model_response`, and presentation STOPS at the third error
+    (the human rule), so `trials_presented` is usually well under 100. Holding the
+    denominator at 100 there would read a participant stopped at trial 4 as 0.04 coverage,
+    i.e. it would flag the intended protocol as degeneracy. For those rows the denominator is
+    `trials_presented`, which is the count the "over all trials" literal is about.
     """
     if run_dir is None:
         return None
@@ -878,8 +887,21 @@ def _wr_summary(run_dir: Path | None) -> dict[str, Any] | None:
         sc = (r.get("metrics") or {}).get("score")
         if sc is not None:
             scores.append(float(sc) / 100.0)
+        if "recall_raw" not in r and r.get("per_trial") is not None:
+            # Post-rewrite row: one turn per word, stopped at the third error.
+            pt = r["per_trial"]
+            judged = {
+                t["trial"]: str(t["model_response"]).lower()
+                for t in pt
+                if t.get("model_response")
+            }
+            denom = int(r.get("trials_presented") or len(pt)) or 1
+            covs.append(len(judged) / denom)
+            olds.append(sum(1 for v in judged.values() if v == "old") / denom)
+            continue
+
         raw = str(r.get("recall_raw") or "")
-        judged: dict[int, str] = {}
+        judged = {}
         for line in raw.splitlines():
             m = _WR_LINE.match(line.strip())
             if m:
