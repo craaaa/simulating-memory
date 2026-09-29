@@ -1,5 +1,35 @@
 """Axis A4: does variable-mapping fail the way humans fail?
 
+RETRACTED 2026-09-29 -- READ THIS BEFORE USING ANY `rc_ratio` NUMBER BELOW.
+=========================================================================
+**A4's human reference is void.** `rc_ratio` on the human side is an artefact of the task's
+stopping rule, not a human interference signature. Human `variable_mapping` ends at the
+participant's FIRST error, and `relationCount` is non-decreasing within a session, so every
+human "error trial" is simply that participant's LAST question -- necessarily the one with the
+highest relation count they ever reached. Verified: 152 of 152 human records contain exactly
+one error and it is always their final question, and substituting "last answered question" for
+"error" reproduces the identical **1.3867**. The statistic cannot distinguish interference from
+"time passed".
+
+So `HUMAN_RC_RATIO = 1.386` and `HUMAN_RC_RATIO_NORMALIZED = 0.3728` below measure the stopping
+rule. They must not be quoted as human behaviour, and the project's headline A4 result --
+`respond_first` on Hermes at rc_norm 0.3751 against "humans at 0.3728" -- is withdrawn. Full
+derivation in `logs/a4_human_reference_invalid.md`.
+
+**What survives.** The MODEL side of `rc_ratio` is fine: the model answers all questions, so its
+error trials are not selected by a stopping rule. A4 is therefore still usable as an INTERNAL
+consistency check -- "this candidate's new errors are independent of interference load, so its
+gain is unstructured" -- and `score_candidate.py` keeps it on exactly that footing. It is no
+longer a distance from human behaviour.
+
+**The intrusion-class statistics below are NOT affected** (`HUMAN_INTRUSION_SHARE`,
+`HUMAN_STALE_SHARE`, ...). The stopping rule determines WHEN a human erred, not WHAT KIND of
+error it was, so the error-class shares are real observations. Those are what
+`report_error_shape.M1_variable_mapping_intrusion` compares, and that comparison is valid: on
+`runs/iter11postfix/baseline` humans name the person's own stale city on 0.2303 of errors
+against the model's 0.0621. **Prefer M1 over `rc_ratio` for anything about mechanism.**
+=========================================================================
+
 Why this axis had to exist before any proposer iteration was spent.
 
 `variable_mapping` is the most attractive cell in the whole table and was, until
@@ -72,7 +102,10 @@ try:
 except Exception:                                    # analysis must not hard-fail
     TURNS_PER_QUESTION = 2
 
-HUMAN_RC_RATIO = 1.386
+HUMAN_RC_RATIO = 1.386            # VOID -- measures the stopping rule, see the retraction at
+                                  # the top of this module. Kept so historical A4 records in
+                                  # evolution_summary.jsonl stay readable. Do not quote as
+                                  # human behaviour; prefer HUMAN_STALE_SHARE / M1.
 # Where the humans sit between pure noise (1.0) and the most interference-shaped
 # result their own error count and relation_count distribution permit: rc_ratio
 # 1.3867 against a ceiling of 2.0372 over 152 errors in 759 trials. So humans are
@@ -88,8 +121,9 @@ HUMAN_RC_RATIO = 1.386
 # normalisation makes the two comparable in position-between-noise-and-ceiling,
 # which is the best available, but it does not make the underlying distributions
 # the same.
-HUMAN_RC_RATIO_NORMALIZED = 0.3728
-HUMAN_INTRUSION_SHARE = 0.691
+HUMAN_RC_RATIO_NORMALIZED = 0.3728   # VOID for the same reason; see the module retraction.
+                                     # Normalising an artefact does not repair it.
+HUMAN_INTRUSION_SHARE = 0.691        # valid -- error CLASS is not selected by the stopping rule
 HUMAN_INTRUSION_CHANCE = 0.577
 HUMAN_STALE_SHARE = 0.230
 

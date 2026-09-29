@@ -171,6 +171,32 @@ NOISE_FLOOR = {
     # split-half values, which are known to be optimistic.
     "factual_qa": 0.061, "map_task": 0.054,
 }
+
+# Run-to-run GENERATION noise, which NOISE_FLOOR above structurally cannot see. `metric_noise`
+# bootstraps the model side of a FIXED set of rows, so it captures sampling noise only; vLLM
+# with continuous batching at max_parallel_participants=50 is not reproducible at temperature
+# 0.0, because batch composition changes reduction order. Measured 2026-09-29 as max - min over
+# the three identical repeats of `runs/iter11postfix/baseline{,_rep2,_rep3}` -- the FIRST such
+# measurement on the post-instrument-fix harness. See logs/nback_turn_order_outcome.md.
+#
+# A delta has to clear BOTH sources, so the effective floor below is the max of the two.
+#
+# This settles a disagreement that had been open since 2026-09-25. craft_task's run-to-run noise
+# was estimated at 0.0000-0.0031 by `run_to_run_floor.json` and at 0.0158 by
+# `score_repeats.SAME_FAMILY_SD`; the observed spread over three identical repeats is **0.0357**
+# (0.8907 / 0.8581 / 0.8550). Both earlier estimates were too narrow, and craft_task's 0.025
+# sampling floor was letting a noise-sized regression through. semantic_story_recall likewise
+# moves 0.0115 against a recorded 0.0012.
+#
+# Caveat on the two tasks mid-rewrite: word_recognition's 0.0199 is measured on the OLD
+# all-at-once presentation and variable_mapping's 0.0033 on a 10-question schedule, so both
+# must be re-measured after the next re-baseline. Three repeats also only pin a spread to about
+# a third of itself, so these are estimates, not constants.
+RUN_TO_RUN_SPREAD = {
+    "digit_span_forward": 0.000, "digit_span_reverse": 0.000, "nback": 0.0034,
+    "word_recognition": 0.0199, "variable_mapping": 0.0033,
+    "narrative_qa": 0.0184, "semantic_story_recall": 0.0115, "craft_task": 0.0357,
+}
 MIN_CREDIBLE_MEAN_DELTA = 0.026
 
 SEARCH_TASKS = [
@@ -351,10 +377,16 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
             # than the precision with which the task can be measured at all --
             # otherwise digit_span_forward (min credible delta 0.140) would reject
             # candidates for noise. So the effective floor is whichever is larger.
-            eff = max(FLOOR, NOISE_FLOOR.get(task, 0.05))
+            #
+            # Two independent noise sources, and a delta must clear BOTH: NOISE_FLOOR is
+            # sampling noise over fixed rows, RUN_TO_RUN_SPREAD is generation noise between
+            # runs of identical code. Before 2026-09-29 only the first was used, which left
+            # craft_task's floor at 0.025 against a measured run-to-run spread of 0.0357.
+            precision = max(NOISE_FLOOR.get(task, 0.05), RUN_TO_RUN_SPREAD.get(task, 0.0))
+            eff = max(FLOOR, precision)
             if task in SEARCH_TASKS and d < -eff:
                 violations.append({"task": task, "delta": d, "floor": -eff})
-            if abs(d) < NOISE_FLOOR.get(task, 0.05):
+            if abs(d) < precision:
                 noise.append(task)
         rec["delta_vs_baseline"] = deltas
         rec["floor_violations"] = violations
@@ -402,11 +434,27 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
                 f"{key} {field}: {cd} vs baseline {bd} (tolerance {tol}) -- "
                 f"drifted further from human"
             )
-    # A4 is conditional, unlike the others. variable_mapping is leaky -- the store
-    # can be bypassed -- so a candidate that does not move it owes no explanation.
-    # But a candidate that DOES move it has manufactured errors, and then the
-    # question is whether those errors are interference-shaped like a human's
-    # (rc_ratio 1.386) or rate-like a noise injector's (rc_ratio -> 1.0).
+    # A4 is conditional, unlike the others. A candidate that does not move
+    # variable_mapping owes no explanation; one that DOES move it has manufactured errors,
+    # and the question is whether those errors track interference load or are independent
+    # of it (rc_ratio -> 1.0), which is what a pure noise injector produces.
+    #
+    # A4 HAS NO VALID HUMAN REFERENCE. The figure this guard used to quote -- human rc_ratio
+    # 1.386, normalized 0.3728 -- is an artefact of the human stopping rule, not a human
+    # interference signature. Human variable_mapping ends at the FIRST error, so every human
+    # "error trial" is that participant's last question and `relationCount` is non-decreasing:
+    # 152 of 152 records have exactly one error and it is always their final question.
+    # Substituting "last answered question" for "error" reproduces the identical 1.3867.
+    # See logs/a4_human_reference_invalid.md. A4 therefore survives only as an INTERNAL
+    # consistency check -- "this candidate's new errors are unstructured" -- and must never be
+    # described as a distance from human behaviour.
+    #
+    # It is also superseded in substance by `M1_variable_mapping_intrusion` in
+    # report_error_shape.py, which asks the same question better and DOES have a valid human
+    # reference: the stopping rule fixes WHEN a human erred, not WHAT KIND of error it was, so
+    # the error-class shares are real observations. Humans name the person's own stale city on
+    # 0.2303 of errors against this model's 0.0621. Replacing A4 with M1 is a user decision
+    # and has not been taken.
     vm_delta = (rec.get("delta_vs_baseline") or {}).get("variable_mapping")
     a4 = rec["axes"].get("A4") or {}
     if vm_delta is not None and vm_delta > NOISE_FLOOR["variable_mapping"]:
@@ -424,15 +472,27 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
         # scored exactly 1.2525 at 12. A fixed 1.15 threshold on the raw ratio is
         # therefore not scale-free: at these error counts almost any result clears
         # it, so the old guard could not have rejected anything. Normalized, 0.0 is
-        # noise and 1.0 is the ceiling; the humans sit at 0.3728.
+        # independence of interference load and 1.0 is the arithmetic ceiling.
+        #
+        # THE 0.15 CUTOFF IS NOT CALIBRATED ON HUMANS and cannot be, because A4's human
+        # reference is void (see above). It was originally justified as "well below the human
+        # 0.3728", which is not a justification any more. What it now rests on is model-side
+        # only: across the twelve candidates measured on this substrate, every run whose
+        # variable_mapping gain came from a real change in what the store held scored above
+        # 0.15 normalized, and 0.15 sits roughly midway between independence (0.0) and the
+        # lowest such observation. **That is a weak basis for a number that can reject a
+        # candidate**, and the honest reading is that this branch is a smoke alarm for a
+        # degenerate gain rather than a measurement. It is recorded as such rather than
+        # quietly retained at its old justification.
         elif (a4.get("rc_ratio_normalized") is not None
               and a4["rc_ratio_normalized"] < 0.15):
             guards.append(
                 f"A4: variable_mapping improved by {vm_delta} with normalized "
                 f"rc_ratio {a4['rc_ratio_normalized']} (raw {a4.get('rc_ratio')}, "
                 f"ceiling {a4.get('rc_ratio_ceiling')}) -- errors are independent "
-                f"of interference load (humans sit at 0.3728, pure noise at 0.0), "
-                f"so the gain is unstructured"
+                f"of interference load (0.0 is independence, 1.0 the ceiling), so the "
+                f"gain is unstructured. NOTE: this is an internal consistency check, "
+                f"NOT a distance from human behaviour -- A4's human reference is void"
             )
 
     rec["guard_violations"] = guards
