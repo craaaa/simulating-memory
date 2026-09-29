@@ -257,9 +257,30 @@ than silently dropped.
    while its A2 distance stays **>= 2x the baseline's**. **AMENDED 2026-09-29 [USER]:**
    "A2 distance" here means the legacy ratio distance |ratio − 6.094|, which is
    dimensionless, unbounded and NaN whenever FA = 0 — so a "2x" bar on it is not a
-   well-defined pass condition. If this adversary is run, state it on
-   `axes.A2.diff_distance`, |miss − fa − 0.2273| in proportion units, and pick the
-   multiplier against a measured run-to-run spread for that quantity. If it cannot match the
+   well-defined pass condition.
+   **AMENDED AGAIN 2026-09-29 [USER] — the A2 leg is WITHDRAWN outright, not restated on
+   `diff_distance`.** The problem is not the units, it is the direction. **Noise moves A2
+   TOWARD human, not away.** Dropping stored keys means failing to recognise old words, so
+   misses rise and false alarms fall and the statistic climbs toward the human value. Measured
+   on the two runs this condition was actually applied to: `random_decay` scored an A2 distance
+   of **5.4288** and `random_decay_v2` **5.4344**, against a baseline of **5.754** — both about
+   0.32 *closer* to human, never 2x further. The leg asked noise to do the opposite of what
+   noise does, so it could never have fired. On top of that, 2x the baseline distance is 11.57,
+   which is 1.9x the entire distance from human (6.094) to the ratio's floor (0).
+   **So A2 cannot serve as this adversary's guard at all**, and with A1 retired and A4's human
+   reference void that is three of four axes failed in that role.
+   **Replacement:** the adversary must be caught by a named error-shape measure by more than
+   that measure's own measured run-to-run spread. The principled candidate is **M1**, the
+   `variable_mapping` intrusion class (`interference.py`): naming a person's own *superseded*
+   city requires that stale binding still to be represented, and random key-dropping destroys
+   it, so noise should drive `stale_same_name` (human 0.2303) toward 0. **M2 is NOT a
+   candidate** — the baseline already shows the truncation/omission signature that random
+   dropping was expected to produce (human substitution 0.4125 against the baseline model's
+   0.0808), so it cannot discriminate. No error-shape measure has a measured spread yet, which
+   is why the `random_decay_v3` run is 3 repeats. Full derivation in
+   `logs/a2_threshold_resolution.md`; registered predictions in
+   `logs/predictions_iter13_adversary.md`.
+   If it cannot match the
    distribution, it is a weak adversary and the axes are untested rather than
    validated; if it matches the distribution *and* the axes, the axes do not
    discriminate and the search is invalid. This is one candidate evaluation

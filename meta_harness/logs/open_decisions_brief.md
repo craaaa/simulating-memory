@@ -385,6 +385,34 @@ leave it at 1/8 of the objective as-is.
 **Cost:** Option 2 is a config edit. Option 1/4 changes the headline metric and every recorded
 mean. Option 3 is authoring work outside this codebase.
 
+## RESOLVED 2026-09-29 [USER] — craft_task keeps 1/8 weight, all four options declined
+
+**"keep 1/8 weight."** No reweighting, no demotion to pass/fail, no participant-count cut.
+`craft_task` stays one of the eight tasks averaged into the primary objective.
+
+**My own recommendation above — drop it from the mean — is WITHDRAWN**, on the user's reframing:
+*"the whole point of this meta harness is to come up with ways that would generate more variation
+in the model responses, so that the model doesn't give a point estimate."* `domain_spec.md` agrees
+by construction — a candidate is judged by *"comparing the resulting score distribution to the
+human distribution"* — so matching **dispersion** is part of the objective, and a model emitting a
+point mass is failing it in the way this project most cares about. `craft_task` is where that is
+most visible (human sd **0.1180** over 8 distinct values at the 15-question unit; model **0.0000**
+over 1), so removing it would have deleted the cleanest instance of the target phenomenon.
+
+**A claim of mine above is also wrong and is corrected here:** the ~0.9105 figure is the ceiling
+for a **point-mass model**, not for the task. A candidate producing human-like spread could reach
+1.0, so real headroom is ≈ **0.109** — second only to `word_recognition`, the opposite of a reason
+to demote it.
+
+Every measured limitation stands as a documented limitation rather than being retracted: 3
+stimuli, 2 distinct score values, the entire run-to-run spread being one question (C2003 Q04)
+flipping, accuracy improvement being *penalised* at the current level, and audit **M12**'s pooling
+fix being rejected on measurement because it produces sd exactly 0.0000.
+
+**What this decision makes actionable:** "can any mechanism give craft_task human-like spread?"
+has never been tested — the adversary's decay was seeded per *stimulus* (3 rates for 150 rows) and
+was a no-op on 3 of 8 tasks entirely. That is what job **18804444** (`random_decay_v3`) is for.
+
 ---
 
 # Suggested order

@@ -3,10 +3,9 @@
 **2026-09-29 [USER]: "do all 3".** Three separate things, decided together because they all follow
 from A2's scalar changing from the miss/false-alarm ratio to `miss_rate − fa_rate`.
 
-**Code edits are DEFERRED, not skipped:** `meta_harness/check_predictions.py` and
-`meta_harness/domain_spec.md` were being edited by another agent when this was written. Items 1
-and 2 are code changes to `check_predictions.py`; item 3 is a `domain_spec.md` change. Apply all
-three from this file, then delete it.
+**APPLIED 2026-09-29.** Items 1 and 2 landed in `check_predictions.py` (a `P6-substance` FAIL row
+plus the forward-looking `A2-band` row); item 3 landed in `domain_spec.md`'s adversary section.
+This file is kept as the derivation, not as a to-do.
 
 ## Units
 
@@ -114,8 +113,14 @@ measure, by more than that measure's own measured run-to-run spread.* Principled
   still be represented somewhere. Random key-dropping destroys the binding outright, so it should
   drive `stale_same_name` toward 0 and `novel_guess` up — a signature noise cannot fake. **This is
   the best candidate.**
-- **M2, digit-span error typology.** Humans substitute a wrong digit in the right place (0.4125
-  forward, 0.3550 reverse); random dropping should produce truncation and omission instead.
+- ~~**M2, digit-span error typology.** Humans substitute a wrong digit in the right place (0.4125
+  forward, 0.3550 reverse); random dropping should produce truncation and omission instead.~~
+  **WITHDRAWN 2026-09-29, same day, on measurement. M2 cannot discriminate.** The baseline
+  *already* has the signature I attributed to random dropping: at `iter12stage2/baseline`,
+  forward `truncation` **0.3131** and `omission` **0.3737** against `substitution` **0.0808**,
+  where the human is `substitution` **0.4125**. So "the model omits and truncates where humans
+  substitute" describes the baseline, not a difference between baseline and adversary. **M1 is
+  the only live candidate.** My error, caught by the agent implementing v3.
 
 **Neither has a measured run-to-run spread**, which is exactly why no error-shape measure has been
 promoted. So the replacement condition is not yet evaluable, and `domain_spec.md` should say so in

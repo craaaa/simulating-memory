@@ -1066,10 +1066,35 @@ def serial_recognition_checks(run_dir: Path,
     # The gate names A2's DISTANCE explicitly as uninterpretable, so when it fires
     # this row is INCONCLUSIVE rather than scored. P3/P4 keep their verdicts,
     # tagged GATED: their disconfirming conditions still carry signal.
+    #
+    # RESOLVED 2026-09-29 [USER]. P6's SUBSTANCE is settled and it is a FAIL: the prediction
+    # was that closing the leak "does not install a conservative response criterion", and it
+    # did, in the strongest available form -- fa_rate went 0.1426 -> exactly 0.0000, zero false
+    # alarms in 487 new-word trials, for all 50 of 50 participants at iter12stage2/baseline.
+    # The registered NUMERIC form is separately un-evaluable, because the ratio it names is
+    # undefined at fa_rate = 0. Both facts are reported; a wrong prediction does not become
+    # inconclusive because its metric died.
+    #
+    # The row is NOT re-pointed at `diff_distance`. The old band lives on an unbounded ratio
+    # distance and `diff_distance` is bounded in [0,2], so "> 4.0" there would be vacuously
+    # passing while reading as a real result. The two scales also disagree about the quantity
+    # the band anchors to: the ratio put the pre-stage-2 baseline at 0.949 of the way to its
+    # floor, `diff` at 0.232 of the way to its bound. That is the ratio's distortion, not a
+    # change of units, so no faithful conversion of "> 4.0" exists.
+    # See logs/a2_threshold_resolution.md.
+    diff_d, diff_why = a2("diff_distance")
+    fa, _ = a2("fa_rate")
+    if diff_why is None and fa is not None:
+        add("P6-substance: the fix DID install a conservative criterion",
+            FAIL, f"fa_rate {fa:.4f}, |diff - human| {diff_d:.4f}",
+            "P6 predicted it would NOT; fa_rate = 0 falsifies that",
+            "registered as 'does not install a conservative response criterion'. It did: "
+            "fa_rate reached exactly 0.0000, past the human value rather than short of it")
     dist, why = a2("distance")
     if why:
         add("P6 A2 distance > 4.0 (does not approach human)", INCONCL, None,
-            "> 4.0", why)
+            "> 4.0", why + " -- and see P6-substance above: the prediction is FAIL on "
+            "merit; only its numeric form is un-evaluable")
     elif gate_fired:
         add("P6 A2 distance > 4.0 (does not approach human)", INCONCL, dist,
             "> 4.0", "P5's gate fired (trials_attempted < 15), and the gate names "
@@ -1085,6 +1110,22 @@ def serial_recognition_checks(run_dir: Path,
             "below 2.0: closing the leak alone fixed the miss/false-alarm "
             "asymmetry, which would make a separate response-criterion candidate "
             "unnecessary" if dist < 2.0 else "moved toward human")
+    # REGISTERED 2026-09-29 [USER], for FUTURE candidates. Anchored to the human
+    # distribution's own spread rather than an invented constant: one human population sd
+    # (0.2658) either side of the human mean (+0.2273), in proportion units.
+    #
+    # STATED PLAINLY BECAUSE IT MATTERS: the run that motivated this band PASSES it --
+    # iter12stage2/baseline sits at 0.1479, iter11postfix at 0.2850 (outside). A band derived
+    # after seeing the data it first scores is not a pre-registration, so this is registered
+    # for candidates going forward and is NOT evidence about iter12stage2. A2 also remains
+    # REPORT ONLY: this is a reporting reference, not a guard, and promotion needs a measured
+    # run-to-run spread for `diff` itself, which does not exist yet.
+    if diff_why is None:
+        add("A2-band |diff - 0.2273| <= 0.2658 (registered 2026-09-29, forward-looking)",
+            PASS if diff_d <= 0.2658 else FAIL, round(diff_d, 4),
+            "<= 0.2658 = one human population sd",
+            "within one human sd of the human mean" if diff_d <= 0.2658 else
+            "further from human than a typical human is from the human mean")
     if gate_fired:
         for r in out:
             if r["prediction"].split()[0] in ("P3", "P4") and "GATED" not in r["tags"]:

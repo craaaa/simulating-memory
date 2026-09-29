@@ -1,5 +1,99 @@
 # CONTINUITY — session state, 2026-09-28 / 29
 
+## 2026-09-29T08:00Z [TOOL] — WHERE THE PROJECT IS. Read this block first.
+
+**One-line state:** the instrument is fixed and re-baselined, all four open metric decisions are
+taken and landed, and the project's own validity check — the noise adversary — is running for the
+first time in a form that can actually test anything (**job 18804444**, PENDING).
+
+### The arc of this session, in order
+
+1. **The search was optimising the instrument.** 99–106% of every frontier candidate's gain came
+   from `nback` and `variable_mapping` — precisely the two tasks that bypassed the memory module.
+2. **The instrument was fixed** in two stages: turn-boundary reset + store injection
+   (`70befa7`), then `word_recognition` one-word-per-turn (`dc14d0a`). n-back's turn order was
+   wrong at first and corrected (`410ec2a`); n=1 accuracy 0.9943 → 0.4786 → **0.9929**.
+3. **Four metric decisions**, all [USER]: survival-length scoring, continue with the current
+   pseudo-participant procedure, retire A1, raise `sequences_per_span` to 40. Then A2's scalar,
+   n-back Option D, and craft_task's weight.
+4. **The validity check turned out never to have run.** That is the live thread.
+
+### Current headline numbers (3 repeats each, current scoring)
+
+| task | iter11postfix | iter12stage2 | note |
+|---|---|---|---|
+| **word_recognition** | 0.5364 | **0.8278** | +0.2914, the session's one big real gain |
+| nback | 0.9622 | 0.9633 | post-Option-D shape |
+| variable_mapping | 0.9643 | 0.9662 | |
+| narrative_qa | 0.9444 | 0.9522 | |
+| semantic_story_recall | 0.9470 | 0.9510 | |
+| craft_task | 0.8679 | 0.8451 | inside its 0.0342 spread |
+| digit_span fwd / rev | 0.9012 / 0.9666 | 0.8712 / 0.9568 | **NOT comparable** — estimator changed |
+| **mean over the 6 comparable** | **0.8704** | **0.9176** | **+0.0473**, almost all word_recognition |
+
+**Quote the six-task mean, not the mean over 8.** Both digit-span columns moved because
+`sequences_per_span` 10→40 changed the pseudo-participant count, not because behaviour changed
+(`logs/digit_span_not_comparable.md`).
+
+### The live thread: no axis has ever been shown to catch noise
+
+`WORKLOG.md` concludes *"the axes discriminate. Search is meaningful."* **That conclusion is
+unsupported.** The adversary it rests on was, measured:
+
+- a **complete no-op on 3 of 8 search tasks** (`nback`, `word_recognition`, `variable_mapping`
+  call `step()` only, never `encode()`/`recall()`);
+- **3 decay rates for 150 rows** on craft, 4 for 200 on story recall (seeded from *stimulus*
+  content, which those tasks share);
+- judged on an **A2 leg that could not fire** — it demanded distance ≥ 11.57 while noise moves A2
+  *toward* human (measured: 5.4288 and 5.4344 against a 5.754 baseline).
+
+The one axis credited with catching it was **A1, on the single task where the adversary worked** —
+and A1 is now retired as reproducible by a null model. So: **A1 retired, A4's human reference
+void, A2 withdrawn as this adversary's guard. Three of four gone.**
+
+**Job 18804444** (`random_decay_v3`, 3 repeats, `ITER=13`, at `91cc76f`) is the first run that can
+test this. Predictions registered while PENDING in `logs/predictions_iter13_adversary.md`.
+**P2 predicts leg 1 of the pass condition may be unsatisfiable**: it needs mean-over-8 ≥ 0.9667
+against a baseline now at 0.9167 and an attainable ceiling near 0.955 — the bar was written when
+the baseline sat at 0.7861, and fixing the instrument moved the goalposts out of reach.
+
+### What is settled and must not be re-litigated
+
+| decision | outcome |
+|---|---|
+| survival-length scoring | `word_recognition` and `variable_mapping` score **items survived**, not accuracy — neither task's human data contains an accuracy. `variable_mapping` scale **pinned at 16** and must not track `N_QUESTIONS`. |
+| A1 | **retired**; `digit_span.best_span` in digits replaces it, report-only |
+| A4 | human reference **void** (it measured the stopping rule); model-side columns still valid |
+| A2 | scalar is now **miss − fa**, human **+0.2273** (sd 0.2658); ratio kept as labelled legacy. **Report-only, deliberately not promoted.** |
+| n-back | **Option D**: per (participant, level) both sides, human lead-in dropped |
+| craft_task | **keeps 1/8 weight** — a point mass is the failure the search exists to fix |
+| pseudo-participants | continue as-is, objection documented (audit M14) |
+
+### Known-open, with owners
+
+1. **M9** — n-back human has 14−n scored trials, model has 14. Both well-defined now, still
+   unequal. Needs a `bench/` change (present 14+n letters) or a decision to document permanently.
+2. **M4 / `best_span` grouping** — four incompatible values on the same model (8.70 / 9.47 /
+   18.40 / 20.0 digits). Decision 3 in `logs/open_decisions_brief.md`, **never briefed in depth**.
+   Note the 18.40 in `score_candidate.py`'s guard commentary is from a grouping the scorer does
+   not use, and at 9.47 the "wrongly signed" argument there **fails**.
+3. **Noise constants** calibrated on superseded shapes; kept at the larger value, annotated.
+4. **n=2, not n=3, is now n-back's worst level** (−0.0791 vs −0.0091). The "deficit is at n=3"
+   framing is retired.
+5. **`wasserstein_1d` is an approximation** (~0.003 on the mean, +0.022 on craft). **User: ignore.**
+
+### Operational facts worth not rediscovering
+
+- **Compute nodes have no GitHub access.** Code reaches the cluster by **git bundle**: create
+  against the cluster's HEAD, `rsync` to `/scratch/cl5625/`, then `git fetch <bundle> HEAD &&
+  git merge --ff-only FETCH_HEAD` **on a compute node**.
+- **Never run git on the torch login node** (`srun --account=torch_pr_287_general --time=00:10:00
+  --mem=4G -c 2` is enough). `sbatch` from the login node is fine.
+- Kerberos tickets expire mid-session; `ssh -O check torch` then the `hpc-signin` skill. The
+  browser step needs the user (Duo).
+- `inject.apply()` is **not idempotent** and `verify_interface.check()` applies internally —
+  verify in a **subprocess** or every decay roll happens twice.
+
 ## 2026-09-29T00:00Z [USER] — OPEN ITEM 2 DECIDED AND LANDED: n-back scored per (participant, level) on both sides, human lead-in dropped ("Option D")
 
 Decision 2 of `logs/open_decisions_brief.md` / `logs/nback_denominator_decision.md` is taken and
