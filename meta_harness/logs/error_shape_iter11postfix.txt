@@ -1,0 +1,123 @@
+
+ERROR-SHAPE REPORT  (report only -- nothing here gates)
+run        : meta_harness/runs/iter11postfix/baseline/Qwen_Qwen3-30B-A3B-Instruct-2507
+human ref  : meta_harness/logs/human_error_shape.json
+distance is |human - model| IN THE MEASURE'S OWN UNIT -- it is a DIFFERENCE,
+not a score, and it is not humanlikeness. `1-W1` is 1 - Wasserstein-1 over
+per-participant values in that same unit, reported only where both sides have
+them at matched granularity.
+
+======================================================================================================================
+SEARCH-SET TASKS
+======================================================================================================================
+
+M1_variable_mapping_intrusion   [task=variable_mapping]   (pooled only)
+    unit: share of that side's errors (sums to 1.000 over the 3 classes)
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    stale_same_name                                 0.2303    0.0621    0.1682       152       515        -
+    intrusion_other_name                            0.4605    0.5961    0.1356       152       515        -
+    novel_guess                                     0.3092    0.3417    0.0325       152       515        -
+
+M2_digit_span_forward_serial_position   [task=digit_span_forward]
+    unit: proportion of presented positions reported with the right digit in the right place
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    primacy_third                                   0.9224    0.9696    0.0472        52         5   0.9455
+    middle_third                                    0.8489    0.8854    0.0365        52         5   0.9363
+    recency_third                                   0.7764    0.7767    0.0003        52         5   0.9641
+
+M2_digit_span_forward_typology   [task=digit_span_forward]
+    unit: share of administered errors (6 classes sum to 1.000)
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    reversal                                        0.0000    0.0000    0.0000       160        32        -
+    transposition                                   0.1375    0.0312    0.1063       160        32        -
+    truncation                                      0.0563    0.3750    0.3187       160        32        -
+    omission                                        0.1375    0.4688    0.3313       160        32        -
+    substitution                                    0.4125    0.0312    0.3813       160        32        -
+    other                                           0.2562    0.0938    0.1624       160        32        -
+    reversal|nonpalindromic                         0.0000    0.0000    0.0000       160        32        -
+    model, all 19 spans, staircase NOT applied -- NOT human-comparable (n_errors=36): {'reversal': 0.0, 'transposition': 0.0278, 'truncation': 0.4167, 'omission': 0.4444, 'substitution': 0.0278, 'other': 0.0833}
+
+M2_digit_span_reverse_serial_position   [task=digit_span_reverse]
+    unit: proportion of presented positions reported with the right digit in the right place
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    primacy_third                                   0.9020    0.9261    0.0241        49         5   0.9458
+    middle_third                                    0.7984    0.8100    0.0116        49         5   0.9338
+    recency_third                                   0.6930    0.8082    0.1152        49         5   0.8773
+
+M2_digit_span_reverse_typology   [task=digit_span_reverse]
+    unit: share of administered errors (6 classes sum to 1.000)
+    model: insufficient (n=20); minimum 30 errors
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    reversal                                        0.0237         -         -       169        20        -
+    transposition                                   0.1598         -         -       169        20        -
+    truncation                                      0.0888         -         -       169        20        -
+    omission                                        0.1775         -         -       169        20        -
+    substitution                                    0.3550         -         -       169        20        -
+    other                                           0.1953         -         -       169        20        -
+    reversal|nonpalindromic                         0.0240         -         -       167        20        -
+    model, all 19 spans, staircase NOT applied -- NOT human-comparable (n_errors=85): {'reversal': 0.0, 'transposition': 0.1882, 'truncation': 0.0, 'omission': 0.4471, 'substitution': 0.0588, 'other': 0.3059}
+
+M3_nback_error_structure   [task=nback]
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    miss_rate                                       0.2533    0.3606    0.1073       683       750   0.8851
+    fa_rate                                         0.0816    0.0482    0.0334      1225      1350   0.9697
+    ratio                                           3.1029    7.4781    4.3752       100        65        -
+    unanswered_rate                                 0.0000    0.0029    0.0029      1908      2100        -
+    lure_fa_rate                                    0.3158    0.3596    0.0438        76        89        -
+    nonlure_fa_rate                                 0.0661    0.0262    0.0399      1149      1261        -
+    position_third_1                                0.8774    0.8913    0.0139       159       150   0.9785
+    position_third_2                                0.8428    0.8053    0.0375       159       150   0.9266
+    position_third_3                                0.8323    0.8217    0.0106       159       150   0.9648
+    miss/fa ratio 95% bootstrap CI over (participant, level) cells: human [2.411, 3.93], model [5.779, 10.212]
+    the ratio point estimate must be read only alongside that CI; it is withheld below 30 false alarms
+
+M4_word_recognition_lag   [task=word_recognition]   (TASK IS BROKEN -- see caveat)
+    unit: accuracy on old trials (proportion correct) within a lag bin
+    CAVEAT: all test words are visible in one list and 'Old' means 'appeared earlier in this list', so this curve measures list inspection as well as memory
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    lag 1-2                                         0.5059    0.9574    0.4515        53        47   0.5459
+    lag 3-5                                         0.7975    0.9952    0.1977        51        42   0.8115
+    lag 6-10                                        0.9265    0.9953    0.0688        44        43   0.9306
+    lag 11-20                                       0.9504    0.9966    0.0462        40        42   0.9496
+    lag 21+                                         0.8878    1.0000    0.1122        27        42   0.8889
+
+M5_narrative_qa_distractor   [task=narrative_qa]   (pooled only)
+    unit: P(two errors on the same question chose the same distractor); chance = 0.3333 for 3 distractors
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    within_side_agreement                           0.5172    0.9840    0.4668       174       500        -
+    cross_side_agreement [human col = chance]       0.3333    0.5113         -        17       221        -
+
+M5b_craft_task_error_index   [task=craft_task]   (not a distractor measure)
+    unit: error rate at that question index (proportion of that index's questions answered wrong), per participant then averaged
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    q1_error_rate                                   0.1173    0.0000    0.1173        54        50   0.9290
+    q2_error_rate                                   0.0432    0.0000    0.0432        54        50   0.9660
+    q3_error_rate                                   0.2407    0.0000    0.2407        54        50   0.8364
+    q4_error_rate                                   0.2840    0.3333    0.0493        54        50   0.8580
+    q5_error_rate                                   0.1173    0.0000    0.1173        54        50   0.9105
+
+M6_story_recall_gist   [task=semantic_story_recall]
+    unit: cosine similarity of all-MiniLM-L6-v2 embeddings of story vs recall, both truncated to 200 words, in [0,1]
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    gist_similarity                                 0.5969    0.5626    0.0343        53       200   0.9435
+    gist_similarity (human stored, web app -- NOT comparable)    0.6041         -         -        53         -        -
+
+======================================================================================================================
+HELD-OUT TASKS (reference only, never part of the search table)
+======================================================================================================================
+
+M5_factual_qa_distractor   [task=factual_qa]   (pooled only)
+    unit: P(two errors on the same question chose the same distractor); chance = 0.3333 for 3 distractors
+    model: task absent from this run dir
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    within_side_agreement                           0.3916         -         -       286         -        -
+
+M5b_map_task_error_index   [task=map_task]   (not a distractor measure)
+    unit: error rate at that question index (proportion of that index's questions answered wrong), per participant then averaged
+    model: task absent from this run dir
+    quantity                                         human     model  distance   n_human   n_model     1-W1
+    q1_error_rate                                   0.1310         -         -        56         -        -
+    q2_error_rate                                   0.2976         -         -        56         -        -
+    q3_error_rate                                   0.3095         -         -        56         -        -
+    q4_error_rate                                   0.3512         -         -        56         -        -
+    q5_error_rate                                   0.2500         -         -        56         -        -
