@@ -125,6 +125,40 @@ Where the forward typology *is* readable it already disagrees sharply: the model
 0.32–0.38. The model drops the tail of the sequence; humans report a wrong digit in the right
 place.
 
+## 6. story recall: the aggregate agrees, the per-story structure does not
+
+Added 2026-09-29 while waiting on job 18781213. M6's gist similarity is the one measure above that
+*agrees* (0.5626 model vs 0.5969 human, distance 0.0343). Broken out by story, it does not:
+
+| story | human n | human mean | model n | model mean | gap |
+|---|---|---|---|---|---|
+| Eyespy | 18 | 0.6185 | 50 | 0.6259 | **+0.0074** |
+| Pieman | 15 | 0.6128 | 50 | 0.6077 | −0.0051 |
+| Baseball | 13 | 0.6114 | 50 | **0.5178** | **−0.0936** |
+| Oregon Trail | 7 | 0.5344 | 50 | 0.4991 | −0.0353 |
+
+**Humans are flat across stories and the model is not.** Three of four human means sit within
+0.007 of each other (0.611–0.619); the model spans 0.499–0.626. Almost the entire model deficit is
+one story, Baseball, at −0.0936 — and on Eyespy the model is slightly *better* than humans. So
+"the model recalls gist a bit less well than humans" is really "the model recalls one of these
+four stories much less well, and matches humans on the rest".
+
+**Caveat, and it is a real limit here:** human n per story is 7–18, so these means carry wide
+intervals and Oregon Trail's 7 is too thin to lean on. The Baseball gap is the only one large
+enough to survive that, and it is the one the claim rests on.
+
+### The M17 reweighting is real but immaterial
+
+Audit **M17** is that the human story mix is uneven (Eyespy 18 / Pieman 15 / Baseball 13 / Oregon
+Trail 7, n=53) while the model runs 50 of each, so the pooled distributions are not comparable.
+Reweighting the model to the human proportions — analysis-side, no re-run — moves story-recall
+humanlikeness **0.9398 → 0.9506, i.e. +0.0109**, and the model's mean 0.5626 → 0.5775 against a
+human 0.6041.
+
+`RUN_TO_RUN_SPREAD["semantic_story_recall"]` is **0.0115**, so **+0.0109 is inside noise** and
+M17 is not worth changing the scorer for on its own. Recorded so nobody re-derives it as a
+priority. The per-story breakdown above is the part worth having, and it needs no reweighting.
+
 ## Recommendation, not applied
 
 The user's stated rule was that the spread of these numbers decides whether they get promoted
