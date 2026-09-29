@@ -28,6 +28,10 @@ Group 1 is **done** (commit below). Groups 2 and 3 are pending on work that has 
 | `domain_spec.md` | ~446 | `frontier` is documented as over (humanlikeness, A2, A3) — omits A4 and the new measures |
 | `domain_spec.md` | acceptance section | state explicitly that error-shape measures report and do **not** gate, and that promotion to guard or objective is a separate decision requiring a measured run-to-run spread per measure |
 | `NOTES.md` | ~73 | the A2 conservative-bias note ("humans are conservative") should sit beside the n-back miss/FA analogue once measured |
+| `HANDOFF.md` | A4 table + "durable result" paragraph | **A4's human reference is void** — `logs/a4_human_reference_invalid.md`. The "closest structural match anywhere in this project" (rc_norm 0.3751 vs human 0.3728 over 845 errors) compares the model's error distribution against the human task's *termination rule*. Strike the comparison; keep the `variable_mapping` humanlikeness gain, which is unaffected. |
+| `WORKLOG.md` | A4 sections | same, by dated amendment only |
+| `domain_spec.md` | A4 row | relabel as a one-sided guard on the model's own error distribution; strike the human column rather than updating it |
+| `src/score.py` / analysis | human n-back denominator | human scores divide by all non-practice trials including lead-in, the model's `acc_over_14` does not; and 112 of 318 human lead-in trials carry an impossible `target: true`. Correcting it moves the human reference 0.8657 → 0.8569 proportion-correct. Small, real, analysis-side. |
 
 ## Group 3 — pending the `word_recognition` fix (`logs/instrument_fix_stage2_plan.md`)
 
