@@ -129,6 +129,7 @@ def run_nback_block(
     condition_id: str,
     temperature: float,
     debug: bool,
+    participant_id: Any = None,
 ) -> Dict[str, Any]:
     """Run one n-back block turn-by-turn using the WM agent's step() method.
 
@@ -161,6 +162,7 @@ def run_nback_block(
         temperature=temperature,
         debug=debug,
         system_prompt_override=wm_system_prompt_for(condition_id, n),
+        participant_id=participant_id,
     )
 
     trial_map: Dict[int, str] = {}
@@ -236,6 +238,7 @@ def run_summarizer_nback_block(
     condition_id: str,
     temperature: float,
     debug: bool,
+    participant_id: Any = None,
 ) -> Dict[str, Any]:
     n = block.n
     agent = SummarizerAgent(
@@ -246,6 +249,7 @@ def run_summarizer_nback_block(
         system_prompt_override=summarizer_system_prompt(
             TASK_DESC_BY_N[n], condition_id=condition_id
         ),
+        participant_id=participant_id,
     )
 
     agent.step(
@@ -338,6 +342,9 @@ def evaluate(
                     condition_id=cond_id,
                     temperature=temperature,
                     debug=debug,
+                    # One row per (participant, repeat, n-level) block, each scored
+                    # separately by score.py, so all three are in the key.
+                    participant_id=f"p{pid}:rep{rep}:n{n_level}",
                 )
 
                 scored = score_block(block, block_result["trial_map"])
@@ -491,6 +498,7 @@ def evaluate_summarizer(
                     condition_id=cond_id,
                     temperature=temperature,
                     debug=debug,
+                    participant_id=f"p{pid}:rep{rep}:n{n_level}",
                 )
 
                 scored = score_block(block, block_result["trial_map"])

@@ -42,8 +42,14 @@ def run_wm_mcq_trial(
     format_rules: str,
     system_prompt_override: str | None = None,
     recall_max_tokens: int = 512,
+    participant_id: Any = None,
 ) -> Dict[str, Any]:
     """Run one WM-agent trial: encode material, then answer MCQs from memory.
+
+    ``participant_id`` identifies the scored unit this trial produces and is forwarded
+    to the agent unchanged. Callers that run several items per participant (craft_task,
+    map_task: one row per item) must pass a key that distinguishes the items, because
+    ``src/score.py::llm_scores`` scores each of those rows as its own observation.
 
     Returns
     -------
@@ -55,6 +61,7 @@ def run_wm_mcq_trial(
         temperature=temperature,
         debug=debug,
         system_prompt_override=system_prompt_override,
+        participant_id=participant_id,
     )
 
     encoding_log = agent.encode(encode_content)
@@ -91,6 +98,7 @@ def run_summarizer_mcq_trial(
     system_prompt_override: str | None = None,
     recall_max_tokens: int = 512,
     encode_max_tokens: int = 4096,
+    participant_id: Any = None,
 ) -> Dict[str, Any]:
     """Run one summarizer-agent trial: summarize material, then answer MCQs from summary."""
     agent = SummarizerAgent(
@@ -99,6 +107,7 @@ def run_summarizer_mcq_trial(
         temperature=temperature,
         debug=debug,
         system_prompt_override=system_prompt_override,
+        participant_id=participant_id,
     )
 
     encoding_log = agent.encode(encode_content, max_tokens=encode_max_tokens)

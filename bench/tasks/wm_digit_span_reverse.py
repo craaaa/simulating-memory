@@ -113,6 +113,9 @@ def evaluate(
             temperature=temperature,
             debug=debug,
             system_prompt_override=WM_SYSTEM_PROMPTS[cond_id],
+            # score.py groups digit-span rows by (participant_id, sequence_index);
+            # one scored unit is one sequence_index across all spans.
+            participant_id=f"p{participant_id}:seq{trial['sequence_index']}",
         )
 
         if debug:
@@ -300,6 +303,7 @@ def evaluate_summarizer(
             system_prompt_override=summarizer_system_prompt(
                 REVERSE_TASK_DESC, condition_id=cond_id
             ),
+            participant_id=f"p{participant_id}:seq{trial['sequence_index']}",
         )
 
         if debug:

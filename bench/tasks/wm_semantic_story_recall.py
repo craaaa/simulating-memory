@@ -168,6 +168,9 @@ def evaluate(
             temperature=temperature,
             debug=debug,
             system_prompt_override=WM_SYSTEM_PROMPTS[cond_id],
+            # `rep` alone repeats across the 4 stories, so the stimulus is part of
+            # the scored-unit key: 4 stories x repeats = one row each.
+            participant_id=f"{stim.stimulus_id}:rep{rep}",
         )
 
         if debug:
@@ -335,6 +338,7 @@ def evaluate_summarizer(
             system_prompt_override=summarizer_system_prompt(
                 TASK_CORE, condition_id=cond_id
             ),
+            participant_id=f"{stim.stimulus_id}:rep{rep}",
         )
 
         if debug:

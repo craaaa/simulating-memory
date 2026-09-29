@@ -214,6 +214,8 @@ def evaluate(
                 recall_preamble=RECALL_PREAMBLE,
                 format_rules=FORMAT_RULES,
                 system_prompt_override=WM_SYSTEM_PROMPTS[cond_id],
+                # Not one of the 8 search tasks; threaded for uniformity.
+                participant_id=f"p{pid}",
             )
 
             parsed = parse_answers_and_difficulty(result["recall_raw"])

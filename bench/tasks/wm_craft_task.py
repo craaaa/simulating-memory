@@ -110,6 +110,9 @@ def evaluate(
                     recall_preamble=RECALL_PREAMBLE,
                     format_rules=FORMAT_RULES,
                     system_prompt_override=WM_SYSTEM_PROMPTS[cond_id],
+                    # One row per (participant, item), and score.py scores each row
+                    # separately, so the scored unit is the pair -- not pid alone.
+                    participant_id=f"p{pid}:{task_id}",
                 )
 
                 answer_map = parse_answers(result["recall_raw"])
@@ -216,6 +219,7 @@ def evaluate_summarizer(
                     system_prompt_override=summarizer_system_prompt(
                         TASK_DESC, condition_id=cond_id
                     ),
+                    participant_id=f"p{pid}:{task_id}",
                 )
 
                 answer_map = parse_answers(result["recall_raw"])

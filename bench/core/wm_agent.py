@@ -157,12 +157,21 @@ class WorkingMemoryAgent:
         temperature: float = 0.0,
         debug: bool = False,
         system_prompt_override: str | None = None,
+        participant_id: Any = None,
     ) -> None:
         self.llm = llm
         self.condition_id = condition_id
         self.temperature = temperature
         self.debug = debug
         self._system_override = system_prompt_override
+        # Identity of the SCORED UNIT this agent instance produces -- the same key
+        # `src/score.py` turns into one observation in the model's score distribution.
+        # Nothing in this class reads it. It exists so a candidate harness can seed a
+        # per-participant mechanism from the participant rather than from the stimulus
+        # content: content varies per participant on only some tasks (measured:
+        # 4 distinct contents across 200 semantic_story_recall rows, 3 across 150
+        # craft_task rows), so a content hash silently collapses the population.
+        self.participant_id = participant_id
         self.wm = WorkingMemory()
         self._encoding_log: Dict[str, Any] = {}
         self._messages: List[Dict[str, Any]] = []
@@ -541,12 +550,15 @@ class SummarizerAgent:
         temperature: float = 0.0,
         debug: bool = False,
         system_prompt_override: str | None = None,
+        participant_id: Any = None,
     ) -> None:
         self.llm = llm
         self.condition_id = condition_id
         self.temperature = temperature
         self.debug = debug
         self._system_override = system_prompt_override
+        # Accepted for symmetry with WorkingMemoryAgent only; nothing reads it here.
+        self.participant_id = participant_id
         self.summary: str = ""
         self._encoding_log: Dict[str, Any] = {}
         self._step_log: List[Dict[str, Any]] = []

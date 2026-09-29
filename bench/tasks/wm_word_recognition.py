@@ -122,6 +122,7 @@ def run_recognition_stream(
     cond_id: str,
     temperature: float,
     debug: bool,
+    participant_id: Any = None,
 ) -> Dict[str, Any]:
     """Present one word per turn, answer before storing, stop at the third error.
 
@@ -139,6 +140,7 @@ def run_recognition_stream(
         temperature=temperature,
         debug=debug,
         system_prompt_override=WM_SYSTEM_PROMPTS[cond_id],
+        participant_id=participant_id,
     )
 
     resp_map: Dict[int, str] = {}
@@ -244,7 +246,10 @@ def evaluate(
                 print(f"{TASK_NAME} | {cond_id} | p{pid} | {len(trials)} trials")
                 print(f"{'='*50}")
 
-            stream = run_recognition_stream(llm, trials, cond_id, temperature, debug)
+            # One row per participant, so pid alone is the scored unit.
+            stream = run_recognition_stream(
+                llm, trials, cond_id, temperature, debug, participant_id=f"p{pid}"
+            )
 
             resp_map = stream["resp_map"]
             scored = score_game(trials, resp_map)
@@ -341,6 +346,7 @@ def evaluate_summarizer(
                 system_prompt_override=summarizer_system_prompt(
                     TASK_DESC, condition_id=cond_id
                 ),
+                participant_id=f"p{pid}",
             )
 
             if debug:

@@ -138,6 +138,9 @@ def evaluate(
                 temperature=temperature,
                 debug=debug,
                 system_prompt_override=WM_SYSTEM_PROMPTS[cond_id],
+                # repeat_index is unique over participants x runs (1..total_runs)
+                # and each run is one scored row.
+                participant_id=f"run{run['repeat_index']}",
             )
 
             if debug:
@@ -296,6 +299,7 @@ def evaluate_summarizer(
                 system_prompt_override=summarizer_system_prompt(
                     TASK_DESC, condition_id=cond_id
                 ),
+                participant_id=f"run{run['repeat_index']}",
             )
 
             if debug:
