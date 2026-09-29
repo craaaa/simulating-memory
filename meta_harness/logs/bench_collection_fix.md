@@ -2,6 +2,22 @@
 
 Approved by the user 2026-09-28. Three changes, ~35 lines, one behavioural.
 
+> **Amendment, 2026-09-28, same day: this fix changes no score, and this file oversells it.**
+> It is correct as a measurement — an answer should not contain a typed-out tool call — but
+> the pre-registered prediction that decided its importance failed. Spoken tool calls on
+> n-back answer turns went **553 of 2100 → 0 of 2100** while trials answered went **10.86 →
+> 10.85 of 14**, and the baseline's own n-back humanlikeness did not move (0.7848 → 0.7838).
+> The model was typing a call *alongside* an answer the parser already found, so nothing was
+> ever being lost. Read the "what it invalidates" claims below as **withdrawn**: the pre-fix
+> Qwen numbers stand as measured.
+>
+> Evidence and the replacement account: the OUTCOME section of `postfix_prediction.md`, and
+> `unanswered_cause.md` — an n-back trial goes unanswered because the model spends the turn on
+> bookkeeping and emits **empty assistant content** (418 of 472), not because it spoke a tool
+> call.
+>
+> The instrument change that does move scores is a different one: `logs/instrument_fix.md`.
+
 ## The defect
 
 `WorkingMemoryAgent.step()` sent `tools=TOOLS` on **every** request, including the two turn

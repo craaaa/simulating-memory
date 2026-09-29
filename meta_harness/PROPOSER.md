@@ -141,24 +141,47 @@ for digit span that threshold is 0.140, not 0.03. The mean alone is not the
 objective; a per-task vector is reported so a headline cannot be bought from one
 cell.
 
-## Two of the eight tasks do not test the memory module at all
+## One of the eight tasks does not test the memory module — it used to be three
 
-Read this before you pick a target, because it invalidates the most attractive
-cell in the table.
+**Updated 2026-09-29. Two of the three leaks are now closed in `bench/` (commit
+70befa7), so do not propose closing them: it is a no-op, and four candidates
+before you already did it.**
 
-`WorkingMemoryAgent` keeps conversation history across `step()` calls, and
-`reset_messages()` is never called by any task. `recall()`, by contrast, builds a
-fresh prompt from the KV store alone. So tasks split by how they answer:
+`step()` now calls `reset_messages()` at the top of every turn, so the key-value
+store is the only thing that crosses a turn boundary. `wm_nback` and
+`wm_variable_mapping` were rewritten to match: each presents one encode turn
+(store + stimulus, tools ON) and one answer turn (store + restated instructions,
+tools OFF), which is the read-out protocol the six batch tasks already used via
+`recall()`. n-back previously had **no** read channel at all — `TOOLS` has only
+`write_memory` and `delete_key`, there is no read tool, and the turn was the bare
+string `"Next letter: X"`, so the store was write-only and every answer came from
+the transcript.
 
-| regime | route | tasks | mean HL |
-|---|---|---|---|
-| **bottlenecked** | `encode()` → `recall()`, KV only | ds_fwd .886, ds_rev .967, story .947, craft .891, narr .957 | 0.930 |
-| **leaky** | answers via `step()`, study history still in context | nback .791, variable_mapping .355 | 0.573 |
-| **leaky** | `recall()`, but the prompt embeds the studied list verbatim | word_rec .495 | 0.495 |
+What this means for you: the pre-2026-09-29 numbers below describe the leaky
+instrument. They are kept because the twelve candidate verdicts were measured
+against it, under tag `exp/compactor-prefix-v1`. **No number from before that tag
+is comparable to one after it.**
 
-Iteration 1 found the third one: `wm_word_recognition.py` formats `trials_text` —
-every trial in order — into its recall prompt, so although it routes through
-`recall()`, the stimulus is visible anyway. See the H2 withdrawal below.
+| regime | route | tasks | mean HL (pre-fix) | status |
+|---|---|---|---|---|
+| **bottlenecked** | `encode()` → `recall()`, KV only | ds_fwd .886, ds_rev .967, story .947, craft .891, narr .957 | 0.930 | unchanged by the fix |
+| ~~leaky~~ **closed** | answered via `step()` with study history in context | nback .791, variable_mapping .355 | 0.573 | fixed in bench 2026-09-29 |
+| **still leaky** | `recall()`, but the prompt embeds the studied list verbatim | word_rec .495 | 0.495 | fix planned, not landed |
+
+`wm_word_recognition.py` builds `word_list_text` and `trials_text` from the *same*
+100 trial lines, so the sequence is printed twice — once to `encode()`, once into
+the recall prompt — and Old/New is decidable from visible text. Continuous
+recognition is genuinely study-equals-test, so the task design is right and the
+presentation is wrong: the fix is one word per turn, not a change to the task. See
+the H2 withdrawal below.
+
+**Why this matters more than the individual leaks.** Measured 2026-09-28
+(`analyze_live_dimensions.py`, commit dbd2ea3): **99–106% of every frontier
+candidate's mean-over-8 delta came from `nback` and `variable_mapping`** — the two
+leaky tasks — while the other six contributed nothing outside 2 SE for four of five
+candidates, and `digit_span_reverse` was exactly +0.0000 for all five. The search
+was optimising the instrument, because those were the only movable dimensions. That
+is why the instrument was fixed instead of another candidate being run.
 
 On `variable_mapping`, conditioning each question on what the store actually held:
 
@@ -336,9 +359,14 @@ ceiling are reading the list off the prompt; the 7 are the only ones consulting 
 store. A2's 0.340 is therefore produced by a handful of participants while most are
 not doing the task at all, and the "A2 headroom" is not what it appeared to be.
 
-So **three of eight tasks bypass the memory module** — nback, variable_mapping and
-word_recognition. Closing the word-recognition leak is the highest-value target
-remaining, and `recall()`'s context construction is inside the override surface.
+So **three of eight tasks bypassed the memory module** — nback, variable_mapping and
+word_recognition. **Updated 2026-09-29: nback and variable_mapping are fixed in
+bench; only word_recognition remains, and its fix is planned as a bench change, not
+a candidate.** Do not propose it. `word_recognition` still has the largest headroom
+of the eight (humanlikeness 0.5199 against a human mean score of 0.315), and
+`serial_recognition` already showed masked one-at-a-time presentation works (0.8134,
+against its deliberate unmasked ablation `serial_recognition_open` at 0.8631) — which
+is the fourth time a candidate re-derived a benchmark fix.
 
 ## What you may change
 
@@ -353,6 +381,30 @@ remaining, and `recall()`'s context construction is inside the override surface.
     WM_SYSTEM_PROMPTS    the per-task prompt overrides
 
 Out of scope: the base model, the task stimuli, the scorers, the human data.
+
+**Surfaces that `bench/` now owns, added 2026-09-29.** These were open when the
+earlier candidates were written and are not worth a candidate any more:
+
+- **the turn-boundary reset.** `step()` clears the transcript itself. A candidate
+  that calls `reset_messages()` at the top of its own `step()` is a **no-op** on
+  these tasks, not an improvement. `episodic_reset_v2`, `episodic_reset_v3`,
+  `evicting_reset`, `respond_first` and `respond_first_v2` all exist largely to do
+  this, and post-fix they close the leak twice.
+- **the store read channel.** `wm_nback` and `wm_variable_mapping` inject
+  `wm.to_recall_text()` into both their turns. Do not re-add it in a candidate.
+- **showing tool schemas on turns that forbid calls.** Fixed in eb3e96f: an empty
+  `tools` list now omits `tools` and `tool_choice` entirely. Note that this fix
+  changed **no score** — see `logs/unanswered_cause.md`.
+
+Each candidate's own `MANIFEST.md` still describes these as open, because it was
+written against the instrument of its own iteration. Those files are historical
+records and were deliberately not rewritten; this section supersedes them.
+
+**What is still open on the reply path**, and was misdiagnosed for a day: an n-back
+trial goes unanswered because the model spends the turn on bookkeeping and emits no
+label — 418 of 472 unanswered turns returned **empty assistant content**. It is not
+the cumulative tool-call budget, which explained 6 of 965. `_tool_call_cap()` remains
+out of scope for proposers.
 
 ## Workflow
 

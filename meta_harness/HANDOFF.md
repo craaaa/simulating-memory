@@ -66,13 +66,40 @@ supersedes it.
 Five waves, twelve candidates, two substrates. **No candidate passes the contract on both
 substrates.** One mechanism transfers robustly and is the durable result: closing the
 conversation-history leak is worth **+0.32 to +0.34 on `variable_mapping` across two
-models and two candidate variants**. The blocker in both cases is `nback`, and the reason
-is a *known, measured, unfixed* failure with a named target — not a limit of the approach.
+models and two candidate variants**.
 
-## The one thing to do next
+**Amended 2026-09-29, and this reframes the whole paragraph.** Measured in
+`analyze_live_dimensions.py` (commit dbd2ea3): **99–106% of every frontier candidate's
+mean-over-8 delta came from `nback` and `variable_mapping`**, the other six tasks
+contributed nothing outside 2 SE for four of five candidates, and `digit_span_reverse` was
+exactly +0.0000 for all five. Those two tasks were exactly the ones that bypassed the memory
+module. So the search was optimising the instrument, which is why the instrument was fixed
+(commit 70befa7) rather than another candidate run. Everything above belongs to tag
+`exp/compactor-prefix-v1`; **no number from before that tag is comparable to one after it.**
+The `variable_mapping` gain in particular is now expected to become a *baseline* property,
+since the baseline does what those candidates did.
 
-**Fix route 3: the cumulative tool-call budget squeeze.** It is the only thing standing
-between `evicting_reset` and a candidate that passes on both substrates.
+## ~~The one thing to do next~~ RETRACTED 2026-09-29
+
+> **Route 3 is dead. Do not spend an arm on it.** It is filed below under the account that
+> "tools get denied → the model emits the tool call as text → the trial scores unanswered".
+> The middle link is false: after the collection fix, spoken tool calls on n-back answer
+> turns went from 553 of 2100 to **0 of 2100** while trials answered went **10.86 → 10.85 of
+> 14**, and the baseline's own n-back humanlikeness did not move (0.7848 → 0.7838). The
+> cumulative budget explains **6 of 965** unanswered trials.
+>
+> The live account: an n-back trial goes unanswered because the model spends that turn on
+> bookkeeping and emits no label — 418 of 472 unanswered turns returned **empty assistant
+> content**, the rest prose about the write. Every unanswered trial's own turn had
+> `tool_call_cap_hit` set (964 of 965) and no turn without it was ever unanswered (0 of
+> 2339). Evidence: `logs/unanswered_cause.md` and the OUTCOME section of
+> `logs/postfix_prediction.md`.
+>
+> Routes 1 and 2 stand — they have independent measured effects (variable_mapping unparsed
+> 38 → 0; answered 5.2–6.8 → 14.0 of 14).
+
+**~~Fix route 3: the cumulative tool-call budget squeeze.~~** ~~It is the only thing standing
+between `evicting_reset` and a candidate that passes on both substrates.~~
 
 The failure family, which every result in this project turns out to be an instance of:
 **tools get denied, and the model emits the tool call as plain text instead of answering.**
@@ -126,11 +153,23 @@ rehearsing.
    question, which saturates by question 5 — so **every model error after question 5 is
    invisible to its own score**. `displacement` erred on 25 runs and 24 still scored 1.0.
    Corrected analysis-side in `protocol_match.variable_mapping_scores`.
-2. **Three of eight search tasks do not test the memory module.** `nback` and
-   `variable_mapping` because `reset_messages()` (`wm_agent.py:161`) is never called, so
-   every stimulus stays in context; `word_recognition` because the studied list is
-   re-printed in the recall prompt. Measured: 36 of 50 word-recognition participants score
-   a perfect 100/100 while their own store can decide at most 0.640 of old trials.
+2. **Three of eight search tasks do not test the memory module** — **two are now fixed,
+   2026-09-29, commit 70befa7.** `nback` and `variable_mapping` because `reset_messages()`
+   was never called, so every stimulus stayed in context; `word_recognition` because the
+   studied list is re-printed in the recall prompt. Measured: 36 of 50 word-recognition
+   participants score a perfect 100/100 while their own store can decide at most 0.640 of
+   old trials.
+   - **`nback`, `variable_mapping`: FIXED.** `step()` clears the transcript at the turn
+     boundary; both tasks now run an encode turn (store + stimulus, tools ON) and an answer
+     turn (store + restated instructions, tools OFF). n-back had had **no read channel at
+     all** — no read tool, no injection, the turn was the bare string `"Next letter: X"`, so
+     its store was write-only.
+   - **`word_recognition`: STILL OPEN**, fix planned, not landed. `word_list_text` and
+     `trials_text` are built from the *same* 100 trial lines, so the sequence is printed
+     twice. The task design is right (continuous recognition is study-equals-test); the
+     presentation is wrong. Fix is one word per turn, answer-then-store, plus a decision on
+     whether to replicate the human 3-strike stop (humans ~20 trials, model 100). Prerequisite:
+     confirm `src/score.py` divides by trials attempted rather than a fixed 100.
 3. **Digit span and n-back are comparable only after protocol/granularity matching**
    (`protocol_match.py`, `nback_levels.py`). The human staircase terminates on double
    failure; the model ran all 19 spans. Human n-back is one pooled score per participant;
@@ -172,8 +211,40 @@ The most recent instance is the one to read, because it nearly closed off the ri
 step: I claimed closing the leak *necessarily* costs n-back, which my own Qwen data
 contradicts (`evicting_reset`: leak closed, n-back 0.7909 → 0.9587).
 
+**Added 2026-09-29 — three more, all about the instrument rather than a candidate:**
+
+- **I got the direction of the collection defect wrong twice**, then built a whole account on
+  it. First: "the baseline loses ~549 of 1500 variable_mapping answers" — it loses **0**; that
+  figure was `evicting_reset`'s. Then: "the losses are inside the candidates" — backwards for
+  n-back, where the **baseline** lost 1091 of 4200 answer turns and `respond_first`/
+  `respond_only` lost none. Cause: counting `maintenance_text` as an answer turn.
+- **The artifact account itself was wrong** and I pre-registered a prediction that killed it:
+  the post-fix baseline's n-back score was predicted to rise 0.7848 → ~0.87 and measured
+  **0.7838**. Spoken tool calls were never the unanswered trials — the model was typing a
+  call *alongside* an answer the parser already found. The `bench/` collection fix (eb3e96f)
+  is correct as a measurement and changes **no score**; I oversold it.
+- **`--baseline` in `score_repeats.py` silently kept only its last occurrence** (declared
+  `nargs="+"` without `action="extend"`), so candidates reported as scored against two or
+  three baselines were scored against one. Fixed 2026-09-29. `respond_first_v2`'s n-back
+  delta moved −0.0784 → −0.0806 once three baselines actually applied; the verdict did not
+  change, but the standard error it rested on was wrong.
+
+The common shape: **four of the five things that moved a verdict in this project were
+measurement defects, not candidate properties.** Three rejections were overturned by fixing
+measurement (3-repeat averaging twice, the 3-run baseline once). Treat any single-run,
+single-baseline, or single-generation number as provisional until it has survived a
+measurement change.
+
 ## Practical notes
 
+- **The frontier belongs to `exp/compactor-prefix-v1`, 2026-09-29.** Every membership claim
+  below was measured on the leaky instrument, and the mechanism that put `respond_first`,
+  `respond_only` and `evicting_reset` on it — closing the history leak — is now a baseline
+  property. Read the frontier as history, and do not run a candidate against the post-fix
+  baseline before checking it against the new turn structure: candidates carry their own
+  `step()` copies, so the `bench/` fix does not reach them and several now close the leak
+  twice. The open decision below (does held-out passage gate membership?) is moot until a
+  post-fix frontier exists.
 - **`evicting_reset` holds the Qwen frontier but fails held-out.** Held-out rows are in
   `evolution_summary.jsonl` marked `instrument` so they cannot enter frontier derivation
   (their means are not comparable — the Hermes *baseline* is 0.8111 vs Qwen's 0.7861).
