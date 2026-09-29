@@ -127,7 +127,18 @@ def main(runs: list[Path]) -> int:
         m, f = float(np.nanmean(miss)), float(np.nanmean(fa))
         ratio = m / f if f else float("nan")
         if ratio != ratio:
-            add("P3 A2 ratio", INCONCL, "ratio undefined (no false alarms)", ">1.0")
+            # FA rate is exactly 0, so the RATIO is undefined rather than small. The registered
+            # band was "supports > 1.0", which an undefined value cannot satisfy, so the
+            # registered verdict is INCONCL -- the band is NOT rewritten after the fact. The
+            # substance is reported alongside it: miss - fa is bounded and well defined, and a
+            # ratio of infinity is past the human 6.094 in the conservative direction, not short
+            # of it. A2's ratio formulation simply breaks at fa = 0 and needs replacing.
+            add("P3 A2 ratio", INCONCL,
+                f"ratio UNDEFINED: miss {m:.4f}, fa exactly {f:.4f} -- zero false alarms. "
+                f"miss-fa difference {m - f:+.4f} (human 0.272-0.045 = +0.227). "
+                f"Direction is PAST human 6.094, not short of it; the registered band cannot "
+                f"express that, so this is inconclusive as written",
+                ">1.0")
         else:
             v = SUPPORTS if ratio > 1.0 else (REJECTS if ratio < 0.6 else INCONCL)
             add("P3 A2 ratio", v,
