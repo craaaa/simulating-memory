@@ -1,5 +1,46 @@
 # CONTINUITY — session state, 2026-09-28
 
+## 2026-09-28T23:40Z [USER][CODE] — the instrument is being fixed; everything below is history
+
+**Decision (user):** stop searching, fix the benchmark. Reason, measured in `dbd2ea3`: 99–106%
+of every frontier candidate's mean-over-8 delta came from `nback` + `variable_mapping`, the
+other six tasks contributed nothing outside 2 SE, and those two are exactly the tasks whose
+stimuli never left the conversation context. The search was optimising plumbing.
+
+**Landed (commit `70befa7`, pre-fix state tagged `exp/compactor-prefix-v1`):** `step()` clears
+the transcript at the turn boundary, so only the KV store crosses a turn; `wm_nback` split into
+encode + answer turns per letter with the store injected on both and `TASK_DESC_BY_N` restated
+on the answer turn (it previously reached the model nowhere — `wm_system_prompt()` accepts
+`task_prompt` and never uses it); `wm_variable_mapping` gains `WM_ENCODE_PROMPT` carrying the
+store; `llm_openai.generate_with_tools` now sanitizes message content. Six offline tests in
+`meta_harness/test_turn_boundary_reset.py`. Full change list and **pre-registered predictions**:
+`meta_harness/logs/instrument_fix.md`. `_tool_call_cap()` untouched.
+
+**n-back was write-only before this.** `TOOLS` has only `write_memory`/`delete_key`, no read
+tool, and the turn was the bare string `"Next letter: X"` — the agent wrote keys it could never
+read and answered from the transcript.
+
+**No number from before `exp/compactor-prefix-v1` is comparable to one after it.** The twelve
+candidate verdicts, the frontier, and all three baseline generations belong to the tag. Every
+candidate overrides `step()` with its own copy, so the fix does not reach them; several exist
+mainly to call `reset_messages()`, which the baseline now does. Do not run a candidate against
+the post-fix baseline before checking it against the new turn structure.
+
+**Running:** job `18767306`, Qwen, 3 post-fix baseline repeats, `ITER=10postfix` →
+`runs/iter10postfix/baseline{,_rep2,_rep3}`. It runs from a **second cluster checkout**,
+`/scratch/cl5625/mh-postfix` (git worktree at `050afa1`, `.venv` and `runs/` symlinked back),
+because job `18757709` is still reading the main checkout and `candidate.sbatch` now takes
+`REPO=<path>` for exactly this. Job `18757709` (Hermes, `respond_first_v2`, pre-fix bench) was
+left running; it now only answers a Hermes behavioural question under an instrument since
+declared broken.
+
+**Deferred on purpose:** migrating the six batch tasks from `recall()` to
+`step(..., allow_tools=False)` (stage 2, instrumentation only); the empty-content answer turn
+(may vanish now that n-back's answer turn is `allow_tools=False`); `word_recognition`, whose
+defect is not a history leak but that all 100 test words are shown at once while "Old" means
+"appeared earlier in this list".
+
+
 Written to survive a compaction. Read this, then `meta_harness/HANDOFF.md` (whose "one thing to
 do next" is superseded by its own 2026-09-28 amendment), then
 `meta_harness/logs/postfix_prediction.md`.
