@@ -11,7 +11,11 @@ Decision rules, from domain_spec.md:
   floor        no task may regress more than FLOOR below the baseline
   A2 (axis)    word-recognition miss/false-alarm ratio, humans 6.09 -- the only
                axis with real headroom on qwen3-30b
-  A1 (guard)   protocol-matched digit-span sub-span leak must stay in [0.05,0.12]
+  A1 (report)  protocol-matched digit-span sub-span leak. DEMOTED 2026-09-29 from
+               guard to report-only: it measures the noise in a declining success
+               curve, not humanlikeness, and it scores an agent that never fails as
+               more human-like than the baseline. `best_span` is reported beside it
+               as a diagnostic but is NOT a guard -- see the note at `enforced`.
   A3 (guard)   story-recall BLEU < 0.02 and recall length in [100,175] words
   covariate    word-recognition trials attempted, reported so an A2 gain that
                came from surviving longer is visible rather than banked
@@ -86,7 +90,8 @@ LEAKY_TASKS = ["nback", "variable_mapping"]
 # |candidate - human| must not exceed |baseline - human| + tolerance.
 HUMAN_A1_LEAK = 0.087
 HUMAN_BEST_SPAN = 6.88            # humans stop here; baseline reaches 18.4
-A1_LEAK_TOLERANCE = 0.03
+A1_LEAK_TOLERANCE = 0.03          # UNUSED since A1 was demoted 2026-09-29; kept so
+                                  # the historical verdicts stay readable
 A3_BLEU_TOLERANCE = 0.02          # absolute; human BLEU is ~0 so this is a cap
 A3_WORD_TOLERANCE = 40.0          # words, around the human 137.2
 A3_PRECISION_TOLERANCE = 0.02     # on length-free 4-gram precision
@@ -343,8 +348,26 @@ def evaluate(run_dir: Path, baseline_dir: Path | None) -> dict[str, Any]:
     # so the guards are reported and not enforced.
     guards: list[str] = []
     base_axes = axes(baseline_dir) if baseline_dir is not None else {}
-    enforced = [("A1", A1_LEAK_TOLERANCE, "distance")]
-    enforced += [("A3", tol, field) for field, tol in A3_ENFORCED_FIELDS]
+    # A1's sub-span leak was DEMOTED to report-only on 2026-09-29 (user decision).
+    # It is not a humanlikeness signal. Under a staircase over increasing lengths,
+    # failing a sequence shorter than your own best is ordinary variability in a
+    # declining success curve, so the leak rate mostly reflects that curve's slope
+    # and noise. Two things confirm it rather than merely suggest it: the ceiling
+    # confound already recorded at `res["A1"]` below -- `full_context` never
+    # terminated, had no failures to leak, and so scored CLOSER to human (0.032)
+    # than the baseline (0.130) purely by being uninformative -- and the fact that
+    # the model was run over all 19 spans while the human staircase stops on double
+    # failure, which hands the model far more sub-span opportunities mechanically.
+    #
+    # `best_span` is deliberately NOT promoted into its place, even though the
+    # docstring at `res["A1"]` calls it the sensitive digit-span regression signal
+    # (it caught random_decay collapsing 18.4 -> 2.0). As a distance-from-human
+    # guard it would be wrongly signed: the human best span is 6.88 and the
+    # baseline sits at 18.4, so a collapse to 2.0 gives distance 4.88 against the
+    # baseline's 11.52 and would read as an IMPROVEMENT. What actually catches that
+    # collapse is the per-task humanlikeness floor on digit span, which is where
+    # enforcement belongs. `best_span` stays reported as a diagnostic.
+    enforced = [("A3", tol, field) for field, tol in A3_ENFORCED_FIELDS]
     for key, tol, field in enforced:
         cand_ax, base_ax = rec["axes"].get(key), base_axes.get(key)
         if not cand_ax or not base_ax:
