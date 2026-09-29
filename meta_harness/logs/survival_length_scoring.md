@@ -12,14 +12,20 @@ minus another and is the only quantity here that can be negative.
 
 The *per-participant score* is task proportion-correct on six of the eight tasks. On the two
 tasks in this file it is now **survival length**: the number of items the participant was
-presented before the protocol stopped them, divided by the censoring point — **100 words**
-for `word_recognition`, **10 questions** for `variable_mapping`.
+presented before the protocol stopped them, divided by a fixed scale — **100 words** for
+`word_recognition`, **16 questions** for `variable_mapping`. Survival past the scale clips
+to 1.0.
+
+> **The `variable_mapping` scale was 10 for the first hours of 2026-09-29 and is now pinned at
+> 16** (`56eedda`). The two are not comparable, and the denominator-10 figures are already
+> quoted in earlier commit messages, so every `variable_mapping` number below is given at both.
+> See *The denominator is pinned, and why* below.
 
 **Worked example.** A human in `variable_mapping` answered 4 questions correctly and got the
 5th wrong; the task ended there. Their record holds 5 questions. Survival length = 5,
-score = 5/10 = **0.50**. Under the old scoring they had 4 correct out of a fixed denominator
+score = 5/16 = **0.3125**. Under the old scoring they had 4 correct out of a fixed denominator
 of 10, score = **0.40**. A model run that answered questions 1–2 correctly and erred on
-question 3 has survival length 3, score = **0.30**; under the old scoring it banked
+question 3 has survival length 3, score = 3/16 = **0.1875**; under the old scoring it banked
 `relation_count` of question 2 and then answered the remaining 7 questions anyway, most often
 scoring **1.00**.
 
@@ -50,11 +56,18 @@ humanlikeness.
 | task | scoring | pre-fix | post-fix | delta |
 |---|---|---|---|---|
 | `word_recognition` | old (correct count / 100) | 0.5075 | 0.4918 | −0.0158 |
-| `word_recognition` | **survival / 100** | **0.5232** | **0.5073** | **−0.0159** |
+| `word_recognition` | **survival / 100 — CURRENT** | **0.5232** | **0.5073** | **−0.0159** |
 | `variable_mapping` | old | 0.3539 | 0.6801 | +0.3262 |
-| `variable_mapping` | **survival / 10** | **0.4621** | **0.9564** | **+0.4943** |
+| `variable_mapping` | survival / 10 — superseded | 0.4621 | 0.9564 | +0.4943 |
+| `variable_mapping` | **survival / 16 — CURRENT** | **0.6809** | **0.9625** | **+0.2816** |
 | mean over 8 | old | 0.7824 | 0.8137 | +0.0313 |
-| mean over 8 | **with survival** | **0.7979** | **0.8502** | **+0.0523** |
+| mean over 8 | with survival, vm at /10 | 0.7979 | 0.8502 | +0.0523 |
+| mean over 8 | **with survival, vm at /16 — CURRENT** | **0.8253** | **0.8509** | **+0.0256** |
+
+All of these are measured on runs where `bench` still asked **10** `variable_mapping`
+questions. `N_QUESTIONS` is now 20, so the model's survival distribution itself will change at
+the next re-baseline — the 5 of 150 rows piled on the old ceiling can now resolve anywhere up
+to 20, clipped at 16. **These `variable_mapping` figures are transitional.**
 
 `word_recognition` barely moves, and that is expected: survival is the old score plus a
 near-constant 3 words, so the two distributions differ by an almost pure translation that
@@ -93,27 +106,65 @@ Verified independently of `metrics.first_error_at` by re-grading every question 
 `parsed_answers` + `options` + `correct_city`: **150 of 150 rows agree**, 0 unparsed answers.
 
 **What this is not.** Two bounded distributions on 2–10 with means 0.15 apart will score high
-on 1 − W₁ almost regardless of mechanism, so 0.9564 is not evidence that the model fails for
+on 1 − W₁ almost regardless of mechanism, so 0.96 is not evidence that the model fails for
 human reasons. It says the *rate* at which this model runs out of usable bindings resembles
 the human rate. It says nothing about which binding it loses, and the project's pseudo-
 participant problem is untouched: per the user's decision to continue with the current
 procedure, the model's between-participant spread is still item difficulty while the humans'
 is between-person ability.
 
-It also means the instrument fix's variable_mapping gain is **larger** than previously
-reported (+0.4943 rather than +0.3262), and that the old 0.6801 understated it.
+It also means the instrument fix's variable_mapping gain is **smaller than the old formula
+showed on one reading and larger on another** — +0.2816 at the pinned scale of 16 against
++0.3262 under the old formula and +0.4943 at a scale of 10. The scale-dependence is the point
+of the next section, and it is why the scale is now fixed.
 
-## Two caveats that must be quoted with the numbers
+## The denominator is pinned, and why
 
-**1. Censoring is not symmetric on `variable_mapping`.** No human record is censored — every
-one ends in an error — and **5 of 152 humans ran past 10 questions**, to 11, 15 and 16.
-`bench` asks exactly 10, so the model cannot exceed 10 and 5 of 150 sit at that ceiling.
-Clipping the human side at 10 is the lesser distortion; a denominator of 16 would impose an
-artificial 0.625 ceiling on the model, and it changes the answer little (0.9629 vs 0.9571 on
-one run). **The real fix is to let `bench` ask more than 10 questions** — not yet done.
+`TASK_DENOM["variable_mapping"] = 16.0`, pinned, and it **must not track `N_QUESTIONS`.**
 
-**2. `word_recognition` is nearly symmetric but not exactly.** The human list is 100 long,
-one record reports `trialsCompleted: 102` and is clipped to 100 here.
+Wasserstein-1 scales linearly with the denominator. A denominator that followed the schedule
+length would therefore make humanlikeness *rise* for a longer task at identical behaviour —
+about +0.02 going 10 → 20 — which is a metric that improves when you lengthen the task.
+
+The size of the effect is not hypothetical. Rescoring the same two baselines at the two scales:
+
+| | pre-fix | post-fix | delta |
+|---|---|---|---|
+| scale 10 | 0.4621 | 0.9564 | +0.4943 |
+| scale 16 | 0.6809 | 0.9625 | +0.2816 |
+
+The pre-fix figure moves 0.22 and the post-fix figure 0.006. Rescaling shrinks a large
+distance far more than a small one, so the *delta* nearly halves. Fixing the scale once, at a
+value chosen from the human data rather than from the harness, is what stops this recurring.
+
+**16 is the human maximum.** Over 152 human records the most questions anyone answered is 16;
+no human record is censored, because every one ends in an error. Survival past 16 clips to 1.0.
+
+## Why `bench` now asks 20 questions
+
+Raising `variable_mapping.N_QUESTIONS` from 10 to 20 (`56eedda`) is a separate change from
+pinning the scale, and it is about censoring rather than units.
+
+| quantity | human app | bench before | bench now |
+|---|---|---|---|
+| questions offered | **≥16** (max answered 16, max turn 32) | 10 | **20** |
+| turns per question | 2 | 2 | 2 |
+| distinct relations | max exactly 10 | 10 | 10 |
+
+`TARGET_RELATIONS` stays at 10 because the human `relationCount` maxes at exactly 10 across all
+152 records — the human app also introduced 10 people and then only re-moved existing ones,
+which is what bench's `turn <= cap` branch already does.
+
+Cost: 2 LLM turns per question (one encode, one answer), so 150 runs × 20 questions × 2 =
+**6000 turns, up from 3000**. Small against post-fix n-back (~5100) and stage-2
+`word_recognition` (up to 10,000). The model is left answering all 20 rather than stopping at
+its first error: under survival scoring the later questions do not affect the score, but they
+are the trace the error-shape measures read.
+
+## `word_recognition` needs no pinning
+
+It is nearly symmetric already: the human list is 100 long and the model's is 100. One human
+record reports `trialsCompleted: 102` and is clipped to 100.
 
 ## Consequences for the rest of the harness
 
@@ -125,3 +176,12 @@ one record reports `trialsCompleted: 102` and is clipped to 100 here.
 - A4 was already retracted; nothing here revives it.
 - `word_recognition`'s A2 (miss/FA ratio, human 6.094) and `M4_word_recognition_lag` are
   unaffected — they read `per_trial`, not the score.
+- `bench`'s own `metrics.score` for `variable_mapping` is now **vestigial**. It is
+  `relation_count` of the last consecutively correct question and saturates by question 5.
+  Left in place so old rows stay readable; nothing new should be built on it.
+- `interference.py`'s pooling note claimed "154 participants answer 10 questions each and make
+  152 errors in total". Corrected: humans answer 2–16 questions (mean 4.99) because the task
+  ends at their first error, so each record holds exactly one error, always its last question.
+  The pooling conclusion stands for a stronger reason than the one recorded.
+- `report_error_shape.py`'s "a human participant answers 10 questions" note was checked and is
+  **not** affected — it describes `narrative_qa` / `factual_qa`, which really do have 10.
