@@ -787,27 +787,33 @@
           "lure_fa_rate": null,
           "lure_note": "insufficient (n=18); minimum 30",
           "miss_rate": 0.0916,
+          "n_false_alarms": 12,
           "n_lure_trials": 18,
           "nonlure_fa_rate": 0.0286,
-          "ratio": 3.3446
+          "ratio": null,
+          "ratio_note": "insufficient (false alarms n=12); minimum 30 -- the ratio's denominator"
         },
         "2": {
           "fa_rate": 0.0752,
           "lure_fa_rate": null,
           "lure_note": "insufficient (n=28); minimum 30",
           "miss_rate": 0.2723,
+          "n_false_alarms": 31,
           "n_lure_trials": 28,
           "nonlure_fa_rate": 0.0521,
-          "ratio": 3.6192
+          "ratio": 3.6192,
+          "ratio_note": null
         },
         "3": {
           "fa_rate": 0.152,
           "lure_fa_rate": 0.4333,
           "lure_note": null,
           "miss_rate": 0.4279,
+          "n_false_alarms": 57,
           "n_lure_trials": 30,
           "nonlure_fa_rate": 0.1275,
-          "ratio": 2.815
+          "ratio": 2.815,
+          "ratio_note": null
         }
       },
       "filters": [
@@ -849,6 +855,7 @@
       ],
       "min_lure_trials": 30,
       "n_cells": 159,
+      "n_false_alarms": 100,
       "n_lure_trials": 76,
       "n_nontarget": 1225,
       "n_target": 683,
@@ -1976,12 +1983,13 @@
         2.411,
         3.93
       ],
+      "ratio_note": null,
       "task": "nback",
       "unit": {
         "fa_rate": "P(respond same | non-target), over answered non-target trials",
         "miss_rate": "P(respond different | target), over answered target trials",
         "position_thirds": "accuracy over answered trials in each third of the block",
-        "ratio": "miss_rate / fa_rate, dimensionless (random responding -> 1.0)",
+        "ratio": "miss_rate / fa_rate, dimensionless (random responding -> 1.0); withheld below 30 false alarms and to be read only alongside ratio_ci_over_cells",
         "unanswered_rate": "share of defined trials with no parseable label"
       },
       "values": {

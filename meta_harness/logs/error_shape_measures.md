@@ -115,7 +115,7 @@ first:
 | `truncation` | a proper prefix of the target: stopped early |
 | `omission` | a shorter subset of the target's digits, not a prefix |
 | `substitution` | right length, at least one digit not in the target |
-| `other` | anything else, including responses **longer** than the target. In the human records this is a mixed error: the length is wrong *and* the content is wrong (len-diff distribution forward: −3:2, −2:5, −1:15, +1:19). |
+| `other` | **a mixed error**: the length differs from the target **and** the content is not a subset of it. This includes responses longer than the target. In the human forward records it is 41 of 160 errors, almost all off by one digit in length (len-diff −3:2, −2:5, −1:15, +1:19) with a substitution as well. It is the largest non-`substitution` bucket, so state plainly: **the six classes are fixed.** Splitting `other` changes every share's denominator and invalidates the cached human reference, so it must be done by rebuilding the cache, not by reinterpreting these numbers. |
 
 **Unit.** Share of that side's **administered errors**, six classes summing to
 1.000. `reversal` has its own denominator: non-palindromic administered errors only,
@@ -197,7 +197,7 @@ human summary is bit-identical after that refactor (`sub_span_fail` 0.0866414835
 |---|---|---|
 | `miss_rate` | P(respond "different" \| target) | proportion of answered target trials |
 | `fa_rate` | P(respond "same" \| non-target) | proportion of answered non-target trials |
-| `ratio` | `miss_rate / fa_rate`, reported the way A2 reports its ratio, with a bootstrap CI over (participant, level) cells | dimensionless; random responding → 1.0 |
+| `ratio` | `miss_rate / fa_rate`, reported the way A2 reports its ratio, with a bootstrap CI over (participant, level) cells. **Withheld below 30 false alarms, and to be read only alongside that CI, never alone.** | dimensionless; random responding → 1.0 |
 | `unanswered_rate` | share of defined trials with no parseable label | proportion of defined trials |
 | `lure_fa_rate` | `fa_rate` restricted to non-targets whose letter matches at lag `n−1` or `n+1` | proportion of answered lure trials |
 | `position_third_k` | accuracy over answered trials in third `k` of the block's defined trials | proportion correct |
@@ -213,7 +213,7 @@ would let a candidate move the ratio by going quiet.
 |---|---|---|
 | `miss_rate` | 0.2533 | 683 target trials |
 | `fa_rate` | 0.0816 | 1225 non-target trials |
-| `ratio` | 3.1029, 95% bootstrap CI over cells **[2.411, 3.930]** | 159 cells |
+| `ratio` | 3.1029, 95% bootstrap CI over cells **[2.411, 3.930]** | 100 false alarms (the denominator's count), over 159 cells |
 | `unanswered_rate` | 0.0000 | 1908 defined trials |
 | `lure_fa_rate` | 0.3158 | 76 lure trials |
 | `nonlure_fa_rate` | 0.0661 | 1149 non-lure non-target trials |
@@ -221,11 +221,19 @@ would let a candidate move the ratio by going quiet.
 
 Per level:
 
-| n | `miss_rate` | `fa_rate` | `ratio` | `lure_fa_rate` (n lures) |
+| n | `miss_rate` | `fa_rate` | `ratio` (n false alarms) | `lure_fa_rate` (n lures) |
 |---|---|---|---|---|
-| 1 | 0.0916 | 0.0274 | 3.3446 | insufficient (n=18) |
-| 2 | 0.2723 | 0.0752 | 3.6192 | insufficient (n=28) |
-| 3 | 0.4279 | 0.1520 | 2.8150 | 0.4333 (n=30) |
+| 1 | 0.0916 | 0.0274 | insufficient (n=12 FAs) | insufficient (n=18) |
+| 2 | 0.2723 | 0.0752 | 3.6192 (n=31 FAs) | insufficient (n=28) |
+| 3 | 0.4279 | 0.1520 | 2.8150 (n=57 FAs) | 0.4333 (n=30) |
+
+**Why `ratio` has its own minimum.** It is a quotient whose denominator is
+`fa_rate`, and `fa_rate` is small — the human n=1 level has 12 false alarms in 438
+non-target trials. A candidate that drives its own `fa_rate` toward zero manufactures
+an enormous ratio out of a handful of false alarms, which is the same failure mode
+A4's fixed threshold had. So the point estimate is withheld below 30 false alarms
+(`MIN_FALSE_ALARMS_FOR_RATIO`), the `n` column for that row carries the **false-alarm
+count** rather than the trial total, and the CI is printed on every report line.
 
 The lure effect is large where it is measurable (0.4333 against a non-lure 0.1275 at
 n=3) but **lures are rare by stimulus construction** — 76 of 1225 human non-target
@@ -318,8 +326,16 @@ Two different measures, kept apart on purpose.
   error counts here are 1–3.
 * `cross_side_agreement` = P(a human error and a model error on the same question
   chose the same distractor) `= Σ_q Σ_d h_qd·m_qd / Σ_q H_q·M_q`. This is the "do the
-  two sides concentrate on the same distractors" number. It has no "human value", so
-  the report puts **chance** in the human column and leaves the distance column empty.
+  two sides concentrate on the same distractors" number.
+
+**How the report's columns read for `cross_side_agreement`.** It is a single statistic
+about the *pair* of sides, so there is no human value and no difference to take. The
+report prints the row as
+`cross_side_agreement [human col = chance]`: the **human column carries chance
+(0.3333)** as the reference point, the **model column carries the statistic**, the
+**distance column is empty**, `n_human` is the number of shared questions and
+`n_model` is the number of human×model error pairs behind it. Do not read that row's
+human column as a human measurement.
 
 **Unit.** Probability in `[0,1]`; chance 0.3333.
 
@@ -416,9 +432,31 @@ bench. They are the **same embedder** — verified in `WORKLOG.md`: over these 5
 records stored mean 0.6041 / sd 0.1282 against recomputed 0.5911 / sd 0.1220, mean
 |diff| 0.0346, corr 0.9431 — but not the same preprocessing, so only the recomputed
 column is computed identically on the two sides and only it is used for `1 − W₁`.
-(The cache's 0.5969 differs slightly from WORKLOG's 0.5911 because this recomputation
-uses `payload.storyFile`-resolved transcripts via `error_structure._transcript`; both
-are recorded so the difference is visible rather than assumed away.)
+
+**Verified, not assumed: the two sides embed the identical story string.**
+`error_structure._transcript(payload.storyFile)` was compared byte-for-byte against
+the `StoryStimulus.text` that `bench.tasks.semantic_story_recall.generate_story_stimuli`
+hands the model, for all four stories: Pieman 4871 chars, Oregon Trail 11906,
+Baseball 11237, Eyespy 11945 — identical in every case. So the reference text is the
+same on both sides and the `1 − W₁` over this column is a valid comparison.
+
+**Unexplained residual, stated as unexplained.** This cache records recomputed mean
+**0.5969** / sd 0.1305 over 53 records; `WORKLOG.md` records **0.5911** / sd 0.1220
+from an earlier recomputation over the same records. The story text is not the cause
+(just verified), and the earlier script is not in the repo, so the 0.0058 gap is
+**not accounted for** — plausibly the recall-side preprocessing or the truncation
+boundary, but that is a guess and is not asserted here. It does not affect the
+comparability of the two sides, both of which now go through the same
+`embedding_similarity`. Anyone reconciling the two numbers should reproduce
+WORKLOG's path rather than trust this note.
+
+**How the report's columns read for M6.** One row, `gist_similarity`, carries the
+human recomputed mean, the model mean, their absolute difference, both n's and the
+`1 − W₁` over per-participant values. A second row,
+`gist_similarity (human stored, web app -- NOT comparable)`, carries the stored human
+value **with an empty model column and an empty distance column**, because there is
+nothing on the model side computed that way. It is there for continuity with earlier
+records, not for comparison.
 
 **Minimum n.** None; the n is printed. Per-story means are printed because the story
 mix differs — humans split 18 Eyespy / 15 Pieman / 13 Baseball / 7 Oregon Trail plus

@@ -159,13 +159,16 @@ def human_reference() -> dict[str, Any]:
                    ("miss_rate", "fa_rate", "ratio", "unanswered_rate",
                     "lure_fa_rate", "nonlure_fa_rate")},
         "ratio_ci_over_cells": prof.get("ratio_ci_over_cells"),
+        "ratio_note": prof["overall"]["ratio_note"],
         "by_level": {k: {kk: v[kk] for kk in
-                         ("miss_rate", "fa_rate", "ratio", "lure_fa_rate",
+                         ("miss_rate", "fa_rate", "ratio", "ratio_note",
+                          "n_false_alarms", "lure_fa_rate",
                           "nonlure_fa_rate", "n_lure_trials", "lure_note")}
                      for k, v in prof["by_level"].items()},
         "n_trials": prof["overall"]["n_trials"],
         "n_target": prof["overall"]["n_target"],
         "n_nontarget": prof["overall"]["n_nontarget"],
+        "n_false_alarms": prof["overall"]["n_false_alarms"],
         "n_lure_trials": prof["overall"]["n_lure_trials"],
         "n_cells": prof["n_cells"],
         "per_cell_miss": [v["miss"] for v in prof["per_cell"].values()],
@@ -426,6 +429,10 @@ def _rows_for(key: str, href: dict, mres: dict | None) -> list[Row]:
                 nh, nm = href.get("n_nontarget"), (mv.get("n_nontarget") if mv else None)
             elif q == "lure_fa_rate":
                 nh, nm = href.get("n_lure_trials"), (mv.get("n_lure_trials") if mv else None)
+            elif q == "ratio":
+                # The ratio's n is its DENOMINATOR's count -- the false alarms --
+                # not the trial total, because that is what it can be destroyed by.
+                nh, nm = href.get("n_false_alarms"), (mv.get("n_false_alarms") if mv else None)
             elif q == "nonlure_fa_rate":
                 nh = (href.get("n_nontarget") or 0) - (href.get("n_lure_trials") or 0)
                 nm = (((mv.get("n_nontarget") or 0) - (mv.get("n_lure_trials") or 0))
@@ -567,6 +574,12 @@ def print_table(run_dir: Path, ref: dict) -> None:
                 mci = (mm or {}).get("ratio_ci_over_cells")
                 print("    miss/fa ratio 95% bootstrap CI over (participant, level) "
                       f"cells: human {hci}, model {mci}")
+                print("    the ratio point estimate must be read only alongside that "
+                      "CI; it is withheld below 30 false alarms")
+                for side, note in (("human", href.get("ratio_note")),
+                                   ("model", (mm or {}).get("overall", {}).get("ratio_note"))):
+                    if note:
+                        print(f"    {side} ratio: {note}")
             if key.endswith("_typology") and mm and mm.get("all_spans_not_comparable"):
                 a = mm["all_spans_not_comparable"]
                 print("    model, all 19 spans, staircase NOT applied -- NOT "

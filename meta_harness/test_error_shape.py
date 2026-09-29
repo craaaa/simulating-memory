@@ -336,6 +336,20 @@ def test_mcq_reparse_reproduces_stored_metrics() -> None:
               agree, rows)
 
 
+# ------------------------- drift guard 4: M6's two sides embed the same story
+def test_m6_story_text_identical_on_both_sides() -> None:
+    """M6's 1 - W_1 is only valid if the human side embeds the SAME story string the
+    model side does. Asserted rather than assumed: `_transcript` resolves
+    `payload.storyFile` out of data/, while bench builds `StoryStimulus.text` from
+    the same basename, and nothing enforces that they stay the same file."""
+    print("drift guard: M6 embeds the identical story text on both sides")
+    sys.path.insert(0, str(ROOT))
+    from bench.tasks.semantic_story_recall import generate_story_stimuli
+    for s in generate_story_stimuli(ROOT / "data"):
+        mine = ES._transcript("transcript/" + s.story_source_file)
+        check(f"{s.story_name} ({len(s.text)} chars) identical", mine == s.text, True)
+
+
 def main() -> int:
     fast = "--fast" in sys.argv
     test_m1_intrusion_classes()
@@ -346,6 +360,7 @@ def main() -> int:
     test_m5_distractor()
     test_m5b_error_index()
     test_m6_gist()
+    test_m6_story_text_identical_on_both_sides()
     test_a1_unchanged_by_refactor()
     test_mcq_reparse_reproduces_stored_metrics()
     test_cached_human_reference_matches_recomputation(fast)

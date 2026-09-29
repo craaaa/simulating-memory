@@ -259,7 +259,13 @@ def classify_span_error(gold: tuple[int, ...], response: tuple[int, ...],
                     rather than losing an item from the middle.
       omission      a subset of the target's digits, shorter, not a prefix.
       substitution  the right length, but at least one digit is not in the target.
-      other         anything else, including responses LONGER than the target.
+      other         a MIXED error: the length differs from the target AND the content
+                    is not a subset of it -- in the human forward records this is
+                    41 of 160 errors, off by one digit in length (len-diff -3:2,
+                    -2:5, -1:15, +1:19) with a substitution as well. The six classes
+                    are FIXED: splitting `other` changes every share's denominator
+                    and invalidates the cached human reference, so it must be done
+                    by rebuilding the cache, not by reinterpreting the number.
     """
     if reverse and presented and response == presented and gold != presented:
         return "reversal"

@@ -341,6 +341,13 @@ def _mean_or_none(vals, nd=4):
 #      flag on 1908/1908 human trials and 2100/2100 model trials, which is the
 #      check that licenses using it.
 MIN_LURE_TRIALS = 30       # below this, lure_fa_rate prints insufficient
+# `ratio` is a quotient whose DENOMINATOR is fa_rate, and fa_rate is small: the
+# human n=1 level has 12 false alarms in 438 non-target trials. A candidate that
+# drives its own fa_rate toward zero manufactures an enormous ratio out of a
+# handful of false alarms -- the same failure mode A4's fixed threshold had. So the
+# point estimate is withheld below this many false alarms, and even above it the
+# ratio must be read alongside `ratio_ci_over_cells`, never alone.
+MIN_FALSE_ALARMS_FOR_RATIO = 30
 NBACK_LEVELS = (1, 2, 3)
 _LEAD_BLOCK = "training"
 
@@ -446,15 +453,22 @@ def nback_error_profile(trials: list[dict], min_lure: int = MIN_LURE_TRIALS) -> 
               if nt_a else None)
         lure = [t for t in nt_a if t["lure"]]
         nonlure = [t for t in nt_a if not t["lure"]]
+        n_fa = sum(1 for t in nt_a if t["response"] == "same")
+        ratio_ok = n_fa >= MIN_FALSE_ALARMS_FOR_RATIO
         return {
             "n_trials": len(sel),
             "n_target": len(tg), "n_nontarget": len(nt),
             "n_answered": len(tg_a) + len(nt_a),
+            "n_false_alarms": n_fa,
             "unanswered_rate": (round(1.0 - (len(tg_a) + len(nt_a)) / len(sel), 4)
                                 if sel else None),
             "miss_rate": round(miss, 4) if miss is not None else None,
             "fa_rate": round(fa, 4) if fa is not None else None,
-            "ratio": (round(miss / fa, 4) if miss is not None and fa else None),
+            "ratio": (round(miss / fa, 4)
+                      if (ratio_ok and miss is not None and fa) else None),
+            "ratio_note": (None if ratio_ok else
+                           f"insufficient (false alarms n={n_fa}); minimum "
+                           f"{MIN_FALSE_ALARMS_FOR_RATIO} -- the ratio's denominator"),
             "n_lure_trials": len(lure),
             "lure_fa_rate": (round(float(np.mean([t["response"] == "same" for t in lure])), 4)
                              if len(lure) >= min_lure else None),
@@ -491,7 +505,9 @@ def nback_error_profile(trials: list[dict], min_lure: int = MIN_LURE_TRIALS) -> 
         "unit": {
             "miss_rate": "P(respond different | target), over answered target trials",
             "fa_rate": "P(respond same | non-target), over answered non-target trials",
-            "ratio": "miss_rate / fa_rate, dimensionless (random responding -> 1.0)",
+            "ratio": ("miss_rate / fa_rate, dimensionless (random responding -> 1.0); "
+                      "withheld below 30 false alarms and to be read only alongside "
+                      "ratio_ci_over_cells"),
             "unanswered_rate": "share of defined trials with no parseable label",
             "position_thirds": "accuracy over answered trials in each third of the block",
         },
